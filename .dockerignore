@@ -1,0 +1,45 @@
+# Git
+.git
+.gitignore
+
+# Environment & Secrets
+.env
+.env.*
+*.pem
+*.key
+
+# Python
+__pycache__
+*.pyc
+.venv
+venv
+.mypy_cache
+.ruff_cache
+.pytest_cache
+htmlcov
+.coverage
+*.egg-info
+
+# Node.js
+node_modules
+.next
+out
+.turbo
+npm-debug.log*
+
+# IDE
+.vscode
+.idea
+*.swp
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# CI
+.github/
+
+# OS
+.DS_Store
+Thumbs.db
