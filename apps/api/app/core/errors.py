@@ -39,6 +39,16 @@ class DatabaseError(AppError):
         super().__init__(503, code, message)
 
 
+class AuthorizationError(AppError):
+    def __init__(self, message: str = "Not authorized", code: str = "AUTHORIZATION_ERROR"):
+        super().__init__(401, code, message)
+
+
+class ForbiddenError(AppError):
+    def __init__(self, message: str = "Forbidden", code: str = "FORBIDDEN"):
+        super().__init__(403, code, message)
+
+
 def register_error_handlers(app: FastAPI):
     @app.exception_handler(AppError)
     async def app_error_handler(request: Request, exc: AppError):
