@@ -1,100 +1,181 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { apiClient, type SystemInfoResponse } from "@/lib/api-client";
+import { useEffect, useState } from 'react';
+import { useAuth } from '@/lib/auth-context';
+import { apiClient } from '@/lib/api-client';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import ErrorState from '@/components/ui/ErrorState';
+import Badge from '@/components/ui/Badge';
+import Link from 'next/link';
 
-export default function Home() {
-  const [systemInfo, setSystemInfo] = useState<SystemInfoResponse | null>(null);
-  const [connectionStatus, setConnectionStatus] = useState<"loading" | "connected" | "error">("loading");
-  const [errorMessage, setErrorMessage] = useState<string>("");
+export default function DashboardPage() {
+  const { user } = useAuth();
+  const [data, setData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchDashboard = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const res = await apiClient.getDashboardToday();
+      setData(res);
+    } catch (err: any) {
+      setError(err.message || 'Failed to load dashboard data');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    async function checkConnection() {
-      const { data, error } = await apiClient.getSystemInfo();
-      if (data) {
-        setSystemInfo(data);
-        setConnectionStatus("connected");
-      } else {
-        setConnectionStatus("error");
-        setErrorMessage(error?.message || "Failed to connect to backend");
-      }
-    }
-    checkConnection();
+    fetchDashboard();
   }, []);
 
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-full">
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
+  if (error) {
+    return <ErrorState message={error} onRetry={fetchDashboard} />;
+  }
+
+  const TaskCard = ({ task }: { task: any }) => (
+    <Link
+      href={`/tasks/${task.id}`}
+      className="block p-3 border border-[var(--sidebar-border)] rounded-lg hover:border-[var(--primary)] transition-colors"
+    >
+      <div className="font-medium mb-1 text-sm">{task.title}</div>
+      <div className="flex gap-2 flex-wrap">
+        <Badge type="status" value={task.status} />
+        <Badge type="priority" value={task.priority} />
+        {task.due_date && (
+          <span className="text-xs text-[var(--text-muted)]">Due: {task.due_date}</span>
+        )}
+      </div>
+    </Link>
+  );
+
   return (
-    <div className="max-w-3xl">
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold mb-2">Welcome to TaskMate</h2>
+    <div className="max-w-5xl mx-auto space-y-8 pb-12">
+      <header className="mb-8">
+        <h1 className="text-3xl font-bold tracking-tight mb-2">
+          {getGreeting()}, {user?.name || 'Developer'}
+        </h1>
         <p className="text-[var(--text-muted)]">
-          Your AI-powered developer workspace for freelance projects.
+          Here&apos;s what needs your attention today.
         </p>
+      </header>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Due Today */}
+        <section className="bg-[var(--sidebar-bg)] border border-[var(--sidebar-border)] rounded-xl p-6">
+          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <span>📅</span> Due Today
+            {data?.due_today?.length > 0 && (
+              <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full">{data.due_today.length}</span>
+            )}
+          </h2>
+          {data?.due_today?.length > 0 ? (
+            <div className="space-y-3">
+              {data.due_today.map((task: any) => (
+                <TaskCard key={task.id} task={task} />
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-[var(--text-muted)]">No tasks due today. Enjoy your day!</p>
+          )}
+        </section>
+
+        {/* Overdue */}
+        <section className="bg-[var(--sidebar-bg)] border border-red-500/30 rounded-xl p-6">
+          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-red-400">
+            <span>⚠️</span> Overdue
+            {data?.overdue?.length > 0 && (
+              <span className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full">{data.overdue.length}</span>
+            )}
+          </h2>
+          {data?.overdue?.length > 0 ? (
+            <div className="space-y-3">
+              {data.overdue.map((task: any) => (
+                <TaskCard key={task.id} task={task} />
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-[var(--text-muted)]">No overdue tasks. Great job!</p>
+          )}
+        </section>
+
+        {/* High Priority */}
+        <section className="bg-[var(--sidebar-bg)] border border-[var(--sidebar-border)] rounded-xl p-6">
+          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-orange-400">
+            <span>🔥</span> High Priority
+            {data?.high_priority?.length > 0 && (
+              <span className="text-xs bg-orange-500/20 text-orange-400 px-2 py-0.5 rounded-full">{data.high_priority.length}</span>
+            )}
+          </h2>
+          {data?.high_priority?.length > 0 ? (
+            <div className="space-y-3">
+              {data.high_priority.map((task: any) => (
+                <TaskCard key={task.id} task={task} />
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-[var(--text-muted)]">No urgent or high priority tasks.</p>
+          )}
+        </section>
+
+        {/* Active Projects */}
+        <section className="bg-[var(--sidebar-bg)] border border-[var(--sidebar-border)] rounded-xl p-6">
+          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <span>📁</span> Active Projects
+          </h2>
+          {data?.active_projects?.length > 0 ? (
+            <div className="space-y-3">
+              {data.active_projects.map((project: any) => (
+                <Link
+                  key={project.id}
+                  href={`/projects/${project.id}`}
+                  className="block p-3 border border-[var(--sidebar-border)] rounded-lg hover:border-[var(--primary)] transition-colors"
+                >
+                  <div className="font-medium text-sm">{project.name}</div>
+                  {project.deadline && (
+                    <div className="text-xs text-[var(--text-muted)] mt-1">Deadline: {project.deadline}</div>
+                  )}
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-[var(--text-muted)]">No active projects yet.</p>
+          )}
+        </section>
       </div>
 
-      {/* Backend Connection Status */}
-      <div className="bg-[var(--sidebar-bg)] border border-[var(--sidebar-border)] rounded-xl p-6 mb-6">
-        <h3 className="text-sm font-semibold uppercase text-[var(--text-muted)] mb-4">
-          System Status
-        </h3>
-
-        <div className="flex items-center gap-3 mb-4">
-          <div
-            className={`w-3 h-3 rounded-full ${
-              connectionStatus === "connected"
-                ? "bg-green-500"
-                : connectionStatus === "error"
-                  ? "bg-red-500"
-                  : "bg-yellow-500 animate-pulse"
-            }`}
-          />
-          <span className="text-sm">
-            {connectionStatus === "connected"
-              ? "Backend Connected"
-              : connectionStatus === "error"
-                ? "Backend Disconnected"
-                : "Checking connection..."}
-          </span>
-        </div>
-
-        {systemInfo && (
-          <div className="grid grid-cols-3 gap-4 text-sm">
-            <div>
-              <p className="text-[var(--text-muted)]">Service</p>
-              <p className="font-medium">{systemInfo.name}</p>
-            </div>
-            <div>
-              <p className="text-[var(--text-muted)]">Version</p>
-              <p className="font-medium">{systemInfo.version}</p>
-            </div>
-            <div>
-              <p className="text-[var(--text-muted)]">Environment</p>
-              <p className="font-medium">{systemInfo.environment}</p>
-            </div>
+      {/* Recently Updated */}
+      <section className="bg-[var(--sidebar-bg)] border border-[var(--sidebar-border)] rounded-xl p-6">
+        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <span>🕐</span> Recently Updated
+        </h2>
+        {data?.recently_updated?.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {data.recently_updated.slice(0, 6).map((task: any) => (
+              <TaskCard key={task.id} task={task} />
+            ))}
           </div>
+        ) : (
+          <p className="text-sm text-[var(--text-muted)]">No recent activity.</p>
         )}
-
-        {connectionStatus === "error" && (
-          <p className="text-sm text-red-500 mt-2">{errorMessage}</p>
-        )}
-      </div>
-
-      {/* Quick Info Cards */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-[var(--sidebar-bg)] border border-[var(--sidebar-border)] rounded-xl p-5">
-          <h3 className="font-semibold mb-2">🚀 Sprint 0</h3>
-          <p className="text-sm text-[var(--text-muted)]">
-            Engineering foundation established. Full-stack environment with
-            FastAPI, Next.js, and PostgreSQL.
-          </p>
-        </div>
-        <div className="bg-[var(--sidebar-bg)] border border-[var(--sidebar-border)] rounded-xl p-5">
-          <h3 className="font-semibold mb-2">🎯 Coming Next</h3>
-          <p className="text-sm text-[var(--text-muted)]">
-            Task management, project organization, AI agent integration,
-            and GitHub connectivity.
-          </p>
-        </div>
-      </div>
+      </section>
     </div>
   );
 }

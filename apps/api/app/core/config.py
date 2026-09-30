@@ -12,6 +12,8 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "sqlite+aiosqlite:///:memory:"
     CORS_ORIGINS: list[str] = ["http://localhost:3000"]
     LOG_LEVEL: str = "INFO"
+    SECRET_KEY: str = "taskmate-dev-secret-key-change-in-production"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
 
     model_config = SettingsConfigDict(
         env_file=".env",
