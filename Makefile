@@ -1,4 +1,4 @@
-.PHONY: help install dev up down build test lint format migrate migration logs clean
+.PHONY: help install dev up down build test lint format migrate migration logs clean evaluate-ai
 
 help: ## Show this help message
 	@echo TaskMate AI - Developer Commands
@@ -71,3 +71,8 @@ format-backend: ## Format backend code
 
 format-frontend: ## Format frontend code
 	cd apps/web && npx prettier --write .
+
+# ---- AI Evaluation ----
+
+evaluate-ai: ## Run AI evaluation suite (requires AI_API_KEY)
+	cd apps/api && python -m evaluation.evaluate

@@ -12,12 +12,7 @@ describe("Sidebar", () => {
     expect(screen.getByText("Tasks")).toBeInTheDocument();
     expect(screen.getByText("Projects")).toBeInTheDocument();
     expect(screen.getByText("Clients")).toBeInTheDocument();
-    expect(screen.getByText("Agent")).toBeInTheDocument();
+    expect(screen.getByText("AI Assistant")).toBeInTheDocument();
     expect(screen.getByText("Settings")).toBeInTheDocument();
-  });
-
-  it("shows Agent as disabled", () => {
-    render(<Sidebar />);
-    expect(screen.getByText("Soon")).toBeInTheDocument();
   });
 });

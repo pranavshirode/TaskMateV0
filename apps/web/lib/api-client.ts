@@ -36,6 +36,57 @@ interface SystemInfoResponse {
   environment: string;
 }
 
+interface AIActionResult {
+  action_type: string;
+  success: boolean;
+  data?: Record<string, unknown>;
+  error?: string;
+}
+
+interface ContextSummary {
+  task_count: number;
+  project_count: number;
+  overdue_count: number;
+  due_today_count: number;
+}
+
+interface AIChatRequest {
+  message: string;
+  conversation_id?: string;
+}
+
+interface AIChatResponse {
+  message: string;
+  intent?: string;
+  confidence?: number;
+  actions: AIActionResult[];
+  conversation_id: string;
+  context_summary?: ContextSummary;
+  requires_clarification: boolean;
+  suggestions: string[];
+}
+
+interface ConversationMessage {
+  id: string;
+  role: string;
+  content: string;
+  intent?: string;
+  created_at: string;
+}
+
+interface Conversation {
+  id: string;
+  title?: string;
+  created_at: string;
+  updated_at: string;
+  messages: ConversationMessage[];
+}
+
+interface ConversationListResponse {
+  items: Conversation[];
+  total: number;
+}
+
 // ---- Future API types (placeholders) ----
 // These will be implemented in future sprints
 // interface Task { id: string; title: string; status: string; ... }
@@ -96,13 +147,41 @@ class TaskMateApiClient {
     return this.request<SystemInfoResponse>("/api/v1/system/info");
   }
 
+  // AI Assistant
+  async sendMessage(data: AIChatRequest): Promise<ApiResponse<AIChatResponse>> {
+    return this.request<AIChatResponse>("/api/v1/ai/chat", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getConversations(): Promise<ApiResponse<ConversationListResponse>> {
+    return this.request<ConversationListResponse>("/api/v1/ai/conversations");
+  }
+
+  async getConversation(id: string): Promise<ApiResponse<Conversation>> {
+    return this.request<Conversation>(`/api/v1/ai/conversations/${id}`);
+  }
+
   // ---- Future API methods (Sprint 1+) ----
   // async getTasks(): Promise<ApiResponse<Task[]>> { ... }
   // async createTask(task: CreateTaskInput): Promise<ApiResponse<Task>> { ... }
   // async updateTask(id: string, task: UpdateTaskInput): Promise<ApiResponse<Task>> { ... }
   // async getProjects(): Promise<ApiResponse<Project[]>> { ... }
-  // async sendMessage(message: string): Promise<ApiResponse<AgentResponse>> { ... }
 }
 
 export const apiClient = new TaskMateApiClient();
-export type { HealthResponse, ReadinessResponse, SystemInfoResponse, ApiResponse, ApiError };
+export type {
+  HealthResponse,
+  ReadinessResponse,
+  SystemInfoResponse,
+  ApiResponse,
+  ApiError,
+  AIActionResult,
+  ContextSummary,
+  AIChatRequest,
+  AIChatResponse,
+  ConversationMessage,
+  Conversation,
+  ConversationListResponse
+};

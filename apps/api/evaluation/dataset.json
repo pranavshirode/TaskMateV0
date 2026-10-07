@@ -1,0 +1,503 @@
+[
+  {
+    "id": 1,
+    "message": "Create a high priority task for the Acme Website project to fix the login bug by tomorrow",
+    "expected_intent": "CREATE_TASK",
+    "expected_entities": {
+      "title": "fix the login bug",
+      "project_name": "Acme Website",
+      "priority": "HIGH",
+      "due_date": "tomorrow"
+    },
+    "category": "task_creation",
+    "description": "Full task creation with project, priority, and due date"
+  },
+  {
+    "id": 2,
+    "message": "Add a task to review the new design docs for Client Portal",
+    "expected_intent": "CREATE_TASK",
+    "expected_entities": {
+      "title": "review the new design docs",
+      "project_name": "Client Portal"
+    },
+    "category": "task_creation",
+    "description": "Task creation with project name"
+  },
+  {
+    "id": 3,
+    "message": "Remind me to call the client next Tuesday",
+    "expected_intent": "CREATE_TASK",
+    "expected_entities": {
+      "title": "call the client",
+      "due_date": "next Tuesday"
+    },
+    "category": "task_creation",
+    "description": "Task creation with due date as 'remind me'"
+  },
+  {
+    "id": 4,
+    "message": "New urgent task: deploy database migrations",
+    "expected_intent": "CREATE_TASK",
+    "expected_entities": {
+      "title": "deploy database migrations",
+      "priority": "URGENT"
+    },
+    "category": "task_creation",
+    "description": "Task creation with urgent priority alias"
+  },
+  {
+    "id": 5,
+    "message": "Create a task for the Mobile App: setup push notifications",
+    "expected_intent": "CREATE_TASK",
+    "expected_entities": {
+      "title": "setup push notifications",
+      "project_name": "Mobile App"
+    },
+    "category": "task_creation",
+    "description": "Task creation with project name prefix"
+  },
+  {
+    "id": 6,
+    "message": "Need to write tests for the auth module",
+    "expected_intent": "CREATE_TASK",
+    "expected_entities": {
+      "title": "write tests for the auth module"
+    },
+    "category": "task_creation",
+    "description": "Casual task creation without keywords"
+  },
+  {
+    "id": 7,
+    "message": "Schedule a meeting with Beta Corp on Friday",
+    "expected_intent": "CREATE_TASK",
+    "expected_entities": {
+      "title": "meeting with Beta Corp",
+      "due_date": "Friday"
+    },
+    "category": "task_creation",
+    "description": "Task creation for scheduling a meeting"
+  },
+  {
+    "id": 8,
+    "message": "Create a low priority task to update the readme",
+    "expected_intent": "CREATE_TASK",
+    "expected_entities": {
+      "title": "update the readme",
+      "priority": "LOW"
+    },
+    "category": "task_creation",
+    "description": "Task creation with explicit low priority"
+  },
+  {
+    "id": 9,
+    "message": "Task: fix css alignment on the home page due 2024-11-01",
+    "expected_intent": "CREATE_TASK",
+    "expected_entities": {
+      "title": "fix css alignment on the home page",
+      "due_date": "2024-11-01"
+    },
+    "category": "task_creation",
+    "description": "Terse task creation with date string"
+  },
+  {
+    "id": 10,
+    "message": "Add task: research new caching library. Project: Acme Website",
+    "expected_intent": "CREATE_TASK",
+    "expected_entities": {
+      "title": "research new caching library",
+      "project_name": "Acme Website"
+    },
+    "category": "task_creation",
+    "description": "Task creation with explicit fields"
+  },
+  {
+    "id": 11,
+    "message": "Rename the auth task to 'Implement JWT authentication'",
+    "expected_intent": "UPDATE_TASK",
+    "expected_entities": {
+      "task_name": "auth",
+      "title": "Implement JWT authentication"
+    },
+    "category": "task_update",
+    "description": "Rename task title"
+  },
+  {
+    "id": 12,
+    "message": "Move the 'update api docs' task to the Client Portal project",
+    "expected_intent": "UPDATE_TASK",
+    "expected_entities": {
+      "task_name": "update api docs",
+      "project_name": "Client Portal"
+    },
+    "category": "task_update",
+    "description": "Change task project"
+  },
+  {
+    "id": 13,
+    "message": "Change the due date for the database migration task to tomorrow",
+    "expected_intent": "UPDATE_TASK",
+    "expected_entities": {
+      "task_name": "database migration",
+      "due_date": "tomorrow"
+    },
+    "category": "task_update",
+    "description": "Change task due date"
+  },
+  {
+    "id": 14,
+    "message": "Update the login bug task to be part of Mobile App",
+    "expected_intent": "UPDATE_TASK",
+    "expected_entities": {
+      "task_name": "login bug",
+      "project_name": "Mobile App"
+    },
+    "category": "task_update",
+    "description": "Update task project alternative phrasing"
+  },
+  {
+    "id": 15,
+    "message": "Push the caching research back to next week",
+    "expected_intent": "UPDATE_TASK",
+    "expected_entities": {
+      "task_name": "caching research",
+      "due_date": "next week"
+    },
+    "category": "task_update",
+    "description": "Casual phrasing for date update"
+  },
+  {
+    "id": 16,
+    "message": "Mark the login bug as done",
+    "expected_intent": "CHANGE_TASK_STATUS",
+    "expected_entities": {
+      "task_name": "login bug",
+      "status": "DONE"
+    },
+    "category": "status_change",
+    "description": "Complete a task"
+  },
+  {
+    "id": 17,
+    "message": "I've started working on the auth module",
+    "expected_intent": "CHANGE_TASK_STATUS",
+    "expected_entities": {
+      "task_name": "auth module",
+      "status": "IN_PROGRESS"
+    },
+    "category": "status_change",
+    "description": "Move to in progress"
+  },
+  {
+    "id": 18,
+    "message": "Set the api docs task back to todo",
+    "expected_intent": "CHANGE_TASK_STATUS",
+    "expected_entities": {
+      "task_name": "api docs",
+      "status": "TODO"
+    },
+    "category": "status_change",
+    "description": "Move back to todo"
+  },
+  {
+    "id": 19,
+    "message": "Cancel the push notifications task",
+    "expected_intent": "CHANGE_TASK_STATUS",
+    "expected_entities": {
+      "task_name": "push notifications",
+      "status": "CANCELLED"
+    },
+    "category": "status_change",
+    "description": "Cancel a task"
+  },
+  {
+    "id": 20,
+    "message": "The css alignment task is complete",
+    "expected_intent": "CHANGE_TASK_STATUS",
+    "expected_entities": {
+      "task_name": "css alignment",
+      "status": "DONE"
+    },
+    "category": "status_change",
+    "description": "Complete task alternative phrasing"
+  },
+  {
+    "id": 21,
+    "message": "Make the authentication bug urgent",
+    "expected_intent": "CHANGE_TASK_PRIORITY",
+    "expected_entities": {
+      "task_name": "authentication bug",
+      "priority": "URGENT"
+    },
+    "category": "priority_change",
+    "description": "Priority change using natural language alias"
+  },
+  {
+    "id": 22,
+    "message": "Decrease the priority of the readme update to low",
+    "expected_intent": "CHANGE_TASK_PRIORITY",
+    "expected_entities": {
+      "task_name": "readme update",
+      "priority": "LOW"
+    },
+    "category": "priority_change",
+    "description": "Decrease priority"
+  },
+  {
+    "id": 23,
+    "message": "The database migration is now high priority",
+    "expected_intent": "CHANGE_TASK_PRIORITY",
+    "expected_entities": {
+      "task_name": "database migration",
+      "priority": "HIGH"
+    },
+    "category": "priority_change",
+    "description": "Increase priority"
+  },
+  {
+    "id": 24,
+    "message": "Set caching research priority to medium",
+    "expected_intent": "CHANGE_TASK_PRIORITY",
+    "expected_entities": {
+      "task_name": "caching research",
+      "priority": "MEDIUM"
+    },
+    "category": "priority_change",
+    "description": "Set specific priority"
+  },
+  {
+    "id": 25,
+    "message": "Flag the design review as a critical task",
+    "expected_intent": "CHANGE_TASK_PRIORITY",
+    "expected_entities": {
+      "task_name": "design review",
+      "priority": "URGENT"
+    },
+    "category": "priority_change",
+    "description": "Priority change with 'critical' alias"
+  },
+  {
+    "id": 26,
+    "message": "Show me all high priority tasks",
+    "expected_intent": "SEARCH_TASKS",
+    "expected_entities": {
+      "priority": "HIGH"
+    },
+    "category": "task_search",
+    "description": "Search by priority"
+  },
+  {
+    "id": 27,
+    "message": "What tasks do I have for the Mobile App project?",
+    "expected_intent": "SEARCH_TASKS",
+    "expected_entities": {
+      "project_name": "Mobile App"
+    },
+    "category": "task_search",
+    "description": "Search by project"
+  },
+  {
+    "id": 28,
+    "message": "Find tasks related to 'authentication'",
+    "expected_intent": "SEARCH_TASKS",
+    "expected_entities": {
+      "query": "authentication"
+    },
+    "category": "task_search",
+    "description": "Keyword search"
+  },
+  {
+    "id": 29,
+    "message": "Are there any pending tasks for Client Portal?",
+    "expected_intent": "SEARCH_TASKS",
+    "expected_entities": {
+      "project_name": "Client Portal",
+      "status": "TODO"
+    },
+    "category": "task_search",
+    "description": "Search by project and status"
+  },
+  {
+    "id": 30,
+    "message": "List my completed tasks",
+    "expected_intent": "SEARCH_TASKS",
+    "expected_entities": {
+      "status": "DONE"
+    },
+    "category": "task_search",
+    "description": "Search by done status"
+  },
+  {
+    "id": 31,
+    "message": "What should I work on today?",
+    "expected_intent": "GET_TODAY_TASKS",
+    "expected_entities": {},
+    "category": "today_tasks",
+    "description": "Simple daily overview request"
+  },
+  {
+    "id": 32,
+    "message": "Show my agenda for today",
+    "expected_intent": "GET_TODAY_TASKS",
+    "expected_entities": {},
+    "category": "today_tasks",
+    "description": "Alternative daily request"
+  },
+  {
+    "id": 33,
+    "message": "What's on my plate right now?",
+    "expected_intent": "GET_TODAY_TASKS",
+    "expected_entities": {},
+    "category": "today_tasks",
+    "description": "Casual daily request"
+  },
+  {
+    "id": 34,
+    "message": "Give me today's to-do list",
+    "expected_intent": "GET_TODAY_TASKS",
+    "expected_entities": {},
+    "category": "today_tasks",
+    "description": "To-do list terminology"
+  },
+  {
+    "id": 35,
+    "message": "Are any of my tasks overdue?",
+    "expected_intent": "GET_OVERDUE_TASKS",
+    "expected_entities": {},
+    "category": "overdue_tasks",
+    "description": "Simple overdue request"
+  },
+  {
+    "id": 36,
+    "message": "Show me tasks I missed the deadline for",
+    "expected_intent": "GET_OVERDUE_TASKS",
+    "expected_entities": {},
+    "category": "overdue_tasks",
+    "description": "Alternative overdue request"
+  },
+  {
+    "id": 37,
+    "message": "What's late?",
+    "expected_intent": "GET_OVERDUE_TASKS",
+    "expected_entities": {},
+    "category": "overdue_tasks",
+    "description": "Terse overdue request"
+  },
+  {
+    "id": 38,
+    "message": "Tell me about the Acme Website project",
+    "expected_intent": "GET_PROJECT_INFO",
+    "expected_entities": {
+      "project_name": "Acme Website"
+    },
+    "category": "project_info",
+    "description": "Simple project info request"
+  },
+  {
+    "id": 39,
+    "message": "What is the status of the Mobile App?",
+    "expected_intent": "GET_PROJECT_INFO",
+    "expected_entities": {
+      "project_name": "Mobile App"
+    },
+    "category": "project_info",
+    "description": "Project status request"
+  },
+  {
+    "id": 40,
+    "message": "Give me a summary of Client Portal",
+    "expected_intent": "GET_PROJECT_INFO",
+    "expected_entities": {
+      "project_name": "Client Portal"
+    },
+    "category": "project_info",
+    "description": "Project summary request"
+  },
+  {
+    "id": 41,
+    "message": "Who is the contact person for Beta Corp?",
+    "expected_intent": "GET_CLIENT_INFO",
+    "expected_entities": {
+      "client_name": "Beta Corp"
+    },
+    "category": "client_info",
+    "description": "Client contact request"
+  },
+  {
+    "id": 42,
+    "message": "Show me details for Acme Inc",
+    "expected_intent": "GET_CLIENT_INFO",
+    "expected_entities": {
+      "client_name": "Acme Inc"
+    },
+    "category": "client_info",
+    "description": "General client info request"
+  },
+  {
+    "id": 43,
+    "message": "What projects do we have with Beta Corp?",
+    "expected_intent": "GET_CLIENT_INFO",
+    "expected_entities": {
+      "client_name": "Beta Corp"
+    },
+    "category": "client_info",
+    "description": "Client projects request"
+  },
+  {
+    "id": 44,
+    "message": "How many active projects do I have?",
+    "expected_intent": "GENERAL_QUESTION",
+    "expected_entities": {},
+    "category": "general_question",
+    "description": "Workspace question about projects"
+  },
+  {
+    "id": 45,
+    "message": "What are my clients?",
+    "expected_intent": "GENERAL_QUESTION",
+    "expected_entities": {},
+    "category": "general_question",
+    "description": "Workspace question about clients"
+  },
+  {
+    "id": 46,
+    "message": "Summarize my current workload",
+    "expected_intent": "GENERAL_QUESTION",
+    "expected_entities": {},
+    "category": "general_question",
+    "description": "General workload question"
+  },
+  {
+    "id": 47,
+    "message": "Am I free tomorrow?",
+    "expected_intent": "GENERAL_QUESTION",
+    "expected_entities": {},
+    "category": "general_question",
+    "description": "General availability question"
+  },
+  {
+    "id": 48,
+    "message": "fix it",
+    "expected_intent": "UNKNOWN",
+    "expected_entities": {},
+    "category": "edge_cases",
+    "description": "Too ambiguous, no context"
+  },
+  {
+    "id": 49,
+    "message": "Hello, how are you?",
+    "expected_intent": "GENERAL_QUESTION",
+    "expected_entities": {},
+    "category": "edge_cases",
+    "description": "Greeting/small talk"
+  },
+  {
+    "id": 50,
+    "message": "Add a very long task to do the thing with the stuff for that one guy we met last week at the conference",
+    "expected_intent": "CREATE_TASK",
+    "expected_entities": {
+      "title": "do the thing with the stuff for that one guy we met last week at the conference"
+    },
+    "category": "edge_cases",
+    "description": "Verbose/rambling task creation"
+  }
+]

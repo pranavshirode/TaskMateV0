@@ -15,7 +15,7 @@ const navigation: NavItem[] = [
   { name: "Tasks", href: "/tasks", icon: "✅" },
   { name: "Projects", href: "/projects", icon: "📁" },
   { name: "Clients", href: "/clients", icon: "👥" },
-  { name: "Agent", href: "/agent", icon: "🤖", disabled: true },
+  { name: "AI Assistant", href: "/assistant", icon: "🤖" },
   { name: "Settings", href: "/settings", icon: "⚙️" },
 ];
 
