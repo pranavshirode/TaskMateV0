@@ -27,6 +27,7 @@ class IntentType(str, Enum):
     GET_OVERDUE_TASKS = "GET_OVERDUE_TASKS"
     GET_PROJECT_INFO = "GET_PROJECT_INFO"
     GET_CLIENT_INFO = "GET_CLIENT_INFO"
+    RUN_AGENT = "RUN_AGENT"
 
 
 # Intents that mutate data
@@ -36,6 +37,7 @@ MUTATING_INTENTS = {
     IntentType.COMPLETE_TASK,
     IntentType.CHANGE_TASK_STATUS,
     IntentType.CHANGE_TASK_PRIORITY,
+    IntentType.RUN_AGENT,
 }
 
 # Intents that only read data

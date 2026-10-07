@@ -27,6 +27,7 @@ You can understand and execute these intents:
 - GET_OVERDUE_TASKS: Get overdue tasks
 - GET_PROJECT_INFO: Get information about a project
 - GET_CLIENT_INFO: Get information about a client
+- RUN_AGENT: Execute a multi-step agent workflow (e.g. GitHub integration, multi-step actions)
 
 ## Current Context
 Current date: {current_date}

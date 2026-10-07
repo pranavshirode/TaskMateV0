@@ -87,6 +87,29 @@ interface ConversationListResponse {
   total: number;
 }
 
+interface AgentRunRequest {
+  prompt: string;
+  conversation_id?: string;
+}
+
+interface AgentRunResponse {
+  conversation_id: string;
+  execution_id: string;
+  status: string;
+  message: string;
+}
+
+interface GitHubStatusResponse {
+  connected: boolean;
+  username?: string;
+  avatar_url?: string;
+}
+
+interface GitHubConnectRequest {
+  access_token: string;
+  scopes?: string;
+}
+
 // ---- Future API types (placeholders) ----
 // These will be implemented in future sprints
 // interface Task { id: string; title: string; status: string; ... }
@@ -102,11 +125,22 @@ class TaskMateApiClient {
 
   private async request<T>(endpoint: string, options?: RequestInit): Promise<ApiResponse<T>> {
     try {
+      // For local development with mock auth token
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+        ...options?.headers as Record<string, string>,
+      };
+      
+      // Look for a token in localStorage if running in browser
+      if (typeof window !== "undefined") {
+        const token = localStorage.getItem("auth_token");
+        if (token) {
+          headers["Authorization"] = `Bearer ${token}`;
+        }
+      }
+
       const response = await fetch(`${this.baseUrl}${endpoint}`, {
-        headers: {
-          "Content-Type": "application/json",
-          ...options?.headers,
-        },
+        headers,
         ...options,
       });
 
@@ -147,7 +181,7 @@ class TaskMateApiClient {
     return this.request<SystemInfoResponse>("/api/v1/system/info");
   }
 
-  // AI Assistant
+  // AI Assistant (Sprint 2)
   async sendMessage(data: AIChatRequest): Promise<ApiResponse<AIChatResponse>> {
     return this.request<AIChatResponse>("/api/v1/ai/chat", {
       method: "POST",
@@ -163,11 +197,35 @@ class TaskMateApiClient {
     return this.request<Conversation>(`/api/v1/ai/conversations/${id}`);
   }
 
-  // ---- Future API methods (Sprint 1+) ----
-  // async getTasks(): Promise<ApiResponse<Task[]>> { ... }
-  // async createTask(task: CreateTaskInput): Promise<ApiResponse<Task>> { ... }
-  // async updateTask(id: string, task: UpdateTaskInput): Promise<ApiResponse<Task>> { ... }
-  // async getProjects(): Promise<ApiResponse<Project[]>> { ... }
+  // AI Agent (Sprint 3)
+  async runAgent(data: AgentRunRequest): Promise<ApiResponse<AgentRunResponse>> {
+    return this.request<AgentRunResponse>("/api/v1/agent/run", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Integrations (Sprint 3)
+  async getGitHubStatus(): Promise<ApiResponse<GitHubStatusResponse>> {
+    return this.request<GitHubStatusResponse>("/api/v1/integrations/github");
+  }
+
+  async getGitHubAuthorizeUrl(): Promise<ApiResponse<{ url: string }>> {
+    return this.request<{ url: string }>("/api/v1/integrations/github/authorize");
+  }
+
+  async connectGitHub(data: GitHubConnectRequest): Promise<ApiResponse<{ status: string }>> {
+    return this.request<{ status: string }>("/api/v1/integrations/github/connect", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async disconnectGitHub(): Promise<ApiResponse<{ status: string }>> {
+    return this.request<{ status: string }>("/api/v1/integrations/github", {
+      method: "DELETE",
+    });
+  }
 }
 
 export const apiClient = new TaskMateApiClient();
@@ -183,5 +241,9 @@ export type {
   AIChatResponse,
   ConversationMessage,
   Conversation,
-  ConversationListResponse
+  ConversationListResponse,
+  AgentRunRequest,
+  AgentRunResponse,
+  GitHubStatusResponse,
+  GitHubConnectRequest
 };

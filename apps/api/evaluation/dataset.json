@@ -499,5 +499,457 @@
     },
     "category": "edge_cases",
     "description": "Verbose/rambling task creation"
+  },
+  {
+    "message": "Check my recent GitHub issues and create a task for each one",
+    "expected_intent": "RUN_AGENT",
+    "expected_entities": {},
+    "category": "agent_github",
+    "description": "Multi-step workflow checking github and creating tasks",
+    "id": 51
+  },
+  {
+    "message": "Summarize the PRs for the Acme Website and update the project notes",
+    "expected_intent": "RUN_AGENT",
+    "expected_entities": {
+      "project_name": "Acme Website"
+    },
+    "category": "agent_github",
+    "description": "Cross-system PR summary and project update",
+    "id": 52
+  },
+  {
+    "message": "Find any bugs reported on GitHub yesterday and make them high priority tasks",
+    "expected_intent": "RUN_AGENT",
+    "expected_entities": {
+      "priority": "HIGH"
+    },
+    "category": "agent_github",
+    "description": "Search github issues and map to high priority tasks",
+    "id": 53
+  },
+  {
+    "message": "What is the status of the frontend repository on GitHub?",
+    "expected_intent": "RUN_AGENT",
+    "expected_entities": {},
+    "category": "agent_github",
+    "description": "GitHub repo info request",
+    "id": 54
+  },
+  {
+    "message": "Look up issue #42 on Github and add a comment that we are working on it",
+    "expected_intent": "RUN_AGENT",
+    "expected_entities": {},
+    "category": "agent_github",
+    "description": "Interact with specific GitHub issue",
+    "id": 55
+  },
+  {
+    "message": "Review my open pull requests and list any that are failing CI",
+    "expected_intent": "RUN_AGENT",
+    "expected_entities": {},
+    "category": "agent_github",
+    "description": "Check PR statuses",
+    "id": 56
+  },
+  {
+    "message": "Are there any mentions of me in the Mobile App repo?",
+    "expected_intent": "RUN_AGENT",
+    "expected_entities": {
+      "project_name": "Mobile App"
+    },
+    "category": "agent_github",
+    "description": "Check github mentions",
+    "id": 57
+  },
+  {
+    "message": "Close the task 'login bug' and close the corresponding issue on github",
+    "expected_intent": "RUN_AGENT",
+    "expected_entities": {
+      "task_name": "login bug"
+    },
+    "category": "agent_github",
+    "description": "Multi-step local and remote action",
+    "id": 58
+  },
+  {
+    "message": "Sync all my github repositories with my TaskMate projects",
+    "expected_intent": "RUN_AGENT",
+    "expected_entities": {},
+    "category": "agent_workflow",
+    "description": "Broad sync request",
+    "id": 59
+  },
+  {
+    "message": "Analyze the codebase for the Client Portal and suggest tasks",
+    "expected_intent": "RUN_AGENT",
+    "expected_entities": {
+      "project_name": "Client Portal"
+    },
+    "category": "agent_workflow",
+    "description": "Analysis and suggestion",
+    "id": 60
+  },
+  {
+    "message": "Gather all overdue tasks and open a github issue for each",
+    "expected_intent": "RUN_AGENT",
+    "expected_entities": {},
+    "category": "agent_workflow",
+    "description": "Local tasks to remote issues",
+    "id": 61
+  },
+  {
+    "message": "Summarize my day and commit the summary to my daily-log repo",
+    "expected_intent": "RUN_AGENT",
+    "expected_entities": {},
+    "category": "agent_workflow",
+    "description": "Summarize and commit",
+    "id": 62
+  },
+  {
+    "message": "Can you check if there are any new releases for the dependencies of Beta Corp project?",
+    "expected_intent": "RUN_AGENT",
+    "expected_entities": {
+      "client_name": "Beta Corp"
+    },
+    "category": "agent_workflow",
+    "description": "Complex dependency check",
+    "id": 63
+  },
+  {
+    "message": "Create tasks for all the TODO comments in the latest PR",
+    "expected_intent": "RUN_AGENT",
+    "expected_entities": {},
+    "category": "agent_workflow",
+    "description": "Parse PR and create tasks",
+    "id": 64
+  },
+  {
+    "message": "Give me an overview of the workload based on GitHub issues and TaskMate tasks",
+    "expected_intent": "RUN_AGENT",
+    "expected_entities": {},
+    "category": "agent_workflow",
+    "description": "Cross-system workload overview",
+    "id": 65
+  },
+  {
+    "message": "List all repositories I have access to",
+    "expected_intent": "RUN_AGENT",
+    "expected_entities": {},
+    "category": "agent_github",
+    "description": "GitHub list repos",
+    "id": 66
+  },
+  {
+    "message": "Find the last 5 closed issues in the Acme Website repo",
+    "expected_intent": "RUN_AGENT",
+    "expected_entities": {
+      "project_name": "Acme Website"
+    },
+    "category": "agent_github",
+    "description": "GitHub closed issues search",
+    "id": 67
+  },
+  {
+    "message": "Create a new project for my personal website and link it to the github repo",
+    "expected_intent": "RUN_AGENT",
+    "expected_entities": {
+      "project_name": "personal website"
+    },
+    "category": "agent_workflow",
+    "description": "Create project and link repo",
+    "id": 68
+  },
+  {
+    "message": "Mark all tasks related to 'caching' as done and close PR #12",
+    "expected_intent": "RUN_AGENT",
+    "expected_entities": {
+      "search_query": "caching"
+    },
+    "category": "agent_workflow",
+    "description": "Multi-step completion",
+    "id": 69
+  },
+  {
+    "message": "Create a high priority task to review PR #100",
+    "expected_intent": "RUN_AGENT",
+    "expected_entities": {
+      "priority": "HIGH"
+    },
+    "category": "agent_github",
+    "description": "Task creation from PR",
+    "id": 70
+  },
+  {
+    "message": "Who opened the last PR in the Mobile App repo?",
+    "expected_intent": "RUN_AGENT",
+    "expected_entities": {
+      "project_name": "Mobile App"
+    },
+    "category": "agent_github",
+    "description": "GitHub PR metadata request",
+    "id": 71
+  },
+  {
+    "message": "Is there any task assigned to me in GitHub that is not in TaskMate?",
+    "expected_intent": "RUN_AGENT",
+    "expected_entities": {},
+    "category": "agent_workflow",
+    "description": "Cross-system diff",
+    "id": 72
+  },
+  {
+    "message": "Update the priority of the database migration task based on the Github issue urgency",
+    "expected_intent": "RUN_AGENT",
+    "expected_entities": {
+      "task_name": "database migration"
+    },
+    "category": "agent_workflow",
+    "description": "Dynamic priority update",
+    "id": 73
+  },
+  {
+    "message": "Create a task for each client to send a weekly update",
+    "expected_intent": "RUN_AGENT",
+    "expected_entities": {},
+    "category": "agent_workflow",
+    "description": "Looping task creation",
+    "id": 74
+  },
+  {
+    "message": "Find all tasks that are IN_PROGRESS but have no recent github activity",
+    "expected_intent": "RUN_AGENT",
+    "expected_entities": {
+      "status": "IN_PROGRESS"
+    },
+    "category": "agent_workflow",
+    "description": "Cross-system correlation",
+    "id": 75
+  },
+  {
+    "message": "Search GitHub for 'memory leak' and add a task to investigate if found",
+    "expected_intent": "RUN_AGENT",
+    "expected_entities": {
+      "search_query": "memory leak"
+    },
+    "category": "agent_workflow",
+    "description": "Conditional task creation",
+    "id": 76
+  },
+  {
+    "message": "What is the most active project right now based on github commits?",
+    "expected_intent": "RUN_AGENT",
+    "expected_entities": {},
+    "category": "agent_github",
+    "description": "GitHub activity analysis",
+    "id": 77
+  },
+  {
+    "message": "Create tasks for all open issues labeled 'bug' in the Client Portal",
+    "expected_intent": "RUN_AGENT",
+    "expected_entities": {
+      "project_name": "Client Portal",
+      "label": "bug"
+    },
+    "category": "agent_workflow",
+    "description": "Task creation from GitHub labels",
+    "id": 78
+  },
+  {
+    "message": "Are there any blockers for the current tasks?",
+    "expected_intent": "RUN_AGENT",
+    "expected_entities": {},
+    "category": "agent_workflow",
+    "description": "Ambiguous status request requiring context",
+    "id": 79
+  },
+  {
+    "message": "Summarize the latest comments on issue #56",
+    "expected_intent": "RUN_AGENT",
+    "expected_entities": {},
+    "category": "agent_github",
+    "description": "GitHub issue comments summary",
+    "id": 80
+  },
+  {
+    "message": "Add a task to follow up with Acme Inc and check their open PRs",
+    "expected_intent": "RUN_AGENT",
+    "expected_entities": {
+      "client_name": "Acme Inc"
+    },
+    "category": "agent_workflow",
+    "description": "Multi-step client task and PR check",
+    "id": 81
+  },
+  {
+    "message": "List all my clients and their active github repos",
+    "expected_intent": "RUN_AGENT",
+    "expected_entities": {},
+    "category": "agent_workflow",
+    "description": "Cross-system listing",
+    "id": 82
+  },
+  {
+    "message": "Change the status of all overdue tasks to REVIEW and comment on their github issues",
+    "expected_intent": "RUN_AGENT",
+    "expected_entities": {
+      "status": "REVIEW"
+    },
+    "category": "agent_workflow",
+    "description": "Bulk multi-step action",
+    "id": 83
+  },
+  {
+    "message": "Which client has the most pending tasks?",
+    "expected_intent": "RUN_AGENT",
+    "expected_entities": {},
+    "category": "agent_workflow",
+    "description": "Data aggregation and analysis",
+    "id": 84
+  },
+  {
+    "message": "Create a task to refactor auth and assign it to the Acme project",
+    "expected_intent": "RUN_AGENT",
+    "expected_entities": {
+      "title": "refactor auth",
+      "project_name": "Acme"
+    },
+    "category": "agent_workflow",
+    "description": "Agent task creation with specific project",
+    "id": 85
+  },
+  {
+    "message": "Delete the testing task and close issue #99",
+    "expected_intent": "RUN_AGENT",
+    "expected_entities": {
+      "task_name": "testing"
+    },
+    "category": "agent_workflow",
+    "description": "Destructive multi-step action",
+    "id": 86
+  },
+  {
+    "message": "Fetch the readme from the Mobile App repo and summarize its goals",
+    "expected_intent": "RUN_AGENT",
+    "expected_entities": {
+      "project_name": "Mobile App"
+    },
+    "category": "agent_github",
+    "description": "GitHub file fetch and summarize",
+    "id": 87
+  },
+  {
+    "message": "Find any closed tasks that still have open PRs",
+    "expected_intent": "RUN_AGENT",
+    "expected_entities": {},
+    "category": "agent_workflow",
+    "description": "Cross-system inconsistency check",
+    "id": 88
+  },
+  {
+    "message": "Set up a new workspace for project Zeta with a github repo and initial tasks",
+    "expected_intent": "RUN_AGENT",
+    "expected_entities": {
+      "project_name": "Zeta"
+    },
+    "category": "agent_workflow",
+    "description": "Complex scaffolding",
+    "id": 89
+  },
+  {
+    "message": "Check the API docs task. If the PR is merged, mark the task as DONE.",
+    "expected_intent": "RUN_AGENT",
+    "expected_entities": {
+      "task_name": "API docs"
+    },
+    "category": "agent_workflow",
+    "description": "Conditional execution",
+    "id": 90
+  },
+  {
+    "message": "What did I work on yesterday across all projects and GitHub?",
+    "expected_intent": "RUN_AGENT",
+    "expected_entities": {},
+    "category": "agent_workflow",
+    "description": "Cross-system daily summary",
+    "id": 91
+  },
+  {
+    "message": "Compile a report of all HIGH priority bugs across all my repos",
+    "expected_intent": "RUN_AGENT",
+    "expected_entities": {
+      "priority": "HIGH"
+    },
+    "category": "agent_workflow",
+    "description": "Cross-system reporting",
+    "id": 92
+  },
+  {
+    "message": "Find out who reviewed PR #10 and add a task to thank them",
+    "expected_intent": "RUN_AGENT",
+    "expected_entities": {},
+    "category": "agent_workflow",
+    "description": "GitHub PR metadata to task creation",
+    "id": 93
+  },
+  {
+    "message": "Clean up my workspace by closing completed tasks and their issues",
+    "expected_intent": "RUN_AGENT",
+    "expected_entities": {},
+    "category": "agent_workflow",
+    "description": "Maintenance workflow",
+    "id": 94
+  },
+  {
+    "message": "Sync the due dates of TaskMate tasks with the milestones in GitHub",
+    "expected_intent": "RUN_AGENT",
+    "expected_entities": {},
+    "category": "agent_workflow",
+    "description": "Data sync",
+    "id": 95
+  },
+  {
+    "message": "Create a summary issue in the Client Portal repo with all pending tasks",
+    "expected_intent": "RUN_AGENT",
+    "expected_entities": {
+      "project_name": "Client Portal"
+    },
+    "category": "agent_workflow",
+    "description": "Task export to GitHub",
+    "id": 96
+  },
+  {
+    "message": "Check if there are any urgent issues on github, if so notify me, else get me a coffee",
+    "expected_intent": "RUN_AGENT",
+    "expected_entities": {},
+    "category": "agent_workflow",
+    "description": "Humorous/ambiguous conditional request",
+    "id": 97
+  },
+  {
+    "message": "What is the average time to close an issue in the Acme Website repo?",
+    "expected_intent": "RUN_AGENT",
+    "expected_entities": {
+      "project_name": "Acme Website"
+    },
+    "category": "agent_github",
+    "description": "GitHub analytics",
+    "id": 98
+  },
+  {
+    "message": "Audit my tasks and flag any that have no corresponding GitHub issue",
+    "expected_intent": "RUN_AGENT",
+    "expected_entities": {},
+    "category": "agent_workflow",
+    "description": "Audit workflow",
+    "id": 99
+  },
+  {
+    "message": "Generate a changelog for the last week based on merged PRs and closed tasks",
+    "expected_intent": "RUN_AGENT",
+    "expected_entities": {},
+    "category": "agent_workflow",
+    "description": "Changelog generation",
+    "id": 100
   }
 ]

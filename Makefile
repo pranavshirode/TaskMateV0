@@ -76,3 +76,6 @@ format-frontend: ## Format frontend code
 
 evaluate-ai: ## Run AI evaluation suite (requires AI_API_KEY)
 	cd apps/api && python -m evaluation.evaluate
+
+evaluate-agent: ## Run Agent-specific tests/evaluation
+	cd apps/api && pytest tests/test_agent/ -v
