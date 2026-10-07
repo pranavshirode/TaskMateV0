@@ -131,3 +131,65 @@ async def get_ai_orchestrator(
         client_service=client_service,
         dashboard_service=dashboard_service,
     )
+
+from app.repositories.agent_execution import AgentExecutionRepository
+from app.services.agent_execution import AgentExecutionService
+from app.repositories.github_integration import GitHubIntegrationRepository
+from app.services.github_integration import GitHubIntegrationService
+from app.agent.tools.registry import ToolRegistry, create_default_registry
+from app.agent.permissions import ToolPermissionService
+from app.agent.orchestrator import AgentOrchestrator
+
+async def get_agent_execution_repository(session: AsyncSession = Depends(get_db)) -> AgentExecutionRepository:
+    return AgentExecutionRepository(session)
+
+async def get_agent_execution_service(repo: AgentExecutionRepository = Depends(get_agent_execution_repository)) -> AgentExecutionService:
+    return AgentExecutionService(repo)
+
+async def get_github_integration_repository(session: AsyncSession = Depends(get_db)) -> GitHubIntegrationRepository:
+    return GitHubIntegrationRepository(session)
+
+async def get_github_integration_service(repo: GitHubIntegrationRepository = Depends(get_github_integration_repository)) -> GitHubIntegrationService:
+    return GitHubIntegrationService(repo)
+
+def get_tool_registry() -> ToolRegistry:
+    # Normally this would be a singleton, but for simplicity we can create it
+    # We should also register the tools here.
+    return create_default_registry()
+
+async def get_tool_permission_service(
+    tool_registry: ToolRegistry = Depends(get_tool_registry),
+    project_service: ProjectService = Depends(get_project_service),
+    github_service: GitHubIntegrationService = Depends(get_github_integration_service),
+    db: AsyncSession = Depends(get_db),
+) -> ToolPermissionService:
+    settings = get_settings()
+    return ToolPermissionService(tool_registry, project_service, github_service, db, settings)
+
+async def get_agent_orchestrator(
+    ai_provider = Depends(get_ai_provider),
+    tool_registry: ToolRegistry = Depends(get_tool_registry),
+    permission_service: ToolPermissionService = Depends(get_tool_permission_service),
+    task_service: TaskService = Depends(get_task_service),
+    project_service: ProjectService = Depends(get_project_service),
+    client_service: ClientService = Depends(get_client_service),
+    dashboard_service: DashboardService = Depends(get_dashboard_service),
+    execution_service: AgentExecutionService = Depends(get_agent_execution_service),
+    conversation_service: ConversationService = Depends(get_conversation_service),
+    github_service: GitHubIntegrationService = Depends(get_github_integration_service),
+) -> AgentOrchestrator:
+    settings = get_settings()
+    context_builder = ContextBuilder(task_service, project_service, client_service, dashboard_service)
+    return AgentOrchestrator(
+        ai_provider=ai_provider,
+        tool_registry=tool_registry,
+        permission_service=permission_service,
+        context_builder=context_builder,
+        execution_service=execution_service,
+        conversation_service=conversation_service,
+        settings=settings,
+        task_service=task_service,
+        project_service=project_service,
+        client_service=client_service,
+        github_service=github_service,
+    )

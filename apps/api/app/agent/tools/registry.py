@@ -85,17 +85,18 @@ def create_default_registry() -> ToolRegistry:
     """
     registry = ToolRegistry()
 
-    # TaskMate tools will be registered in Phase 4
-    # GitHub tools will be registered in Phase 6
-    # Import and register them here once they exist:
-    #
-    # from app.agent.tools.task_tools import get_task_tools
-    # from app.agent.tools.project_tools import get_project_tools
-    # from app.agent.tools.client_tools import get_client_tools
-    # from app.agent.tools.github_tools import get_github_tools
-    #
-    # for tool in get_task_tools():
-    #     registry.register(tool)
-    # etc.
+    from app.agent.tools.task_tools import get_task_tools
+    from app.agent.tools.project_tools import get_project_tools
+    from app.agent.tools.client_tools import get_client_tools
+    from app.agent.tools.github_tools import get_github_tools
+
+    for tool in get_task_tools():
+        registry.register(tool)
+    for tool in get_project_tools():
+        registry.register(tool)
+    for tool in get_client_tools():
+        registry.register(tool)
+    for tool in get_github_tools():
+        registry.register(tool)
 
     return registry

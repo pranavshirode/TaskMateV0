@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.routes import health, system, auth, users, clients, projects, tasks, dashboard, repositories, ai
+from app.api.routes import health, system, auth, users, clients, projects, tasks, dashboard, repositories, ai, agent, integrations
 
 api_router = APIRouter()
 health_router = APIRouter(tags=["health"])
@@ -19,3 +19,5 @@ v1_router.include_router(tasks.router, prefix="/tasks", tags=["tasks"])
 v1_router.include_router(dashboard.router, prefix="/dashboard", tags=["dashboard"])
 v1_router.include_router(repositories.router, tags=["repositories"])
 v1_router.include_router(ai.router, prefix="/ai", tags=["ai"])
+v1_router.include_router(agent.router, prefix="/agent", tags=["agent"])
+v1_router.include_router(integrations.router, prefix="/integrations", tags=["integrations"])
