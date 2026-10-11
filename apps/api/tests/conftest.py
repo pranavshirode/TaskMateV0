@@ -79,6 +79,10 @@ async def create_test_client_entity(db_session):
     return _create
 
 @pytest.fixture
+async def create_test_client(create_test_client_entity):
+    return create_test_client_entity
+
+@pytest.fixture
 async def create_test_project(db_session):
     async def _create(user_id, client_id=None, name="Test Project"):
         p = Project(

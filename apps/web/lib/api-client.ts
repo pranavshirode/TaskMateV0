@@ -274,6 +274,142 @@ export class ApiClient {
       return { data: null, error: e };
     }
   }
+
+  // --- Sprint 4: Requirements Analysis ---
+  async createAnalysis(data: any) {
+    return this.fetchAPI('/requirements/', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getAnalysis(id: string) {
+    return this.fetchAPI(`/requirements/${id}`);
+  }
+
+  async listProjectAnalyses(projectId: string) {
+    return this.fetchAPI(`/requirements/project/${projectId}`);
+  }
+
+  async analyzeBrief(analysisId: string) {
+    return this.fetchAPI(`/requirements/${analysisId}/analyze`, {
+      method: 'POST',
+    });
+  }
+
+  async answerClarification(analysisId: string, questionId: string, answer: string) {
+    return this.fetchAPI(`/requirements/${analysisId}/questions/${questionId}/answer`, {
+      method: 'POST',
+      body: JSON.stringify({ answer }),
+    });
+  }
+
+  async updateRequirement(analysisId: string, reqId: string, data: any) {
+    return this.fetchAPI(`/requirements/${analysisId}/requirements/${reqId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async approveAnalysis(analysisId: string) {
+    return this.fetchAPI(`/requirements/${analysisId}/approve`, {
+      method: 'POST',
+    });
+  }
+
+  async archiveAnalysis(analysisId: string) {
+    return this.fetchAPI(`/requirements/${analysisId}/archive`, {
+      method: 'POST',
+    });
+  }
+
+  async generateTaskPlan(analysisId: string) {
+    return this.fetchAPI(`/requirements/${analysisId}/generate-task-plan`, {
+      method: 'POST',
+    });
+  }
+
+  async approveTaskPlan(analysisId: string, selectedTasks: any[]) {
+    return this.fetchAPI(`/requirements/${analysisId}/approve-task-plan`, {
+      method: 'POST',
+      body: JSON.stringify({ selected_tasks: selectedTasks }),
+    });
+  }
+
+  async getTraceability(analysisId: string) {
+    return this.fetchAPI(`/requirements/${analysisId}/traceability`);
+  }
+
+  // --- Sprint 4: Project Context Notes & Memory ---
+  async listProjectContextNotes(projectId: string, includeSuperseded = false) {
+    return this.fetchAPI(`/projects/${projectId}/context?include_superseded=${includeSuperseded}`);
+  }
+
+  async createProjectContextNote(projectId: string, data: any) {
+    return this.fetchAPI(`/projects/${projectId}/context`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateProjectContextNote(noteId: string, data: any) {
+    return this.fetchAPI(`/context/${noteId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteProjectContextNote(noteId: string) {
+    return this.fetchAPI(`/context/${noteId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // --- Sprint 4: Client Requests ---
+  async listProjectClientRequests(projectId: string) {
+    return this.fetchAPI(`/projects/${projectId}/client-requests`);
+  }
+
+  async createClientRequest(projectId: string, data: any) {
+    return this.fetchAPI(`/projects/${projectId}/client-requests`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getClientRequest(requestId: string) {
+    return this.fetchAPI(`/client-requests/${requestId}`);
+  }
+
+  async analyzeClientRequestImpact(requestId: string) {
+    return this.fetchAPI(`/client-requests/${requestId}/analyze-impact`, {
+      method: 'POST',
+    });
+  }
+
+  async approveClientRequest(requestId: string) {
+    return this.fetchAPI(`/client-requests/${requestId}/approve`, {
+      method: 'POST',
+    });
+  }
+
+  // --- Sprint 4: Automations ---
+  async generateDailyProjectSummary(projectId: string) {
+    return this.fetchAPI(`/automations/projects/${projectId}/daily-summary`, {
+      method: 'POST',
+    });
+  }
+
+  async syncProjectTaskConsistency(projectId: string) {
+    return this.fetchAPI(`/automations/projects/${projectId}/sync-consistency`, {
+      method: 'POST',
+    });
+  }
+
+  async listAutomationExecutions(projectId?: string) {
+    const query = projectId ? `?project_id=${projectId}` : '';
+    return this.fetchAPI(`/automations/executions${query}`);
+  }
 }
 
 export const apiClient = new ApiClient();

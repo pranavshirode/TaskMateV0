@@ -30,6 +30,16 @@ class AIContext:
         self.projects = projects
         self.clients = clients
         self.recent_tasks = recent_tasks
+        self.project_notes: list[dict[str, Any]] = []
+        self.approved_requirements: list[dict[str, Any]] = []
+
+    def set_project_memory(
+        self,
+        notes: list[dict[str, Any]],
+        requirements: list[dict[str, Any]],
+    ) -> None:
+        self.project_notes = notes
+        self.approved_requirements = requirements
 
     def to_prompt_text(self) -> str:
         """Render context as concise text for LLM system prompt."""
@@ -52,6 +62,19 @@ class AIContext:
         else:
             lines.append("- (No active clients)")
 
+        if self.project_notes:
+            lines.append("")
+            lines.append("Confirmed Project Decisions & Architectural Memory:")
+            for n in self.project_notes:
+                confirmed_tag = "[Confirmed]" if n.get("is_confirmed") else "[Unconfirmed]"
+                lines.append(f"- {confirmed_tag} ({n.get('category')}) {n.get('title')}: {n.get('content')}")
+
+        if self.approved_requirements:
+            lines.append("")
+            lines.append("Approved Project Requirements:")
+            for r in self.approved_requirements[:10]:
+                lines.append(f"- [{r.get('key')}] {r.get('title')}: {r.get('description')}")
+
         lines.append("")
         lines.append("Open / Recent Tasks:")
         if self.recent_tasks:
@@ -73,7 +96,7 @@ class AIContextBuilder:
         self.client_service = ClientService(db)
         self.task_service = TaskService(db)
 
-    async def build(self, user_id: str) -> AIContext:
+    async def build(self, user_id: str, project_id: str | None = None) -> AIContext:
         """Fetch user-scoped context for AI decision making."""
         now = datetime.now(timezone.utc)
         current_date = now.date()
@@ -85,8 +108,6 @@ class AIContextBuilder:
 
         # 2. Fetch user clients
         clients_resp = await self.client_service.list(user_id=user_id, page=1, page_size=50)
-        clients = [{"id": c.name, "name": c.name, "actual_id": c.id} for c in clients_resp.items]
-        # Store both id and name
         clean_clients = [{"id": c.id, "name": c.name} for c in clients_resp.items]
 
         # 3. Fetch user active tasks
@@ -104,13 +125,51 @@ class AIContextBuilder:
                 "due_date": t.due_date.isoformat() if t.due_date else None,
             })
 
-        return AIContext(
+        ctx = AIContext(
             current_date=current_date,
             day_of_week=day_of_week,
             projects=projects,
             clients=clean_clients,
             recent_tasks=tasks,
         )
+
+        # 4. If project_id provided, fetch persistent context notes & approved requirements
+        if project_id:
+            try:
+                from app.repositories.project_context import ProjectContextNoteRepository
+                from app.repositories.requirements import RequirementsAnalysisRepository
+
+                note_repo = ProjectContextNoteRepository(self.db)
+                active_notes = await note_repo.get_active_notes_for_context(
+                    project_id=project_id, user_id=user_id, limit=10
+                )
+                notes_data = [
+                    {
+                        "title": n.title,
+                        "content": n.content,
+                        "category": n.category.value if hasattr(n.category, "value") else str(n.category),
+                        "is_confirmed": n.is_confirmed,
+                    }
+                    for n in active_notes
+                ]
+
+                analysis_repo = RequirementsAnalysisRepository(self.db)
+                analyses = await analysis_repo.list_by_project(project_id, user_id)
+                approved_reqs = []
+                for a in analyses:
+                    for r in a.requirements:
+                        if r.status.value == "APPROVED" or str(r.status) == "APPROVED":
+                            approved_reqs.append({
+                                "key": r.key,
+                                "title": r.title,
+                                "description": r.description[:200],
+                            })
+
+                ctx.set_project_memory(notes_data, approved_reqs)
+            except Exception:
+                pass
+
+        return ctx
 
 
 ContextBuilder = AIContextBuilder

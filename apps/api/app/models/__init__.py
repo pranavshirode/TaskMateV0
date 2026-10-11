@@ -9,7 +9,15 @@ from app.models.task_event import TaskEvent  # noqa: F401
 from app.models.enums import (  # noqa: F401
     TaskStatus, TaskPriority, ClientStatus, ProjectStatus,
     RepositoryProvider, TaskEventType,
+    AnalysisStatus, RequirementCategory, RequirementStatus, ClarificationStatus,
+    ClientRequestType, ClientRequestStatus, ContextCategory, AutomationType,
 )
 from app.models.ai import Conversation, ConversationMessage, AIRequestLog  # noqa: F401
 from app.models.github_integration import GitHubIntegration  # noqa: F401
 from app.models.agent_execution import AgentExecution, AgentExecutionStep  # noqa: F401
+from app.models.requirements import (  # noqa: F401
+    RequirementsAnalysis, Requirement, ClarificationQuestion,
+    RequirementAssumption, RequirementRisk, AnalysisRevision,
+    RequirementTaskLink, ProjectContextNote, ClientRequest,
+    AutomationExecution,
+)

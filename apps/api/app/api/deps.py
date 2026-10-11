@@ -106,3 +106,36 @@ async def get_agent_orchestrator(
         client_service=client_service,
         github_service=github_service,
     )
+
+
+from app.services.requirements_pipeline import RequirementsService
+from app.services.project_context import ProjectContextService
+from app.services.client_request import ClientRequestService
+from app.services.workflow_automation import WorkflowAutomationService
+
+
+async def get_requirements_service(
+    db: AsyncSession = Depends(get_db),
+) -> RequirementsService:
+    ai_provider = get_ai_provider()
+    task_service = TaskService(db)
+    return RequirementsService(db, ai_provider, task_service)
+
+
+async def get_project_context_service(
+    db: AsyncSession = Depends(get_db),
+) -> ProjectContextService:
+    return ProjectContextService(db)
+
+
+async def get_client_request_service(
+    db: AsyncSession = Depends(get_db),
+) -> ClientRequestService:
+    ai_provider = get_ai_provider()
+    return ClientRequestService(db, ai_provider)
+
+
+async def get_workflow_automation_service(
+    db: AsyncSession = Depends(get_db),
+) -> WorkflowAutomationService:
+    return WorkflowAutomationService(db)

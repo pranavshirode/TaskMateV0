@@ -176,6 +176,32 @@ export default function DashboardPage() {
           <p className="text-sm text-[var(--text-muted)]">No recent activity.</p>
         )}
       </section>
+
+      {/* Sprint 4 Requirements & Workspace Intelligence */}
+      <section className="bg-[var(--sidebar-bg)] border border-[var(--sidebar-border)] rounded-xl p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <span>📋</span> Requirements & Workspace Intelligence
+          </h2>
+          <Link href="/requirements" className="text-xs text-[var(--primary)] hover:underline">
+            View All Requirements →
+          </Link>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Link href="/requirements" className="p-4 rounded-lg border border-[var(--sidebar-border)] hover:border-[var(--primary)] transition-colors">
+            <div className="font-semibold text-sm mb-1">Requirements Analysis</div>
+            <p className="text-xs text-[var(--text-muted)]">Analyze client briefs, answer clarifying questions, and trace tasks.</p>
+          </Link>
+          <Link href="/projects" className="p-4 rounded-lg border border-[var(--sidebar-border)] hover:border-[var(--primary)] transition-colors">
+            <div className="font-semibold text-sm mb-1">Project Decisions & Memory</div>
+            <p className="text-xs text-[var(--text-muted)]">Persist confirmed architectural decisions and constraints across AI sessions.</p>
+          </Link>
+          <Link href="/projects" className="p-4 rounded-lg border border-[var(--sidebar-border)] hover:border-[var(--primary)] transition-colors">
+            <div className="font-semibold text-sm mb-1">Client Requests & Scope Impact</div>
+            <p className="text-xs text-[var(--text-muted)]">Assess incoming client requests against approved requirements.</p>
+          </Link>
+        </div>
+      </section>
     </div>
   );
 }

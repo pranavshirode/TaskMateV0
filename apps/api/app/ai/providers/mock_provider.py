@@ -41,14 +41,208 @@ class MockAIProvider(BaseAIProvider):
                 latency_ms=10,
             )
 
-        # Extract last user message
+        # Extract system & user text
+        sys_text = ""
         user_text = ""
-        for m in reversed(messages):
-            if m.role == "user":
+        for m in messages:
+            if m.role == "system":
+                sys_text += " " + m.content
+            elif m.role == "user":
                 user_text = m.content
-                break
 
         low = user_text.lower()
+        sys_low = sys_text.lower()
+
+        # Sprint 4: Requirements Analysis prompt
+        if "senior software requirements analyst" in sys_low or "analyze this client brief" in low:
+            # Check for prompt injection in brief
+            if any(p in low for p in ["ignore previous", "disregard all", "reveal system"]):
+                analysis_data = {
+                    "overview": {
+                        "project_objective": "Safe Sanitized Brief",
+                        "business_problem": "Detected prompt injection attempt in client brief.",
+                        "intended_outcome": "Untrusted instructions were safely disregarded.",
+                        "in_scope": ["Legitimate project requirements only"],
+                        "out_of_scope": ["Security bypasses and instruction overrides"],
+                    },
+                    "functional_requirements": [
+                        {
+                            "key": "FR-1",
+                            "title": "Enforce Input Sanitization",
+                            "description": "Ensure system ignores embedded adversarial instructions.",
+                            "priority": "HIGH",
+                            "acceptance_criteria": ["Given untrusted text, when analyzed, system policies are preserved."],
+                            "dependencies": [],
+                            "open_questions": [],
+                        }
+                    ],
+                    "non_functional_requirements": [
+                        {
+                            "key": "NFR-1",
+                            "title": "Security Guardrails",
+                            "category": "SECURITY",
+                            "description": "Never execute unauthorized commands.",
+                            "priority": "CRITICAL",
+                        }
+                    ],
+                    "technical_constraints": [],
+                    "assumptions": [],
+                    "clarification_questions": [],
+                    "risks_and_dependencies": [],
+                }
+            else:
+                analysis_data = {
+                    "overview": {
+                        "project_objective": "Deliver Freelance Implementation",
+                        "business_problem": "Implement specifications described in client brief.",
+                        "intended_outcome": "Fully tested and working software deliverable.",
+                        "in_scope": ["Core functionality", "Testing and validation", "Documentation"],
+                        "out_of_scope": ["Unspecified features outside the initial agreement"],
+                    },
+                    "functional_requirements": [
+                        {
+                            "key": "FR-1",
+                            "title": "Core Feature Implementation",
+                            "description": user_text[:200].strip(),
+                            "priority": "HIGH",
+                            "acceptance_criteria": [
+                                "Given authenticated user, when input is supplied, expected result is returned.",
+                            ],
+                            "dependencies": [],
+                            "open_questions": [],
+                        },
+                        {
+                            "key": "FR-2",
+                            "title": "API Validation and Data Persistence",
+                            "description": "Persist records transactionally in database and validate inputs.",
+                            "priority": "MEDIUM",
+                            "acceptance_criteria": [
+                                "Given valid payload, when submitted, record is stored.",
+                            ],
+                            "dependencies": ["FR-1"],
+                            "open_questions": [],
+                        },
+                    ],
+                    "non_functional_requirements": [
+                        {
+                            "key": "NFR-1",
+                            "title": "Security and Authentication",
+                            "category": "SECURITY",
+                            "description": "Ensure authorization checks are enforced on all routes.",
+                            "priority": "HIGH",
+                        },
+                        {
+                            "key": "NFR-2",
+                            "title": "Performance and Reliability",
+                            "category": "PERFORMANCE",
+                            "description": "Endpoints must respond within 500ms under standard load.",
+                            "priority": "MEDIUM",
+                        },
+                    ],
+                    "technical_constraints": [
+                        {"constraint": "Standard REST API and PostgreSQL", "category": "TECH_STACK"}
+                    ],
+                    "assumptions": [
+                        {
+                            "description": "The client has established database and hosting access.",
+                            "reason": "Standard freelance prerequisite",
+                            "confidence": "HIGH",
+                        }
+                    ],
+                    "clarification_questions": [
+                        {
+                            "question_key": "Q-1",
+                            "question": "Are there specific third-party API credentials needed for deployment?",
+                            "reason": "Clarify prerequisites before task execution.",
+                            "context_topic": "Third-Party Credentials",
+                        }
+                    ],
+                    "risks_and_dependencies": [
+                        {
+                            "description": "Scope creep if additional undocumented requests are introduced.",
+                            "risk_type": "SCHEDULE",
+                            "severity": "MEDIUM",
+                            "mitigation": "Review approved requirements with client before starting development.",
+                        }
+                    ],
+                }
+            return AIResponse(
+                content=json.dumps(analysis_data),
+                model="mock-model",
+                input_tokens=150,
+                output_tokens=300,
+                total_tokens=450,
+                latency_ms=10,
+            )
+
+        # Sprint 4: Task Planning prompt
+        if "implementation planner" in sys_low or "implementation task plan" in low:
+            tasks_data = {
+                "proposed_tasks": [
+                    {
+                        "title": "Setup Architecture and Data Schema",
+                        "description": "Create required models, migrations, and database tables.",
+                        "priority": "HIGH",
+                        "status": "TODO",
+                        "deadline": None,
+                        "linked_requirement_keys": ["FR-1"],
+                        "acceptance_criteria": ["Database migrations execute cleanly without error."],
+                        "estimated_effort": "2-3 hours",
+                    },
+                    {
+                        "title": "Implement Backend API and Services",
+                        "description": "Create service logic, repositories, and REST API endpoints.",
+                        "priority": "HIGH",
+                        "status": "TODO",
+                        "deadline": None,
+                        "linked_requirement_keys": ["FR-1", "FR-2"],
+                        "acceptance_criteria": ["All unit and integration tests pass."],
+                        "estimated_effort": "4-6 hours",
+                    },
+                    {
+                        "title": "Integrate Frontend User Interface",
+                        "description": "Build interactive views, forms, and responsive components.",
+                        "priority": "MEDIUM",
+                        "status": "TODO",
+                        "deadline": None,
+                        "linked_requirement_keys": ["FR-2"],
+                        "acceptance_criteria": ["UI renders correctly with validation feedback."],
+                        "estimated_effort": "3-5 hours",
+                    },
+                ],
+                "rationale": "Logical three-phase execution plan moving from data layer to API to user interface.",
+            }
+            return AIResponse(
+                content=json.dumps(tasks_data),
+                model="mock-model",
+                input_tokens=120,
+                output_tokens=220,
+                total_tokens=340,
+                latency_ms=10,
+            )
+
+        # Sprint 4: Client Request Impact prompt
+        if "requirements and scope impact analyst" in sys_low or "analyze the impact of this request" in low:
+            impact_data = {
+                "request_type": "CHANGE_REQUEST",
+                "classification_explanation": "Identified client request modifying existing project requirements.",
+                "affected_requirements": ["FR-1"],
+                "affected_tasks": ["Implement Backend API and Services"],
+                "scope_change_summary": "Extends current requirement scope to accommodate client adjustments.",
+                "recommended_actions": [
+                    "Review proposed change with client",
+                    "Update requirement specifications upon approval",
+                    "Adjust task deadlines if necessary",
+                ],
+            }
+            return AIResponse(
+                content=json.dumps(impact_data),
+                model="mock-model",
+                input_tokens=100,
+                output_tokens=150,
+                total_tokens=250,
+                latency_ms=10,
+            )
 
         # Prompt injection / security guard detection
         if any(

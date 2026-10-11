@@ -75,11 +75,37 @@ export default function ProjectDetailPage() {
           <Button variant="danger" onClick={handleArchive}>Archive</Button>
         </div>
         {project.description && <p className="text-[var(--text-muted)] mb-4">{project.description}</p>}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-5">
           <div><span className="text-xs text-[var(--text-muted)] block">Client</span>{project.client_id ? <Link href={`/clients/${project.client_id}`} className="text-[var(--primary)] hover:underline">{project.client_id.substring(0,8)}...</Link> : '—'}</div>
           <div><span className="text-xs text-[var(--text-muted)] block">Start Date</span>{project.start_date || '—'}</div>
           <div><span className="text-xs text-[var(--text-muted)] block">Deadline</span>{project.deadline || '—'}</div>
           <div><span className="text-xs text-[var(--text-muted)] block">Created</span>{new Date(project.created_at).toLocaleDateString()}</div>
+        </div>
+
+        {/* Sprint 4 Workflows */}
+        <div className="flex flex-wrap gap-2 pt-4 border-t border-[var(--sidebar-border)]">
+          <Link href={`/projects/${id}/requirements`}>
+            <Button variant="secondary">📋 Requirements</Button>
+          </Link>
+          <Link href={`/projects/${id}/context`}>
+            <Button variant="secondary">🧠 Project Memory</Button>
+          </Link>
+          <Link href={`/projects/${id}/requests`}>
+            <Button variant="secondary">💬 Client Requests</Button>
+          </Link>
+          <Button
+            variant="secondary"
+            onClick={async () => {
+              try {
+                const res = await apiClient.generateDailyProjectSummary(id);
+                alert(res.summary_text);
+              } catch (e: any) {
+                alert(e.message);
+              }
+            }}
+          >
+            📊 Daily Summary
+          </Button>
         </div>
       </div>
 
