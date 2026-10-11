@@ -84,6 +84,14 @@ class ProjectService:
         projects, _ = await self.project_repo.list_by_user(
             user_id=user_id, status=ProjectStatus.ACTIVE, page=1, page_size=100
         )
-        # Assuming list_by_user handles filtering out archived properly if requested, or filtering by ACTIVE status
         return [ProjectResponse.model_validate(p) for p in projects if p.status == ProjectStatus.ACTIVE and p.archived_at is None]
+
+    # Convenience aliases for agent tools
+    async def create_project(self, user: Any, data: ProjectCreate) -> ProjectResponse:
+        user_id = str(user.id if hasattr(user, "id") else user)
+        return await self.create(user_id, data)
+
+    async def get_project(self, user: Any, project_id: Any) -> ProjectResponse:
+        user_id = str(user.id if hasattr(user, "id") else user)
+        return await self.get(user_id, str(project_id))
 

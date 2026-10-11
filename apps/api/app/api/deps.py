@@ -35,3 +35,74 @@ async def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found",
         )
+
+
+from app.repositories.github_integration import GitHubIntegrationRepository
+from app.services.github_integration import GitHubIntegrationService
+from app.repositories.agent_execution import AgentExecutionRepository
+from app.services.agent_execution import AgentExecutionService
+from app.repositories.conversation import ConversationRepository
+from app.services.conversation import ConversationService
+
+
+async def get_github_integration_service(
+    db: AsyncSession = Depends(get_db),
+) -> GitHubIntegrationService:
+    repo = GitHubIntegrationRepository(db)
+    return GitHubIntegrationService(repo)
+
+
+async def get_agent_execution_service(
+    db: AsyncSession = Depends(get_db),
+) -> AgentExecutionService:
+    repo = AgentExecutionRepository(db)
+    return AgentExecutionService(repo)
+
+
+async def get_conversation_service(
+    db: AsyncSession = Depends(get_db),
+) -> ConversationService:
+    repo = ConversationRepository(db)
+    return ConversationService(repo)
+
+
+from app.agent.tools.registry import create_default_registry
+from app.agent.permissions import ToolPermissionService
+from app.agent.orchestrator import AgentOrchestrator
+from app.ai.providers import get_ai_provider
+from app.ai.context.builder import ContextBuilder
+from app.services.task import TaskService
+from app.services.project import ProjectService
+from app.services.client import ClientService
+from app.core.config import get_settings
+
+
+async def get_agent_orchestrator(
+    db: AsyncSession = Depends(get_db),
+) -> AgentOrchestrator:
+    settings = get_settings()
+    tool_registry = create_default_registry()
+    github_service = GitHubIntegrationService(GitHubIntegrationRepository(db))
+    project_service = ProjectService(db)
+    permission_service = ToolPermissionService(
+        tool_registry, project_service, github_service, db, settings
+    )
+    ai_provider = get_ai_provider()
+    context_builder = ContextBuilder(db)
+    execution_service = AgentExecutionService(AgentExecutionRepository(db))
+    conversation_service = ConversationService(ConversationRepository(db))
+    task_service = TaskService(db)
+    client_service = ClientService(db)
+    return AgentOrchestrator(
+        ai_provider=ai_provider,
+        tool_registry=tool_registry,
+        permission_service=permission_service,
+        context_builder=context_builder,
+        execution_service=execution_service,
+        conversation_service=conversation_service,
+        settings=settings,
+        task_service=task_service,
+        project_service=project_service,
+        client_service=client_service,
+        github_service=github_service,
+    )

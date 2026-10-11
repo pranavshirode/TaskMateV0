@@ -41,6 +41,14 @@ export default function SettingsPage() {
         </form>
       </div>
 
+      <div className="bg-[var(--sidebar-bg)] border border-[var(--sidebar-border)] rounded-xl p-6 mb-6">
+        <h2 className="text-lg font-semibold mb-2">Integrations</h2>
+        <p className="text-sm text-[var(--text-muted)] mb-4">Connect external services like GitHub to enable automated repositories and agent features.</p>
+        <a href="/settings/integrations" className="inline-block">
+          <Button variant="secondary">Manage Integrations →</Button>
+        </a>
+      </div>
+
       <div className="bg-[var(--sidebar-bg)] border border-[var(--sidebar-border)] rounded-xl p-6">
         <h2 className="text-lg font-semibold mb-4">Account</h2>
         <Button variant="danger" onClick={logout}>Sign Out</Button>
