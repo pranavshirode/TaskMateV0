@@ -6,6 +6,8 @@
 .env.*.local
 *.pem
 *.key
+*.db
+*.sqlite
 
 # ===========================
 # Python

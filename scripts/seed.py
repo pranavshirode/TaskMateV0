@@ -38,6 +38,9 @@ async def seed():
     print("Starting seed script...")
     settings = get_settings()
     engine = create_async_engine(settings.DATABASE_URL)
+    import app.models  # noqa: F401
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
     session_factory = async_sessionmaker(engine, expire_on_commit=False)
 
     async with session_factory() as db:
