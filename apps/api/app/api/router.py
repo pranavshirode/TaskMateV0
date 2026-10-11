@@ -9,7 +9,7 @@ health_router = APIRouter(tags=["health"])
 health_router.include_router(health.router)
 
 # V1 routes
-from app.api.routes import auth, clients, projects, repositories, tasks, dashboard, labels
+from app.api.routes import auth, clients, projects, repositories, tasks, dashboard, labels, ai
 
 v1_router = APIRouter(prefix="/api/v1")
 v1_router.include_router(system.router, prefix="/system", tags=["system"])
@@ -21,3 +21,4 @@ v1_router.include_router(repositories.repo_router, prefix="/repositories", tags=
 v1_router.include_router(tasks.router, prefix="/tasks", tags=["tasks"])
 v1_router.include_router(dashboard.router, prefix="/dashboard", tags=["dashboard"])
 v1_router.include_router(labels.router, prefix="/labels", tags=["labels"])
+v1_router.include_router(ai.router, prefix="/ai", tags=["ai"])

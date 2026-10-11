@@ -190,8 +190,28 @@ export class ApiClient {
     return this.fetchAPI('/labels');
   }
 
-  createLabel(data: any) {
-    return this.fetchAPI('/labels', { method: 'POST', body: JSON.stringify(data) });
+  // AI Methods
+  aiChat(message: string, conversationId?: string) {
+    return this.fetchAPI('/ai/chat', {
+      method: 'POST',
+      body: JSON.stringify({ message, conversation_id: conversationId }),
+    });
+  }
+
+  listAiConversations() {
+    return this.fetchAPI('/ai/conversations');
+  }
+
+  getAiConversation(id: string) {
+    return this.fetchAPI(`/ai/conversations/${id}`);
+  }
+
+  deleteAiConversation(id: string) {
+    return this.fetchAPI(`/ai/conversations/${id}`, { method: 'DELETE' });
+  }
+
+  getAiUsage() {
+    return this.fetchAPI('/ai/usage');
   }
 }
 

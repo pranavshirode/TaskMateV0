@@ -10,3 +10,4 @@ from app.models.enums import (  # noqa: F401
     TaskStatus, TaskPriority, ClientStatus, ProjectStatus,
     RepositoryProvider, TaskEventType,
 )
+from app.models.ai import Conversation, ConversationMessage, AIRequestLog  # noqa: F401
