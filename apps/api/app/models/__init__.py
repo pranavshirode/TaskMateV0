@@ -11,3 +11,5 @@ from app.models.enums import (  # noqa: F401
     RepositoryProvider, TaskEventType,
 )
 from app.models.ai import Conversation, ConversationMessage, AIRequestLog  # noqa: F401
+from app.models.github_integration import GitHubIntegration  # noqa: F401
+from app.models.agent_execution import AgentExecution, AgentExecutionStep  # noqa: F401

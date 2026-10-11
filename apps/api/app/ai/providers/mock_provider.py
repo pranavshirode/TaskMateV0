@@ -26,6 +26,8 @@ class MockAIProvider(BaseAIProvider):
         temperature: float | None = None,
         max_tokens: int | None = None,
         model: str | None = None,
+        tools: Any = None,
+        tool_choice: Any = None,
     ) -> AIResponse:
         self.calls.append(messages)
 

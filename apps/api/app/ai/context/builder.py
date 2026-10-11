@@ -112,3 +112,6 @@ class AIContextBuilder:
             recent_tasks=tasks,
         )
 
+
+ContextBuilder = AIContextBuilder
+

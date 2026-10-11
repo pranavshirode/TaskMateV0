@@ -68,3 +68,12 @@ class ClientService:
         )
         return [ClientResponse.model_validate(c) for c in clients]
 
+    # Convenience aliases for agent tools
+    async def create_client(self, user: Any, data: ClientCreate) -> ClientResponse:
+        user_id = str(user.id if hasattr(user, "id") else user)
+        return await self.create(user_id, data)
+
+    async def get_client(self, user: Any, client_id: Any) -> ClientResponse:
+        user_id = str(user.id if hasattr(user, "id") else user)
+        return await self.get(user_id, str(client_id))
+

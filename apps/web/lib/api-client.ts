@@ -213,6 +213,78 @@ export class ApiClient {
   getAiUsage() {
     return this.fetchAPI('/ai/usage');
   }
+
+  // GitHub Integration & Agent (Sprint 3)
+  async getGitHubStatus() {
+    try {
+      const data = await this.fetchAPI('/integrations/github');
+      return { data, error: null };
+    } catch (e: any) {
+      return { data: null, error: e };
+    }
+  }
+
+  async getGitHubAuthorizeUrl() {
+    try {
+      const data = await this.fetchAPI('/integrations/github/authorize');
+      return { data, error: null };
+    } catch (e: any) {
+      return { data: null, error: e };
+    }
+  }
+
+  async connectGitHub(data: any) {
+    try {
+      const res = await this.fetchAPI('/integrations/github/connect', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+      return { data: res, error: null };
+    } catch (e: any) {
+      return { data: null, error: e };
+    }
+  }
+
+  async disconnectGitHub() {
+    try {
+      const res = await this.fetchAPI('/integrations/github', { method: 'DELETE' });
+      return { data: res, error: null };
+    } catch (e: any) {
+      return { data: null, error: e };
+    }
+  }
+
+  async runAgent(data: any) {
+    try {
+      const res = await this.fetchAPI('/agent/run', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+      return { data: res, error: null };
+    } catch (e: any) {
+      return { data: null, error: e };
+    }
+  }
+
+  async sendMessage(data: { message: string; conversation_id?: string }) {
+    try {
+      const res = await this.aiChat(data.message, data.conversation_id);
+      return { data: res, error: null };
+    } catch (e: any) {
+      return { data: null, error: e };
+    }
+  }
 }
 
 export const apiClient = new ApiClient();
+
+export interface AIChatResponse {
+  message: string;
+  conversation_id: string;
+  intent?: string;
+  confidence?: number;
+  actions?: any[];
+  context_summary?: any;
+  requires_clarification?: boolean;
+  suggestions?: string[];
+}

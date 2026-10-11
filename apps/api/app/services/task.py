@@ -206,3 +206,16 @@ class TaskService:
         )
         return [TaskResponse.model_validate(t) for t in tasks]
 
+    # Convenience aliases for agent tools
+    async def create_task(self, user: Any, data: TaskCreate) -> TaskResponse:
+        user_id = str(user.id if hasattr(user, "id") else user)
+        return await self.create(user_id, data)
+
+    async def get_task(self, user: Any, task_id: Any) -> TaskResponse:
+        user_id = str(user.id if hasattr(user, "id") else user)
+        return await self.get(user_id, str(task_id))
+
+    async def update_task(self, user: Any, task_id: Any, data: TaskUpdate) -> TaskResponse:
+        user_id = str(user.id if hasattr(user, "id") else user)
+        return await self.update(user_id, str(task_id), data)
+
