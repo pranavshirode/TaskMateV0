@@ -54,6 +54,10 @@ from app.schemas.requirements import (
 from app.schemas.task import TaskCreate
 from app.services.task import TaskService
 from app.ai.providers.base import AIMessage, BaseAIProvider
+from app.ai.extractors.requirements_analyzer import (
+    analyze_brief_dynamically,
+    validate_and_sanitize_requirements_data,
+)
 from app.ai.prompts.requirements import (
     REQUIREMENTS_ANALYSIS_SYSTEM_PROMPT,
     TASK_PLANNING_SYSTEM_PROMPT,
@@ -180,6 +184,17 @@ Analyze this client brief and return the complete requirements specification in 
         except Exception as e:
             logger.warning(f"Failed to parse AI requirements JSON: {e}. Using rule-based fallback.")
             parsed = self._fallback_requirements_extraction(analysis)
+
+        # Validate and sanitize to guarantee quality and avoid leaked metadata or generic placeholders
+        project_name = project.name if project else ""
+        parsed = validate_and_sanitize_requirements_data(
+            parsed=parsed,
+            brief=analysis.brief,
+            project_name=project_name,
+            title=analysis.title,
+            desired_outcome=analysis.desired_outcome or "",
+            constraints=analysis.constraints or "",
+        )
 
         # Store overview & constraints
         analysis.overview_data = parsed.get("overview", {})
@@ -315,64 +330,14 @@ Analyze this client brief and return the complete requirements specification in 
 
     def _fallback_requirements_extraction(self, analysis: RequirementsAnalysis) -> dict[str, Any]:
         """Deterministic fallback extraction when AI returns non-JSON or offline."""
-        brief = analysis.brief
-        return {
-            "overview": {
-                "project_objective": analysis.title,
-                "business_problem": "Fulfill client specifications as stated in brief.",
-                "intended_outcome": analysis.desired_outcome or "Delivered and verified software implementation.",
-                "in_scope": [analysis.title, "Implementation and testing"],
-                "out_of_scope": ["Unspecified third-party integrations"],
-            },
-            "functional_requirements": [
-                {
-                    "key": "FR-1",
-                    "title": f"Implement core feature: {analysis.title}",
-                    "description": brief[:300],
-                    "priority": "HIGH",
-                    "acceptance_criteria": [
-                        "Given authenticated developer, when feature executes, then expected outcome occurs",
-                    ],
-                    "dependencies": [],
-                    "open_questions": [],
-                }
-            ],
-            "non_functional_requirements": [
-                {
-                    "key": "NFR-1",
-                    "title": "Security and Authentication",
-                    "category": "SECURITY",
-                    "description": "Ensure user authorization checks are enforced on all endpoints.",
-                    "priority": "HIGH",
-                }
-            ],
-            "technical_constraints": [
-                {"constraint": analysis.constraints or "Standard application stack", "category": "GENERAL"}
-            ],
-            "assumptions": [
-                {
-                    "description": "Standard REST API endpoints and PostgreSQL persistence will be utilized.",
-                    "reason": "Existing TaskMate architecture",
-                    "confidence": "HIGH",
-                }
-            ],
-            "clarification_questions": [
-                {
-                    "question_key": "Q-1",
-                    "question": "Are there any specific third-party API keys or integrations required for this brief?",
-                    "reason": "Ensure all external credentials are ready prior to task execution.",
-                    "context_topic": "Integrations",
-                }
-            ],
-            "risks_and_dependencies": [
-                {
-                    "description": "Potential dependency on external API availability or unclear client approval criteria.",
-                    "risk_type": "DEPENDENCY",
-                    "severity": "MEDIUM",
-                    "mitigation": "Clarify requirements and verify endpoints early in development.",
-                }
-            ],
-        }
+        project_name = getattr(analysis, "project", None).name if getattr(analysis, "project", None) else ""
+        return analyze_brief_dynamically(
+            brief=analysis.brief,
+            title=analysis.title,
+            project_name=project_name,
+            desired_outcome=analysis.desired_outcome or "",
+            constraints=analysis.constraints or "",
+        )
 
     async def answer_question(
         self, user_id: str, analysis_id: str, question_id: str, answer: str

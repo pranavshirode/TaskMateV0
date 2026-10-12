@@ -20,6 +20,7 @@ export default function RequirementsAnalysisDetailPage() {
 
   // Active section tab
   const [activeTab, setActiveTab] = useState<'requirements' | 'questions' | 'assumptions' | 'traceability'>('requirements');
+  const [categoryFilter, setCategoryFilter] = useState<'ALL' | 'FUNCTIONAL' | 'NON_FUNCTIONAL'>('ALL');
 
   // Question answering state
   const [answeringQId, setAnsweringQId] = useState<string | null>(null);
@@ -278,7 +279,7 @@ export default function RequirementsAnalysisDetailPage() {
               : 'border-transparent text-[var(--text-muted)] hover:text-[var(--foreground)]'
           }`}
         >
-          Functional Requirements ({analysis.requirements?.length || 0})
+          Requirements ({analysis.requirements?.length || 0})
         </button>
 
         <button
@@ -315,47 +316,99 @@ export default function RequirementsAnalysisDetailPage() {
         </button>
       </div>
 
-      {/* Tab 1: Functional Requirements */}
+      {/* Tab 1: Requirements */}
       {activeTab === 'requirements' && (
         <div className="space-y-4">
-          {(analysis.requirements || []).map((req: Requirement) => (
-            <div
-              key={req.id}
-              className="bg-[var(--sidebar-bg)] border border-[var(--sidebar-border)] rounded-xl p-5"
+          <div className="flex items-center gap-2 pb-2">
+            <span className="text-xs text-[var(--text-muted)] font-medium">Filter:</span>
+            <button
+              onClick={() => setCategoryFilter('ALL')}
+              className={`px-2.5 py-1 text-xs rounded-lg font-medium transition-colors ${
+                categoryFilter === 'ALL'
+                  ? 'bg-[var(--primary)] text-white'
+                  : 'bg-[var(--sidebar-bg)] border border-[var(--sidebar-border)] text-[var(--text-muted)] hover:text-[var(--foreground)]'
+              }`}
             >
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-2">
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-[var(--primary)]/10 text-[var(--primary)]">
-                    {req.key}
-                  </span>
-                  <h3 className="font-semibold text-sm">{req.title}</h3>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge type="priority" value={req.priority} />
-                  <Badge type="status" value={req.status} />
-                </div>
-              </div>
+              All ({analysis.requirements?.length || 0})
+            </button>
+            <button
+              onClick={() => setCategoryFilter('FUNCTIONAL')}
+              className={`px-2.5 py-1 text-xs rounded-lg font-medium transition-colors ${
+                categoryFilter === 'FUNCTIONAL'
+                  ? 'bg-[var(--primary)] text-white'
+                  : 'bg-[var(--sidebar-bg)] border border-[var(--sidebar-border)] text-[var(--text-muted)] hover:text-[var(--foreground)]'
+              }`}
+            >
+              Functional ({(analysis.requirements || []).filter((r) => r.category === 'FUNCTIONAL' || r.key.startsWith('FR-')).length})
+            </button>
+            <button
+              onClick={() => setCategoryFilter('NON_FUNCTIONAL')}
+              className={`px-2.5 py-1 text-xs rounded-lg font-medium transition-colors ${
+                categoryFilter === 'NON_FUNCTIONAL'
+                  ? 'bg-[var(--primary)] text-white'
+                  : 'bg-[var(--sidebar-bg)] border border-[var(--sidebar-border)] text-[var(--text-muted)] hover:text-[var(--foreground)]'
+              }`}
+            >
+              Non-Functional ({(analysis.requirements || []).filter((r) => r.category === 'NON_FUNCTIONAL' || r.key.startsWith('NFR-')).length})
+            </button>
+          </div>
 
-              <p className="text-xs text-[var(--text-muted)] mb-3">{req.description}</p>
+          {(analysis.requirements || [])
+            .filter((r: Requirement) => {
+              if (categoryFilter === 'FUNCTIONAL') return r.category === 'FUNCTIONAL' || r.key.startsWith('FR-');
+              if (categoryFilter === 'NON_FUNCTIONAL') return r.category === 'NON_FUNCTIONAL' || r.key.startsWith('NFR-');
+              return true;
+            })
+            .map((req: Requirement) => {
+              const isNfr = req.category === 'NON_FUNCTIONAL' || req.key.startsWith('NFR-');
+              return (
+                <div
+                  key={req.id}
+                  className="bg-[var(--sidebar-bg)] border border-[var(--sidebar-border)] rounded-xl p-5"
+                >
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-[var(--primary)]/10 text-[var(--primary)]">
+                        {req.key}
+                      </span>
+                      <span
+                        className={`text-[10px] font-medium px-2 py-0.5 rounded ${
+                          isNfr
+                            ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
+                            : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                        }`}
+                      >
+                        {isNfr ? 'Non-Functional' : 'Functional'}
+                      </span>
+                      <h3 className="font-semibold text-sm">{req.title}</h3>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge type="priority" value={req.priority} />
+                      <Badge type="status" value={req.status} />
+                    </div>
+                  </div>
 
-              {req.acceptance_criteria && req.acceptance_criteria.length > 0 && (
-                <div className="bg-[var(--background)] rounded-lg p-3 border border-[var(--sidebar-border)] text-xs mb-2">
-                  <span className="font-medium text-[var(--foreground)] block mb-1">Acceptance Criteria:</span>
-                  <ul className="list-disc pl-4 space-y-0.5 text-[var(--text-muted)]">
-                    {req.acceptance_criteria.map((c: string, i: number) => (
-                      <li key={i}>{c}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+                  <p className="text-xs text-[var(--text-muted)] mb-3">{req.description}</p>
 
-              {req.dependencies && req.dependencies.length > 0 && (
-                <div className="text-xs text-[var(--text-muted)]">
-                  Dependencies: <span className="font-mono">{req.dependencies.join(', ')}</span>
+                  {req.acceptance_criteria && req.acceptance_criteria.length > 0 && (
+                    <div className="bg-[var(--background)] rounded-lg p-3 border border-[var(--sidebar-border)] text-xs mb-2">
+                      <span className="font-medium text-[var(--foreground)] block mb-1">Acceptance Criteria:</span>
+                      <ul className="list-disc pl-4 space-y-0.5 text-[var(--text-muted)]">
+                        {req.acceptance_criteria.map((c: string, i: number) => (
+                          <li key={i}>{c}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {req.dependencies && req.dependencies.length > 0 && (
+                    <div className="text-xs text-[var(--text-muted)]">
+                      Dependencies: <span className="font-mono">{req.dependencies.join(', ')}</span>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          ))}
+              );
+            })}
         </div>
       )}
 

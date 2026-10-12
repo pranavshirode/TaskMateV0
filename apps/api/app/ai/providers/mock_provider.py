@@ -5,6 +5,7 @@ import json
 import re
 from typing import Any
 
+from app.ai.extractors.requirements_analyzer import analyze_brief_dynamically
 from app.ai.providers.base import AIMessage, AIResponse, BaseAIProvider
 
 
@@ -91,81 +92,7 @@ class MockAIProvider(BaseAIProvider):
                     "risks_and_dependencies": [],
                 }
             else:
-                analysis_data = {
-                    "overview": {
-                        "project_objective": "Deliver Freelance Implementation",
-                        "business_problem": "Implement specifications described in client brief.",
-                        "intended_outcome": "Fully tested and working software deliverable.",
-                        "in_scope": ["Core functionality", "Testing and validation", "Documentation"],
-                        "out_of_scope": ["Unspecified features outside the initial agreement"],
-                    },
-                    "functional_requirements": [
-                        {
-                            "key": "FR-1",
-                            "title": "Core Feature Implementation",
-                            "description": user_text[:200].strip(),
-                            "priority": "HIGH",
-                            "acceptance_criteria": [
-                                "Given authenticated user, when input is supplied, expected result is returned.",
-                            ],
-                            "dependencies": [],
-                            "open_questions": [],
-                        },
-                        {
-                            "key": "FR-2",
-                            "title": "API Validation and Data Persistence",
-                            "description": "Persist records transactionally in database and validate inputs.",
-                            "priority": "MEDIUM",
-                            "acceptance_criteria": [
-                                "Given valid payload, when submitted, record is stored.",
-                            ],
-                            "dependencies": ["FR-1"],
-                            "open_questions": [],
-                        },
-                    ],
-                    "non_functional_requirements": [
-                        {
-                            "key": "NFR-1",
-                            "title": "Security and Authentication",
-                            "category": "SECURITY",
-                            "description": "Ensure authorization checks are enforced on all routes.",
-                            "priority": "HIGH",
-                        },
-                        {
-                            "key": "NFR-2",
-                            "title": "Performance and Reliability",
-                            "category": "PERFORMANCE",
-                            "description": "Endpoints must respond within 500ms under standard load.",
-                            "priority": "MEDIUM",
-                        },
-                    ],
-                    "technical_constraints": [
-                        {"constraint": "Standard REST API and PostgreSQL", "category": "TECH_STACK"}
-                    ],
-                    "assumptions": [
-                        {
-                            "description": "The client has established database and hosting access.",
-                            "reason": "Standard freelance prerequisite",
-                            "confidence": "HIGH",
-                        }
-                    ],
-                    "clarification_questions": [
-                        {
-                            "question_key": "Q-1",
-                            "question": "Are there specific third-party API credentials needed for deployment?",
-                            "reason": "Clarify prerequisites before task execution.",
-                            "context_topic": "Third-Party Credentials",
-                        }
-                    ],
-                    "risks_and_dependencies": [
-                        {
-                            "description": "Scope creep if additional undocumented requests are introduced.",
-                            "risk_type": "SCHEDULE",
-                            "severity": "MEDIUM",
-                            "mitigation": "Review approved requirements with client before starting development.",
-                        }
-                    ],
-                }
+                analysis_data = analyze_brief_dynamically(user_text)
             return AIResponse(
                 content=json.dumps(analysis_data),
                 model="mock-model",
