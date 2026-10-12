@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { apiClient } from '@/lib/api-client';
+import { apiClient, type Client, type Project } from '@/lib/api-client';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import ErrorState from '@/components/ui/ErrorState';
 import Badge from '@/components/ui/Badge';
@@ -12,8 +12,8 @@ import Button from '@/components/ui/Button';
 export default function ClientDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const [client, setClient] = useState<any>(null);
-  const [projects, setProjects] = useState<any[]>([]);
+  const [client, setClient] = useState<Client | null>(null);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -25,7 +25,7 @@ export default function ClientDetailPage() {
         apiClient.listProjects({ client_id: id, page_size: '50' }),
       ]);
       setClient(clientData); setProjects(projData.items || []);
-    } catch (err: any) { setError(err.message); }
+    } catch (err: unknown) { setError(err instanceof Error ? err.message : 'Unknown error'); }
     finally { setIsLoading(false); }
   };
 
@@ -34,7 +34,7 @@ export default function ClientDetailPage() {
   const handleArchive = async () => {
     if (!confirm('Archive this client?')) return;
     try { await apiClient.archiveClient(id); router.push('/clients'); }
-    catch (err: any) { alert(err.message); }
+    catch (err: unknown) { alert(err instanceof Error ? err.message : 'Failed to archive client'); }
   };
 
   if (isLoading) return <div className="flex justify-center py-12"><LoadingSpinner /></div>;
@@ -76,7 +76,7 @@ export default function ClientDetailPage() {
         </div>
         {projects.length > 0 ? (
           <div className="space-y-2">
-            {projects.map((p: any) => (
+            {projects.map((p: Project) => (
               <Link key={p.id} href={`/projects/${p.id}`} className="flex items-center justify-between p-3 border border-[var(--sidebar-border)] rounded-lg hover:border-[var(--primary)] transition-colors">
                 <span className="font-medium text-sm">{p.name}</span>
                 <Badge type="status" value={p.status} />

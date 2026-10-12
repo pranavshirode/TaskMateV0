@@ -4,7 +4,7 @@ type BadgeType = 'status' | 'priority';
 
 interface BadgeProps {
   type: BadgeType;
-  value: string;
+  value?: string;
 }
 
 export default function Badge({ type, value }: BadgeProps) {
@@ -30,8 +30,9 @@ export default function Badge({ type, value }: BadgeProps) {
     }
   };
 
-  const colorClass = type === 'status' ? getStatusColor(value) : getPriorityColor(value);
-  const displayValue = value.replace('_', ' ');
+  const safeVal = value || 'ACTIVE';
+  const colorClass = type === 'status' ? getStatusColor(safeVal) : getPriorityColor(safeVal);
+  const displayValue = safeVal.replace('_', ' ');
 
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${colorClass}`}>

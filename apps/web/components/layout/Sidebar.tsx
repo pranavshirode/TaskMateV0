@@ -54,7 +54,7 @@ export default function Sidebar() {
           </div>
         )}
         <p className="text-xs text-[var(--text-muted)]">
-          TaskMate AI v0.1.0
+          TaskMate AI v1.0.0
         </p>
       </div>
     </aside>

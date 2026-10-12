@@ -3,11 +3,9 @@
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import AuthGuard from "@/components/layout/AuthGuard";
-import { useAuth } from "@/lib/auth-context";
 import { usePathname } from "next/navigation";
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
-  const { isLoading } = useAuth();
   const pathname = usePathname();
 
   const isAuthPage = pathname === '/login' || pathname === '/register';

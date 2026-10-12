@@ -2,8 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { apiClient } from '@/lib/api-client';
+import { apiClient, type Task } from '@/lib/api-client';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import ErrorState from '@/components/ui/ErrorState';
 import EmptyState from '@/components/ui/EmptyState';
@@ -16,7 +15,7 @@ const PRIORITIES = ['', 'LOW', 'MEDIUM', 'HIGH', 'URGENT'];
 
 export default function TasksPage() {
   const router = useRouter();
-  const [tasks, setTasks] = useState<any[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
@@ -39,8 +38,8 @@ export default function TasksPage() {
       const res = await apiClient.listTasks(params);
       setTasks(res.items);
       setTotal(res.total);
-    } catch (err: any) {
-      setError(err.message || 'Failed to load tasks');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to load tasks');
     } finally {
       setIsLoading(false);
     }

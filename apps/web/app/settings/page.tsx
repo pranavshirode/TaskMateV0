@@ -19,7 +19,7 @@ export default function SettingsPage() {
     try {
       await apiClient.updateMe({ name: name.trim() });
       setMessage('Profile updated successfully.');
-    } catch (err: any) { setMessage(`Error: ${err.message}`); }
+    } catch (err: unknown) { setMessage(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`); }
     finally { setIsSaving(false); }
   };
 

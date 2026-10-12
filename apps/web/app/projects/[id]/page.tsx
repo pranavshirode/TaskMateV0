@@ -3,20 +3,19 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { apiClient } from '@/lib/api-client';
+import { apiClient, type Project, type Repository, type Task } from '@/lib/api-client';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import ErrorState from '@/components/ui/ErrorState';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
-import Select from '@/components/ui/Select';
 
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const [project, setProject] = useState<any>(null);
-  const [repos, setRepos] = useState<any[]>([]);
-  const [tasks, setTasks] = useState<any[]>([]);
+  const [project, setProject] = useState<Project | null>(null);
+  const [repos, setRepos] = useState<Repository[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showRepoForm, setShowRepoForm] = useState(false);
@@ -32,7 +31,7 @@ export default function ProjectDetailPage() {
         apiClient.listTasks({ project_id: id, page_size: '10', sort_by: 'updated_at', sort_order: 'desc' }),
       ]);
       setProject(proj); setRepos(repoList || []); setTasks(taskList.items || []);
-    } catch (err: any) { setError(err.message); }
+    } catch (err: unknown) { setError(err instanceof Error ? err.message : 'Failed to load project'); }
     finally { setIsLoading(false); }
   };
 
@@ -45,13 +44,13 @@ export default function ProjectDetailPage() {
       await apiClient.createRepo(id, { name: repoName.trim(), url: repoUrl.trim(), provider: 'GITHUB', default_branch: 'main' });
       setRepoName(''); setRepoUrl(''); setShowRepoForm(false);
       fetchData();
-    } catch (err: any) { alert(err.message); }
+    } catch (err: unknown) { alert(err instanceof Error ? err.message : 'Failed to add repo'); }
   };
 
   const handleArchive = async () => {
     if (!confirm('Archive this project?')) return;
     try { await apiClient.archiveProject(id); router.push('/projects'); }
-    catch (err: any) { alert(err.message); }
+    catch (err: unknown) { alert(err instanceof Error ? err.message : 'Failed to archive project'); }
   };
 
   if (isLoading) return <div className="flex justify-center py-12"><LoadingSpinner /></div>;
@@ -79,7 +78,7 @@ export default function ProjectDetailPage() {
           <div><span className="text-xs text-[var(--text-muted)] block">Client</span>{project.client_id ? <Link href={`/clients/${project.client_id}`} className="text-[var(--primary)] hover:underline">{project.client_id.substring(0,8)}...</Link> : '—'}</div>
           <div><span className="text-xs text-[var(--text-muted)] block">Start Date</span>{project.start_date || '—'}</div>
           <div><span className="text-xs text-[var(--text-muted)] block">Deadline</span>{project.deadline || '—'}</div>
-          <div><span className="text-xs text-[var(--text-muted)] block">Created</span>{new Date(project.created_at).toLocaleDateString()}</div>
+          <div><span className="text-xs text-[var(--text-muted)] block">Created</span>{project.created_at ? new Date(project.created_at).toLocaleDateString() : '—'}</div>
         </div>
 
         {/* Sprint 4 Workflows */}
@@ -99,8 +98,8 @@ export default function ProjectDetailPage() {
               try {
                 const res = await apiClient.generateDailyProjectSummary(id);
                 alert(res.summary_text);
-              } catch (e: any) {
-                alert(e.message);
+              } catch (e: unknown) {
+                alert(e instanceof Error ? e.message : 'Failed to generate summary');
               }
             }}
           >
@@ -143,7 +142,7 @@ export default function ProjectDetailPage() {
         )}
         {repos.length > 0 ? (
           <div className="space-y-2">
-            {repos.map((r: any) => (
+            {repos.map((r: Repository) => (
               <div key={r.id} className="flex items-center justify-between p-3 border border-[var(--sidebar-border)] rounded-lg">
                 <div><div className="font-medium text-sm">{r.name}</div><a href={r.url} target="_blank" rel="noreferrer" className="text-xs text-[var(--primary)] hover:underline">{r.url}</a></div>
                 <span className="text-xs text-[var(--text-muted)]">{r.default_branch}</span>
@@ -158,7 +157,7 @@ export default function ProjectDetailPage() {
         <h2 className="text-lg font-semibold mb-4">Recent Tasks</h2>
         {tasks.length > 0 ? (
           <div className="space-y-2">
-            {tasks.map((task: any) => (
+            {tasks.map((task: Task) => (
               <Link key={task.id} href={`/tasks/${task.id}`} className="flex items-center justify-between p-3 border border-[var(--sidebar-border)] rounded-lg hover:border-[var(--primary)] transition-colors">
                 <span className="font-medium text-sm">{task.title}</span>
                 <div className="flex gap-2"><Badge type="status" value={task.status} /><Badge type="priority" value={task.priority} /></div>

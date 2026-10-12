@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { apiClient } from '@/lib/api-client';
+import { apiClient, type Project } from '@/lib/api-client';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import ErrorState from '@/components/ui/ErrorState';
 import EmptyState from '@/components/ui/EmptyState';
@@ -14,7 +14,7 @@ const PROJECT_STATUSES = ['', 'PLANNING', 'ACTIVE', 'ON_HOLD', 'COMPLETED', 'ARC
 
 export default function ProjectsPage() {
   const router = useRouter();
-  const [projects, setProjects] = useState<any[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
@@ -31,7 +31,7 @@ export default function ProjectsPage() {
       if (statusFilter) params.status = statusFilter;
       const res = await apiClient.listProjects(params);
       setProjects(res.items); setTotal(res.total);
-    } catch (err: any) { setError(err.message); }
+    } catch (err: unknown) { setError(err instanceof Error ? err.message : 'Unknown error'); }
     finally { setIsLoading(false); }
   }, [page, search, statusFilter]);
 
@@ -70,7 +70,7 @@ export default function ProjectsPage() {
                 {project.description && <p className="text-sm text-[var(--text-muted)] line-clamp-2 mb-2">{project.description}</p>}
                 <div className="flex gap-4 text-xs text-[var(--text-muted)]">
                   {project.deadline && <span>Deadline: {project.deadline}</span>}
-                  <span>Created: {new Date(project.created_at).toLocaleDateString()}</span>
+                  <span>Created: {project.created_at ? new Date(project.created_at).toLocaleDateString() : '—'}</span>
                 </div>
               </div>
             ))}

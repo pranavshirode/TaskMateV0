@@ -32,8 +32,8 @@ export default function NewTaskPage() {
   const [dueDate, setDueDate] = useState('');
   const [estimatedMinutes, setEstimatedMinutes] = useState('');
   const [labelsInput, setLabelsInput] = useState('');
-  const [projects, setProjects] = useState<any[]>([]);
-  const [clients, setClients] = useState<any[]>([]);
+  const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
+  const [clients, setClients] = useState<{ id: string; name: string }[]>([]);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -46,7 +46,7 @@ export default function NewTaskPage() {
         ]);
         setProjects(projRes.items || []);
         setClients(clientRes.items || []);
-      } catch (e) { /* ignore */ }
+      } catch { /* ignore */ }
     };
     load();
   }, []);
@@ -57,7 +57,7 @@ export default function NewTaskPage() {
     setError('');
     setIsSubmitting(true);
     try {
-      const data: any = { title: title.trim(), status, priority };
+      const data: Record<string, string | number | string[]> = { title: title.trim(), status, priority };
       if (description.trim()) data.description = description.trim();
       if (projectId) data.project_id = projectId;
       if (clientId) data.client_id = clientId;
@@ -67,8 +67,8 @@ export default function NewTaskPage() {
 
       const task = await apiClient.createTask(data);
       router.push(`/tasks/${task.id}`);
-    } catch (err: any) {
-      setError(err.message || 'Failed to create task');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to create task');
     } finally {
       setIsSubmitting(false);
     }

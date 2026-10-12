@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { apiClient } from '@/lib/api-client';
+import { apiClient, type RequirementsAnalysis, type TraceabilityReport, type TaskPlan, type AnalysisQuestion, type Requirement, type RequirementAssumption, type RequirementRisk, type TraceabilityItem, type ProposedTask } from '@/lib/api-client';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import ErrorState from '@/components/ui/ErrorState';
 import Badge from '@/components/ui/Badge';
@@ -11,10 +11,9 @@ import Button from '@/components/ui/Button';
 
 export default function RequirementsAnalysisDetailPage() {
   const { id: projectId, analysisId } = useParams<{ id: string; analysisId: string }>();
-  const router = useRouter();
 
-  const [analysis, setAnalysis] = useState<any>(null);
-  const [traceability, setTraceability] = useState<any>(null);
+  const [analysis, setAnalysis] = useState<RequirementsAnalysis | null>(null);
+  const [traceability, setTraceability] = useState<TraceabilityReport | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,7 +27,7 @@ export default function RequirementsAnalysisDetailPage() {
 
   // Task planning state
   const [showPlanModal, setShowPlanModal] = useState(false);
-  const [taskPlan, setTaskPlan] = useState<any>(null);
+  const [taskPlan, setTaskPlan] = useState<TaskPlan | null>(null);
   const [selectedTaskIndices, setSelectedTaskIndices] = useState<number[]>([]);
   const [isCreatingTasks, setIsCreatingTasks] = useState(false);
 
@@ -42,8 +41,8 @@ export default function RequirementsAnalysisDetailPage() {
       ]);
       setAnalysis(res);
       setTraceability(traceRes);
-    } catch (err: any) {
-      setError(err.message || 'Failed to load analysis');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to load analysis');
     } finally {
       setIsLoading(false);
     }
@@ -61,8 +60,8 @@ export default function RequirementsAnalysisDetailPage() {
       setAnalysis(res);
       alert('Analysis updated successfully!');
       fetchAnalysisData();
-    } catch (err: any) {
-      alert(err.message);
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Operation failed');
     } finally {
       setIsActionLoading(false);
     }
@@ -76,8 +75,8 @@ export default function RequirementsAnalysisDetailPage() {
       setAnalysis(res);
       alert('Requirements specification approved!');
       fetchAnalysisData();
-    } catch (err: any) {
-      alert(err.message);
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Operation failed');
     } finally {
       setIsActionLoading(false);
     }
@@ -91,8 +90,8 @@ export default function RequirementsAnalysisDetailPage() {
       setAnsweringQId(null);
       setAnswerText('');
       fetchAnalysisData();
-    } catch (err: any) {
-      alert(err.message);
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Failed to save answer');
     } finally {
       setIsActionLoading(false);
     }
@@ -103,10 +102,10 @@ export default function RequirementsAnalysisDetailPage() {
       setIsActionLoading(true);
       const res = await apiClient.generateTaskPlan(analysisId);
       setTaskPlan(res);
-      setSelectedTaskIndices((res.proposed_tasks || []).map((_: any, i: number) => i));
+      setSelectedTaskIndices((res.proposed_tasks || []).map((_: unknown, i: number) => i));
       setShowPlanModal(true);
-    } catch (err: any) {
-      alert(err.message);
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Failed to generate task plan');
     } finally {
       setIsActionLoading(false);
     }
@@ -123,8 +122,8 @@ export default function RequirementsAnalysisDetailPage() {
       setShowPlanModal(false);
       fetchAnalysisData();
       setActiveTab('traceability');
-    } catch (err: any) {
-      alert(err.message);
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Failed to create tasks');
     } finally {
       setIsCreatingTasks(false);
     }
@@ -152,9 +151,9 @@ export default function RequirementsAnalysisDetailPage() {
 
   if (!analysis) return null;
 
-  const overview = analysis.overview_data || {};
+  const overview = (analysis.overview_data || {}) as Record<string, unknown>;
   const unresolvedQuestions = (analysis.questions || []).filter(
-    (q: any) => q.status === 'UNRESOLVED'
+    (q: AnalysisQuestion) => q.status === 'UNRESOLVED'
   );
 
   return (
@@ -181,7 +180,7 @@ export default function RequirementsAnalysisDetailPage() {
               <Badge type="status" value={analysis.status} />
             </div>
             <p className="text-xs text-[var(--text-muted)] mt-1">
-              Created {new Date(analysis.created_at).toLocaleDateString()}
+              Created {analysis.created_at ? new Date(analysis.created_at).toLocaleDateString() : '—'}
               {analysis.approved_at && (
                 <span className="text-green-400 font-medium ml-2">
                   ✓ Approved on {new Date(analysis.approved_at).toLocaleDateString()}
@@ -241,11 +240,11 @@ export default function RequirementsAnalysisDetailPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mb-4">
           <div>
             <span className="text-xs text-[var(--text-muted)] block font-medium">Project Objective</span>
-            <p>{overview.project_objective || analysis.title}</p>
+            <p>{String(overview.project_objective || '') || analysis.title}</p>
           </div>
           <div>
             <span className="text-xs text-[var(--text-muted)] block font-medium">Intended Outcome</span>
-            <p>{overview.intended_outcome || analysis.desired_outcome || '—'}</p>
+            <p>{String(overview.intended_outcome || '') || analysis.desired_outcome || '—'}</p>
           </div>
         </div>
 
@@ -253,7 +252,7 @@ export default function RequirementsAnalysisDetailPage() {
           <div>
             <span className="font-semibold text-green-400 block mb-1">In-Scope:</span>
             <ul className="list-disc pl-4 space-y-0.5 text-[var(--text-muted)]">
-              {(overview.in_scope || ['Core functional deliverable']).map((s: string, i: number) => (
+              {((overview.in_scope as string[]) || ['Core functional deliverable']).map((s: string, i: number) => (
                 <li key={i}>{s}</li>
               ))}
             </ul>
@@ -261,7 +260,7 @@ export default function RequirementsAnalysisDetailPage() {
           <div>
             <span className="font-semibold text-red-400 block mb-1">Out-of-Scope:</span>
             <ul className="list-disc pl-4 space-y-0.5 text-[var(--text-muted)]">
-              {(overview.out_of_scope || ['Third-party external dependencies outside agreed brief']).map((s: string, i: number) => (
+              {((overview.out_of_scope as string[]) || ['Third-party external dependencies outside agreed brief']).map((s: string, i: number) => (
                 <li key={i}>{s}</li>
               ))}
             </ul>
@@ -319,7 +318,7 @@ export default function RequirementsAnalysisDetailPage() {
       {/* Tab 1: Functional Requirements */}
       {activeTab === 'requirements' && (
         <div className="space-y-4">
-          {(analysis.requirements || []).map((req: any) => (
+          {(analysis.requirements || []).map((req: Requirement) => (
             <div
               key={req.id}
               className="bg-[var(--sidebar-bg)] border border-[var(--sidebar-border)] rounded-xl p-5"
@@ -363,7 +362,7 @@ export default function RequirementsAnalysisDetailPage() {
       {/* Tab 2: Clarification Questions */}
       {activeTab === 'questions' && (
         <div className="space-y-4">
-          {(analysis.questions || []).map((q: any) => (
+          {(analysis.questions || []).map((q: AnalysisQuestion) => (
             <div
               key={q.id}
               className={`bg-[var(--sidebar-bg)] border rounded-xl p-5 ${
@@ -434,7 +433,7 @@ export default function RequirementsAnalysisDetailPage() {
           <div>
             <h3 className="font-semibold text-sm mb-3">Recorded Assumptions</h3>
             <div className="space-y-3">
-              {(analysis.assumptions || []).map((asm: any) => (
+              {(analysis.assumptions || []).map((asm: RequirementAssumption) => (
                 <div
                   key={asm.id}
                   className="bg-[var(--sidebar-bg)] border border-[var(--sidebar-border)] rounded-xl p-4 text-xs"
@@ -457,7 +456,7 @@ export default function RequirementsAnalysisDetailPage() {
           <div>
             <h3 className="font-semibold text-sm mb-3">Risks & Dependencies</h3>
             <div className="space-y-3">
-              {(analysis.risks || []).map((rk: any) => (
+              {(analysis.risks || []).map((rk: RequirementRisk) => (
                 <div
                   key={rk.id}
                   className="bg-[var(--sidebar-bg)] border border-[var(--sidebar-border)] rounded-xl p-4 text-xs"
@@ -507,7 +506,7 @@ export default function RequirementsAnalysisDetailPage() {
           </div>
 
           <div className="space-y-3">
-            {(traceability.items || []).map((item: any) => (
+            {(traceability.items || []).map((item: TraceabilityItem) => (
               <div
                 key={item.requirement_id}
                 className="bg-[var(--sidebar-bg)] border border-[var(--sidebar-border)] rounded-xl p-4"
@@ -523,7 +522,7 @@ export default function RequirementsAnalysisDetailPage() {
                 {item.linked_tasks && item.linked_tasks.length > 0 ? (
                   <div className="space-y-1 mt-2">
                     <span className="text-xs text-[var(--text-muted)] block">Linked Implementation Tasks:</span>
-                    {item.linked_tasks.map((t: any) => (
+                    {item.linked_tasks.map((t: { id: string; title: string; status: string; priority: string }) => (
                       <Link
                         key={t.id}
                         href={`/tasks/${t.id}`}
@@ -572,7 +571,7 @@ export default function RequirementsAnalysisDetailPage() {
                 Rationale: {taskPlan.rationale}
               </p>
 
-              {(taskPlan.proposed_tasks || []).map((t: any, index: number) => {
+              {(taskPlan.proposed_tasks || []).map((t: ProposedTask, index: number) => {
                 const isChecked = selectedTaskIndices.includes(index);
                 return (
                   <div

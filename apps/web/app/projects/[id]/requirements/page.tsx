@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { apiClient } from '@/lib/api-client';
+import { apiClient, type Project, type RequirementsAnalysis } from '@/lib/api-client';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import ErrorState from '@/components/ui/ErrorState';
 import Badge from '@/components/ui/Badge';
@@ -14,8 +14,8 @@ export default function ProjectRequirementsPage() {
   const { id: projectId } = useParams<{ id: string }>();
   const router = useRouter();
 
-  const [project, setProject] = useState<any>(null);
-  const [analyses, setAnalyses] = useState<any[]>([]);
+  const [project, setProject] = useState<Project | null>(null);
+  const [analyses, setAnalyses] = useState<RequirementsAnalysis[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,8 +38,8 @@ export default function ProjectRequirementsPage() {
       ]);
       setProject(projRes);
       setAnalyses(analysisRes || []);
-    } catch (err: any) {
-      setError(err.message || 'Failed to load project requirements');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to load project requirements');
     } finally {
       setIsLoading(false);
     }
@@ -67,8 +67,8 @@ export default function ProjectRequirementsPage() {
       // Automatically trigger initial AI analysis pipeline
       await apiClient.analyzeBrief(created.id);
       router.push(`/projects/${projectId}/requirements/${created.id}`);
-    } catch (err: any) {
-      alert(err.message || 'Failed to analyze brief');
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Failed to analyze brief');
       setIsSubmitting(false);
     }
   };
@@ -216,9 +216,9 @@ export default function ProjectRequirementsPage() {
                   {a.brief}
                 </p>
                 <div className="flex gap-4 text-xs text-[var(--text-muted)]">
-                  <span>Requirements: {a.total_requirements}</span>
-                  <span>Approved: {a.approved_requirements}</span>
-                  {a.unresolved_questions > 0 && (
+                  <span>Requirements: {a.total_requirements || a.requirements?.length || 0}</span>
+                  <span>Approved: {a.approved_requirements || 0}</span>
+                  {(a.unresolved_questions || 0) > 0 && (
                     <span className="text-amber-400 font-medium">
                       ⚠️ {a.unresolved_questions} questions pending
                     </span>

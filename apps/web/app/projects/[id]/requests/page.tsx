@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { apiClient } from '@/lib/api-client';
+import { apiClient, type Project, type ClientRequest, type ImpactSummary } from '@/lib/api-client';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import ErrorState from '@/components/ui/ErrorState';
 import Badge from '@/components/ui/Badge';
@@ -12,8 +12,8 @@ import Input from '@/components/ui/Input';
 
 export default function ProjectClientRequestsPage() {
   const { id: projectId } = useParams<{ id: string }>();
-  const [project, setProject] = useState<any>(null);
-  const [requests, setRequests] = useState<any[]>([]);
+  const [project, setProject] = useState<Project | null>(null);
+  const [requests, setRequests] = useState<ClientRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,7 +26,7 @@ export default function ProjectClientRequestsPage() {
 
   // Impact analysis modal
   const [analyzingReqId, setAnalyzingReqId] = useState<string | null>(null);
-  const [activeImpact, setActiveImpact] = useState<any>(null);
+  const [activeImpact, setActiveImpact] = useState<ImpactSummary | null>(null);
 
   const fetchData = async () => {
     try {
@@ -38,8 +38,8 @@ export default function ProjectClientRequestsPage() {
       ]);
       setProject(projRes);
       setRequests(reqRes || []);
-    } catch (err: any) {
-      setError(err.message || 'Failed to load client requests');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to load client requests');
     } finally {
       setIsLoading(false);
     }
@@ -64,8 +64,8 @@ export default function ProjectClientRequestsPage() {
       setContent('');
       setShowForm(false);
       fetchData();
-    } catch (err: any) {
-      alert(err.message);
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Failed to create request');
     } finally {
       setIsSubmitting(false);
     }
@@ -75,10 +75,10 @@ export default function ProjectClientRequestsPage() {
     try {
       setAnalyzingReqId(requestId);
       const impact = await apiClient.analyzeClientRequestImpact(requestId);
-      setActiveImpact(impact);
+      setActiveImpact((impact.impact_summary || impact) as unknown as ImpactSummary);
       fetchData();
-    } catch (err: any) {
-      alert(err.message);
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Failed to analyze impact');
     } finally {
       setAnalyzingReqId(null);
     }
@@ -89,8 +89,8 @@ export default function ProjectClientRequestsPage() {
       await apiClient.approveClientRequest(requestId);
       setActiveImpact(null);
       fetchData();
-    } catch (err: any) {
-      alert(err.message);
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Failed to approve request');
     }
   };
 
@@ -229,16 +229,16 @@ export default function ProjectClientRequestsPage() {
               {r.impact_summary && (
                 <div className="bg-[var(--background)] border border-[var(--sidebar-border)] rounded-lg p-3 text-xs">
                   <span className="font-semibold text-amber-400 block mb-1">
-                    AI Impact Assessment ({r.impact_summary.request_type}):
+                    AI Impact Assessment ({String(r.impact_summary.request_type || '')}):
                   </span>
                   <p className="text-[var(--text-muted)] mb-2">
-                    {r.impact_summary.scope_change_summary || r.impact_summary.classification_explanation}
+                    {String(r.impact_summary.scope_change_summary || r.impact_summary.classification_explanation || '')}
                   </p>
-                  {r.impact_summary.recommended_actions?.length > 0 && (
+                  {(r.impact_summary.recommended_actions?.length || 0) > 0 && (
                     <div>
                       <span className="font-medium text-[var(--foreground)] block">Recommended Actions:</span>
                       <ul className="list-disc pl-4 space-y-0.5 text-[var(--text-muted)]">
-                        {r.impact_summary.recommended_actions.map((act: string, i: number) => (
+                        {r.impact_summary.recommended_actions?.map((act: string, i: number) => (
                           <li key={i}>{act}</li>
                         ))}
                       </ul>
@@ -266,20 +266,20 @@ export default function ProjectClientRequestsPage() {
           <div className="bg-[var(--sidebar-bg)] border border-[var(--sidebar-border)] rounded-xl max-w-lg w-full p-6 shadow-2xl">
             <h3 className="text-base font-bold mb-2">Change Impact Assessment</h3>
             <p className="text-xs text-[var(--text-muted)] mb-4">
-              {activeImpact.classification_explanation}
+              {String(activeImpact.classification_explanation || '')}
             </p>
 
             <div className="space-y-3 text-xs mb-6">
               <div>
                 <span className="font-semibold text-[var(--foreground)] block">Scope Change Summary:</span>
-                <p className="text-[var(--text-muted)]">{activeImpact.scope_change_summary}</p>
+                <p className="text-[var(--text-muted)]">{String(activeImpact.scope_change_summary || '')}</p>
               </div>
 
-              {activeImpact.recommended_actions?.length > 0 && (
+              {(activeImpact.recommended_actions?.length || 0) > 0 && (
                 <div>
                   <span className="font-semibold text-[var(--foreground)] block">Recommended Actions:</span>
                   <ul className="list-disc pl-4 space-y-0.5 text-[var(--text-muted)]">
-                    {activeImpact.recommended_actions.map((act: string, i: number) => (
+                    {activeImpact.recommended_actions?.map((act: string, i: number) => (
                       <li key={i}>{act}</li>
                     ))}
                   </ul>
@@ -293,7 +293,7 @@ export default function ProjectClientRequestsPage() {
               </Button>
               <Button
                 variant="primary"
-                onClick={() => handleApproveRequest(activeImpact.request_id)}
+                onClick={() => handleApproveRequest(String(activeImpact.request_id || ''))}
               >
                 Approve Change
               </Button>

@@ -21,14 +21,14 @@ export default function NewClientPage() {
     if (!name.trim()) { setError('Name is required'); return; }
     setError(''); setIsSubmitting(true);
     try {
-      const data: any = { name: name.trim() };
+      const data: Record<string, string> = { name: name.trim() };
       if (companyName.trim()) data.company_name = companyName.trim();
       if (email.trim()) data.email = email.trim();
       if (phone.trim()) data.phone = phone.trim();
       if (notes.trim()) data.notes = notes.trim();
       const client = await apiClient.createClient(data);
       router.push(`/clients/${client.id}`);
-    } catch (err: any) { setError(err.message || 'Failed to create client'); }
+    } catch (err: unknown) { setError(err instanceof Error ? err.message : 'Failed to create client'); }
     finally { setIsSubmitting(false); }
   };
 

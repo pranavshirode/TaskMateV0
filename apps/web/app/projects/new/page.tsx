@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { apiClient } from '@/lib/api-client';
+import { apiClient, type Client } from '@/lib/api-client';
 import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import Button from '@/components/ui/Button';
@@ -21,7 +21,7 @@ export default function NewProjectPage() {
   const [status, setStatus] = useState('PLANNING');
   const [startDate, setStartDate] = useState('');
   const [deadline, setDeadline] = useState('');
-  const [clients, setClients] = useState<any[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -34,14 +34,14 @@ export default function NewProjectPage() {
     if (!name.trim()) { setError('Name is required'); return; }
     setError(''); setIsSubmitting(true);
     try {
-      const data: any = { name: name.trim(), status };
+      const data: Record<string, string> = { name: name.trim(), status };
       if (clientId) data.client_id = clientId;
       if (description.trim()) data.description = description.trim();
       if (startDate) data.start_date = startDate;
       if (deadline) data.deadline = deadline;
       const project = await apiClient.createProject(data);
       router.push(`/projects/${project.id}`);
-    } catch (err: any) { setError(err.message || 'Failed to create project'); }
+    } catch (err: unknown) { setError(err instanceof Error ? err.message : 'Failed to create project'); }
     finally { setIsSubmitting(false); }
   };
 

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { apiClient } from '@/lib/api-client';
+import { apiClient, type Project, type ProjectContextNote } from '@/lib/api-client';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import ErrorState from '@/components/ui/ErrorState';
 import Button from '@/components/ui/Button';
@@ -11,8 +11,8 @@ import Input from '@/components/ui/Input';
 
 export default function ProjectContextPage() {
   const { id: projectId } = useParams<{ id: string }>();
-  const [project, setProject] = useState<any>(null);
-  const [notes, setNotes] = useState<any[]>([]);
+  const [project, setProject] = useState<Project | null>(null);
+  const [notes, setNotes] = useState<ProjectContextNote[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -34,8 +34,8 @@ export default function ProjectContextPage() {
       ]);
       setProject(projRes);
       setNotes(notesRes || []);
-    } catch (err: any) {
-      setError(err.message || 'Failed to load project context');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to load project context');
     } finally {
       setIsLoading(false);
     }
@@ -61,8 +61,8 @@ export default function ProjectContextPage() {
       setContent('');
       setShowForm(false);
       fetchData();
-    } catch (err: any) {
-      alert(err.message);
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Failed to create note');
     } finally {
       setIsSubmitting(false);
     }
@@ -73,8 +73,8 @@ export default function ProjectContextPage() {
     try {
       await apiClient.deleteProjectContextNote(noteId);
       fetchData();
-    } catch (err: any) {
-      alert(err.message);
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Failed to delete note');
     }
   };
 

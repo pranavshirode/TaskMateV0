@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { apiClient } from '@/lib/api-client';
+import { apiClient, type Client } from '@/lib/api-client';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import ErrorState from '@/components/ui/ErrorState';
 import EmptyState from '@/components/ui/EmptyState';
@@ -12,7 +12,7 @@ import Pagination from '@/components/ui/Pagination';
 
 export default function ClientsPage() {
   const router = useRouter();
-  const [clients, setClients] = useState<any[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
@@ -29,7 +29,7 @@ export default function ClientsPage() {
       if (statusFilter) params.status = statusFilter;
       const res = await apiClient.listClients(params);
       setClients(res.items); setTotal(res.total);
-    } catch (err: any) { setError(err.message); }
+    } catch (err: unknown) { setError(err instanceof Error ? err.message : 'Unknown error'); }
     finally { setIsLoading(false); }
   }, [page, search, statusFilter]);
 

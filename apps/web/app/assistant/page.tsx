@@ -1,25 +1,20 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { apiClient } from "@/lib/api-client";
-import type { AIChatResponse } from "@/lib/api-client";
+import { apiClient, type AIChatAction } from "@/lib/api-client";
 
 // Types for local state
 interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
-  actions?: Array<{
-    action_type: string;
-    success: boolean;
-    data?: Record<string, unknown>;
-    error?: string;
-  }>;
+  actions?: AIChatAction[];
   context_summary?: {
-    task_count: number;
-    project_count: number;
-    overdue_count: number;
-    due_today_count: number;
+    task_count?: number;
+    project_count?: number;
+    overdue_count?: number;
+    due_today_count?: number;
+    [key: string]: unknown;
   };
   requires_clarification?: boolean;
   suggestions?: string[];
@@ -92,12 +87,14 @@ export default function AssistantPage() {
           ]);
         } else if (response.data) {
           const data = response.data;
-          setConversationId(data.conversation_id);
+          if (data.conversation_id) {
+            setConversationId(data.conversation_id);
+          }
 
           const assistantMessage: Message = {
             id: crypto.randomUUID(),
             role: "assistant",
-            content: data.message,
+            content: data.message || data.result || "Agent executed successfully.",
             timestamp: new Date(),
           };
           setMessages((prev) => [...prev, assistantMessage]);
@@ -128,7 +125,7 @@ export default function AssistantPage() {
             role: "assistant",
             content: data.message,
             actions: data.actions,
-            context_summary: data.context_summary || undefined,
+            context_summary: (data.context_summary as Message['context_summary']) || undefined,
             requires_clarification: data.requires_clarification,
             suggestions: data.suggestions,
             intent: data.intent || undefined,
@@ -137,7 +134,7 @@ export default function AssistantPage() {
           setMessages((prev) => [...prev, assistantMessage]);
         }
       }
-    } catch (err) {
+    } catch {
       setError("Network error. Please check your connection.");
     } finally {
       setIsLoading(false);
@@ -236,7 +233,7 @@ export default function AssistantPage() {
                       }`}
                     >
                       {action.success ? "✓" : "✗"}{" "}
-                      {action.action_type.replace(/_/g, " ").toLowerCase()}
+                      {(action.action_type || action.type || "action").replace(/_/g, " ").toLowerCase()}
                       {Boolean(action.data && action.data.title) && (
                         <span className="font-medium"> — {String(action.data?.title)}</span>
                       )}
@@ -250,7 +247,7 @@ export default function AssistantPage() {
                 <div className="mt-2 text-xs text-[var(--text-muted)] border-t border-[var(--sidebar-border)] pt-1">
                   Based on: {msg.context_summary.task_count} tasks,{" "}
                   {msg.context_summary.project_count} projects
-                  {msg.context_summary.overdue_count > 0 && (
+                  {(msg.context_summary.overdue_count || 0) > 0 && (
                     <span>, {msg.context_summary.overdue_count} overdue</span>
                   )}
                 </div>

@@ -2,15 +2,15 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { apiClient } from '@/lib/api-client';
+import { apiClient, type Project, type RequirementsAnalysis } from '@/lib/api-client';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import ErrorState from '@/components/ui/ErrorState';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 
 export default function RequirementsIndexPage() {
-  const [projects, setProjects] = useState<any[]>([]);
-  const [analyses, setAnalyses] = useState<any[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [analyses, setAnalyses] = useState<RequirementsAnalysis[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -28,8 +28,8 @@ export default function RequirementsIndexPage() {
         const analysisRes = await apiClient.listProjectAnalyses(projList[0].id);
         setAnalyses(analysisRes || []);
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to load projects');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to load projects');
     } finally {
       setIsLoading(false);
     }
@@ -45,8 +45,8 @@ export default function RequirementsIndexPage() {
       setIsLoading(true);
       const res = await apiClient.listProjectAnalyses(projectId);
       setAnalyses(res || []);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to load analyses');
     } finally {
       setIsLoading(false);
     }
@@ -114,14 +114,14 @@ export default function RequirementsIndexPage() {
                 {a.brief}
               </p>
               <div className="flex flex-wrap gap-4 text-xs text-[var(--text-muted)] border-t border-[var(--sidebar-border)] pt-3">
-                <span>Requirements: <strong className="text-[var(--foreground)]">{a.total_requirements}</strong></span>
-                <span>Approved: <strong className="text-green-400">{a.approved_requirements}</strong></span>
-                {a.unresolved_questions > 0 && (
+                <span>Requirements: <strong className="text-[var(--foreground)]">{a.total_requirements || a.requirements?.length || 0}</strong></span>
+                <span>Approved: <strong className="text-green-400">{a.approved_requirements || 0}</strong></span>
+                {(a.unresolved_questions || 0) > 0 && (
                   <span className="text-amber-400 font-medium">
                     ⚠️ {a.unresolved_questions} Questions Unresolved
                   </span>
                 )}
-                <span>Created: {new Date(a.created_at).toLocaleDateString()}</span>
+                <span>Created: {a.created_at ? new Date(a.created_at).toLocaleDateString() : '—'}</span>
               </div>
             </Link>
           ))}

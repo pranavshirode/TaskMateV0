@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
-import { apiClient } from '@/lib/api-client';
+import { apiClient, type DashboardToday, type Task, type Project } from '@/lib/api-client';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import ErrorState from '@/components/ui/ErrorState';
 import Badge from '@/components/ui/Badge';
@@ -10,7 +10,7 @@ import Link from 'next/link';
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<DashboardToday | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -20,8 +20,8 @@ export default function DashboardPage() {
       setError(null);
       const res = await apiClient.getDashboardToday();
       setData(res);
-    } catch (err: any) {
-      setError(err.message || 'Failed to load dashboard data');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to load dashboard data');
     } finally {
       setIsLoading(false);
     }
@@ -50,7 +50,11 @@ export default function DashboardPage() {
     return <ErrorState message={error} onRetry={fetchDashboard} />;
   }
 
-  const TaskCard = ({ task }: { task: any }) => (
+  if (!data) {
+    return null;
+  }
+
+  const TaskCard = ({ task }: { task: Task }) => (
     <Link
       href={`/tasks/${task.id}`}
       className="block p-3 border border-[var(--sidebar-border)] rounded-lg hover:border-[var(--primary)] transition-colors"
@@ -82,13 +86,13 @@ export default function DashboardPage() {
         <section className="bg-[var(--sidebar-bg)] border border-[var(--sidebar-border)] rounded-xl p-6">
           <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
             <span>📅</span> Due Today
-            {data?.due_today?.length > 0 && (
+            {(data.due_today?.length || 0) > 0 && (
               <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full">{data.due_today.length}</span>
             )}
           </h2>
-          {data?.due_today?.length > 0 ? (
+          {(data.due_today?.length || 0) > 0 ? (
             <div className="space-y-3">
-              {data.due_today.map((task: any) => (
+              {data.due_today.map((task: Task) => (
                 <TaskCard key={task.id} task={task} />
               ))}
             </div>
@@ -101,13 +105,13 @@ export default function DashboardPage() {
         <section className="bg-[var(--sidebar-bg)] border border-red-500/30 rounded-xl p-6">
           <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-red-400">
             <span>⚠️</span> Overdue
-            {data?.overdue?.length > 0 && (
+            {(data.overdue?.length || 0) > 0 && (
               <span className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full">{data.overdue.length}</span>
             )}
           </h2>
-          {data?.overdue?.length > 0 ? (
+          {(data.overdue?.length || 0) > 0 ? (
             <div className="space-y-3">
-              {data.overdue.map((task: any) => (
+              {data.overdue.map((task: Task) => (
                 <TaskCard key={task.id} task={task} />
               ))}
             </div>
@@ -120,13 +124,13 @@ export default function DashboardPage() {
         <section className="bg-[var(--sidebar-bg)] border border-[var(--sidebar-border)] rounded-xl p-6">
           <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-orange-400">
             <span>🔥</span> High Priority
-            {data?.high_priority?.length > 0 && (
+            {(data.high_priority?.length || 0) > 0 && (
               <span className="text-xs bg-orange-500/20 text-orange-400 px-2 py-0.5 rounded-full">{data.high_priority.length}</span>
             )}
           </h2>
-          {data?.high_priority?.length > 0 ? (
+          {(data.high_priority?.length || 0) > 0 ? (
             <div className="space-y-3">
-              {data.high_priority.map((task: any) => (
+              {data.high_priority.map((task: Task) => (
                 <TaskCard key={task.id} task={task} />
               ))}
             </div>
@@ -140,9 +144,9 @@ export default function DashboardPage() {
           <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
             <span>📁</span> Active Projects
           </h2>
-          {data?.active_projects?.length > 0 ? (
+          {(data.active_projects?.length || 0) > 0 ? (
             <div className="space-y-3">
-              {data.active_projects.map((project: any) => (
+              {data.active_projects.map((project: Project) => (
                 <Link
                   key={project.id}
                   href={`/projects/${project.id}`}
@@ -166,9 +170,9 @@ export default function DashboardPage() {
         <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
           <span>🕐</span> Recently Updated
         </h2>
-        {data?.recently_updated?.length > 0 ? (
+        {(data.recently_updated?.length || 0) > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {data.recently_updated.slice(0, 6).map((task: any) => (
+            {data.recently_updated.slice(0, 6).map((task: Task) => (
               <TaskCard key={task.id} task={task} />
             ))}
           </div>

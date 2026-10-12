@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { apiClient } from "@/lib/api-client";
+import { apiClient, type Conversation, type AIChatAction } from "@/lib/api-client";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 interface Message {
@@ -11,21 +11,8 @@ interface Message {
   content: string;
   intent?: string;
   confidence?: number;
-  actions?: Array<{
-    type: string;
-    success: boolean;
-    message: string;
-    data?: any;
-  }>;
+  actions?: AIChatAction[];
   created_at?: string;
-}
-
-interface ConversationItem {
-  id: string;
-  created_at: string;
-  updated_at: string;
-  message_count: number;
-  last_message?: string;
 }
 
 const QUICK_PROMPTS = [
@@ -37,7 +24,7 @@ const QUICK_PROMPTS = [
 ];
 
 export default function AIAssistantPage() {
-  const [conversations, setConversations] = useState<ConversationItem[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -75,9 +62,9 @@ export default function AIAssistantPage() {
     setError(null);
     try {
       const detail = await apiClient.getAiConversation(id);
-      setMessages(detail.messages || []);
-    } catch (e: any) {
-      setError(e.message || "Failed to load conversation messages");
+      setMessages((detail.messages as Message[]) || []);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to load conversation messages");
     } finally {
       setLoadingHistory(false);
     }
@@ -123,8 +110,8 @@ export default function AIAssistantPage() {
         created_at: new Date().toISOString(),
       };
       setMessages((prev) => [...prev, botMsg]);
-    } catch (e: any) {
-      setError(e.message || "Failed to communicate with TaskMate AI");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to communicate with TaskMate AI");
     } finally {
       setLoading(false);
     }
@@ -138,8 +125,8 @@ export default function AIAssistantPage() {
         handleNewChat();
       }
       loadConversations();
-    } catch (err: any) {
-      setError(err.message || "Failed to delete conversation");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to delete conversation");
     }
   };
 
@@ -258,9 +245,9 @@ export default function AIAssistantPage() {
                             </span>
                             <span>{act.message}</span>
                           </div>
-                          {act.data?.task_id && (
+                          {!!act.data?.task_id && (
                             <Link
-                              href={`/tasks/${act.data.task_id}`}
+                              href={`/tasks/${String(act.data.task_id)}`}
                               className="text-[var(--primary)] underline hover:opacity-80"
                             >
                               View Task

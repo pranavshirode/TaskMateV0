@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { apiClient } from '@/lib/api-client';
+import { apiClient, type Project, type Repository } from '@/lib/api-client';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import ErrorState from '@/components/ui/ErrorState';
 import EmptyState from '@/components/ui/EmptyState';
@@ -10,8 +10,8 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 
 export default function RepositoriesPage() {
-  const [projects, setProjects] = useState<any[]>([]);
-  const [reposByProject, setReposByProject] = useState<Record<string, any[]>>({});
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [reposByProject, setReposByProject] = useState<Record<string, Repository[]>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [addingTo, setAddingTo] = useState<string | null>(null);
@@ -24,15 +24,15 @@ export default function RepositoriesPage() {
       const projRes = await apiClient.listProjects({ page_size: '100' });
       const projs = projRes.items || [];
       setProjects(projs);
-      const repoMap: Record<string, any[]> = {};
-      await Promise.all(projs.map(async (p: any) => {
+      const repoMap: Record<string, Repository[]> = {};
+      await Promise.all(projs.map(async (p: Project) => {
         try {
           const repos = await apiClient.listProjectRepos(p.id);
           if (repos && repos.length > 0) repoMap[p.id] = repos;
         } catch { /* ignore */ }
       }));
       setReposByProject(repoMap);
-    } catch (err: any) { setError(err.message); }
+    } catch (err: unknown) { setError(err instanceof Error ? err.message : 'Failed to load'); }
     finally { setIsLoading(false); }
   };
 
@@ -44,13 +44,13 @@ export default function RepositoriesPage() {
       await apiClient.createRepo(projectId, { name: repoName.trim(), url: repoUrl.trim(), provider: 'GITHUB', default_branch: 'main' });
       setRepoName(''); setRepoUrl(''); setAddingTo(null);
       fetchData();
-    } catch (err: any) { alert(err.message); }
+    } catch (err: unknown) { alert(err instanceof Error ? err.message : 'Failed to add repo'); }
   };
 
   const handleDeleteRepo = async (repoId: string) => {
     if (!confirm('Remove this repository?')) return;
     try { await apiClient.deleteRepo(repoId); fetchData(); }
-    catch (err: any) { alert(err.message); }
+    catch (err: unknown) { alert(err instanceof Error ? err.message : 'Failed to remove repo'); }
   };
 
   if (isLoading) return <div className="flex justify-center py-12"><LoadingSpinner /></div>;
@@ -83,7 +83,7 @@ export default function RepositoriesPage() {
 
               {(reposByProject[project.id] || []).length > 0 ? (
                 <div className="space-y-2">
-                  {reposByProject[project.id].map((repo: any) => (
+                  {reposByProject[project.id].map((repo: Repository) => (
                     <div key={repo.id} className="flex items-center justify-between p-3 border border-[var(--sidebar-border)] rounded-lg">
                       <div>
                         <span className="font-medium text-sm">{repo.name}</span>

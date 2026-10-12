@@ -1,20 +1,14 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { apiClient } from './api-client';
-
-type User = {
-  id: string;
-  email: string;
-  name: string;
-};
+import { apiClient, User, LoginRequest, RegisterRequest } from './api-client';
 
 type AuthContextType = {
   user: User | null;
   token: string | null;
-  login: (data: any) => Promise<void>;
+  login: (data: LoginRequest) => Promise<void>;
   logout: () => void;
-  register: (data: any) => Promise<void>;
+  register: (data: RegisterRequest) => Promise<void>;
   isLoading: boolean;
 };
 
@@ -45,7 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     initAuth();
   }, []);
 
-  const login = useCallback(async (data: any) => {
+  const login = useCallback(async (data: LoginRequest) => {
     const response = await apiClient.login(data);
     const accessToken = response.access_token;
     apiClient.setToken(accessToken);
@@ -54,7 +48,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(userData);
   }, []);
 
-  const register = useCallback(async (data: any) => {
+  const register = useCallback(async (data: RegisterRequest) => {
     await apiClient.register(data);
   }, []);
 

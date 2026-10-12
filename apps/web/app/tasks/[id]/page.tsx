@@ -3,10 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { apiClient } from '@/lib/api-client';
+import { apiClient, type Task, type TaskEvent } from '@/lib/api-client';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import ErrorState from '@/components/ui/ErrorState';
-import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 
 const STATUSES = ['BACKLOG', 'TODO', 'IN_PROGRESS', 'BLOCKED', 'REVIEW', 'COMPLETED'];
@@ -24,8 +23,8 @@ const EVENT_LABELS: Record<string, string> = {
 export default function TaskDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const [task, setTask] = useState<any>(null);
-  const [events, setEvents] = useState<any[]>([]);
+  const [task, setTask] = useState<Task | null>(null);
+  const [events, setEvents] = useState<TaskEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -44,8 +43,8 @@ export default function TaskDetailPage() {
       setEvents(eventsData.items || []);
       setEditTitle(taskData.title);
       setEditDesc(taskData.description || '');
-    } catch (err: any) {
-      setError(err.message || 'Failed to load task');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to load task');
     } finally {
       setIsLoading(false);
     }
@@ -57,14 +56,14 @@ export default function TaskDetailPage() {
     try {
       await apiClient.changeTaskStatus(id, newStatus);
       fetchTask();
-    } catch (err: any) { alert(err.message); }
+    } catch (err: unknown) { alert(err instanceof Error ? err.message : 'Failed to change status'); }
   };
 
   const handlePriorityChange = async (newPriority: string) => {
     try {
       await apiClient.changeTaskPriority(id, newPriority);
       fetchTask();
-    } catch (err: any) { alert(err.message); }
+    } catch (err: unknown) { alert(err instanceof Error ? err.message : 'Failed to change priority'); }
   };
 
   const handleSaveEdit = async () => {
@@ -72,7 +71,7 @@ export default function TaskDetailPage() {
       await apiClient.updateTask(id, { title: editTitle, description: editDesc });
       setIsEditing(false);
       fetchTask();
-    } catch (err: any) { alert(err.message); }
+    } catch (err: unknown) { alert(err instanceof Error ? err.message : 'Failed to save'); }
   };
 
   const handleArchive = async () => {
@@ -80,7 +79,7 @@ export default function TaskDetailPage() {
     try {
       await apiClient.archiveTask(id);
       router.push('/tasks');
-    } catch (err: any) { alert(err.message); }
+    } catch (err: unknown) { alert(err instanceof Error ? err.message : 'Failed to archive'); }
   };
 
   if (isLoading) return <div className="flex justify-center py-12"><LoadingSpinner /></div>;
@@ -150,11 +149,11 @@ export default function TaskDetailPage() {
           </div>
           <div>
             <label className="text-xs text-[var(--text-muted)] block mb-1">Created</label>
-            <span className="text-sm">{new Date(task.created_at).toLocaleDateString()}</span>
+            <span className="text-sm">{task.created_at ? new Date(task.created_at).toLocaleDateString() : '—'}</span>
           </div>
           <div>
             <label className="text-xs text-[var(--text-muted)] block mb-1">Updated</label>
-            <span className="text-sm">{new Date(task.updated_at).toLocaleDateString()}</span>
+            <span className="text-sm">{task.updated_at ? new Date(task.updated_at).toLocaleDateString() : '—'}</span>
           </div>
         </div>
 
@@ -162,11 +161,16 @@ export default function TaskDetailPage() {
           <div className="mt-4 pt-4 border-t border-[var(--sidebar-border)]">
             <label className="text-xs text-[var(--text-muted)] block mb-2">Labels</label>
             <div className="flex gap-2 flex-wrap">
-              {task.labels.map((l: any) => (
-                <span key={l.id} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-[var(--primary)]/20 text-[var(--primary)]" style={l.color ? { backgroundColor: l.color + '20', color: l.color } : {}}>
-                  {l.name}
-                </span>
-              ))}
+              {(task.labels as unknown as { id?: string; name?: string; color?: string }[]).map((l, i) => {
+                const name = typeof l === 'string' ? l : l.name || '';
+                const key = typeof l === 'string' ? l : l.id || String(i);
+                const color = typeof l === 'object' && l.color ? l.color : undefined;
+                return (
+                  <span key={key} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-[var(--primary)]/20 text-[var(--primary)]" style={color ? { backgroundColor: color + '20', color } : {}}>
+                    {name}
+                  </span>
+                );
+              })}
             </div>
           </div>
         )}
@@ -177,13 +181,13 @@ export default function TaskDetailPage() {
         <h2 className="text-lg font-semibold mb-4">Activity</h2>
         {events.length > 0 ? (
           <div className="space-y-4">
-            {events.map((event: any) => (
+            {events.map((event: TaskEvent) => (
               <div key={event.id} className="flex gap-3 text-sm">
                 <div className="w-2 h-2 rounded-full bg-[var(--primary)] mt-1.5 flex-shrink-0" />
                 <div>
                   <span className="font-medium">{EVENT_LABELS[event.event_type] || event.event_type}</span>
-                  {event.old_value && event.new_value && (
-                    <span className="text-[var(--text-muted)]"> — {event.old_value.replace('_', ' ')} → {event.new_value.replace('_', ' ')}</span>
+                  {Boolean(event.data?.old_value && event.data?.new_value) && (
+                    <span className="text-[var(--text-muted)]"> — {String(event.data?.old_value).replace('_', ' ')} → {String(event.data?.new_value).replace('_', ' ')}</span>
                   )}
                   <div className="text-xs text-[var(--text-muted)] mt-0.5">
                     {new Date(event.created_at).toLocaleString()}
