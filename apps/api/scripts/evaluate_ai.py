@@ -3,6 +3,7 @@
 Evaluates intent classification accuracy, entity extraction, and latency
 across the evaluation dataset.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -19,22 +20,20 @@ from app.ai.providers.base import AIMessage
 
 
 async def run_evaluation():
-    dataset_path = os.path.join(
-        os.path.dirname(__file__), "..", "tests", "evaluation", "eval_dataset.json"
-    )
+    dataset_path = os.path.join(os.path.dirname(__file__), "..", "tests", "evaluation", "eval_dataset.json")
     if not os.path.exists(dataset_path):
         print(f"Error: Dataset not found at {dataset_path}")
         sys.exit(1)
 
-    with open(dataset_path, "r", encoding="utf-8") as f:
+    with open(dataset_path, encoding="utf-8") as f:
         dataset = json.load(f)
 
     provider = get_ai_provider()
-    print(f"==================================================")
-    print(f"TASKMATE AI — SPRINT 2 EVALUATION SUITE")
+    print("==================================================")
+    print("TASKMATE AI — SPRINT 2 EVALUATION SUITE")
     print(f"Provider: {type(provider).__name__}")
     print(f"Dataset Size: {len(dataset)} prompts")
-    print(f"==================================================\n")
+    print("==================================================\n")
 
     correct_intents = 0
     total = len(dataset)
@@ -49,7 +48,10 @@ async def run_evaluation():
         expected_intent = item["expected_intent"]
 
         messages = [
-            AIMessage(role="system", content="You are TaskMate AI. Respond with valid JSON containing intent, confidence, entities."),
+            AIMessage(
+                role="system",
+                content="You are TaskMate AI. Respond with valid JSON containing intent, confidence, entities.",
+            ),
             AIMessage(role="user", content=prompt),
         ]
 
@@ -77,12 +79,12 @@ async def run_evaluation():
     avg_latency = sum(latencies) / len(latencies) if latencies else 0
 
     print("-" * 75)
-    print(f"\nEVALUATION SUMMARY:")
+    print("\nEVALUATION SUMMARY:")
     print(f"Total Cases:     {total}")
     print(f"Passed Intents:  {correct_intents}")
     print(f"Intent Accuracy: {accuracy:.2f}%")
     print(f"Avg Latency:     {avg_latency:.1f}ms")
-    print(f"Baseline Target: >= 85.0%")
+    print("Baseline Target: >= 85.0%")
     print(f"Result:          {'SUCCEEDED' if accuracy >= 85.0 else 'FAILED'}\n")
 
     return accuracy >= 85.0
@@ -91,4 +93,3 @@ async def run_evaluation():
 if __name__ == "__main__":
     success = asyncio.run(run_evaluation())
     sys.exit(0 if success else 1)
-

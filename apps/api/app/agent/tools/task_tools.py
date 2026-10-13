@@ -4,10 +4,10 @@ These tools wrap TaskService methods, allowing the agent
 to create, read, update, and search tasks via natural language.
 """
 
-import uuid
 import logging
+import uuid
 from datetime import date
-from typing import Any, Optional
+from typing import Any
 
 from app.agent.tools.base import AgentTool, ToolContext, ToolPermission, ToolResult
 from app.schemas.task import TaskCreate, TaskUpdate
@@ -96,15 +96,17 @@ class TaskCreateTool(AgentTool):
 
             task_in = TaskCreate(**input_data)
             task = await task_service.create_task(context.user, task_in)
-            return ToolResult.ok({
-                "task_id": str(task.id),
-                "title": task.title,
-                "status": task.status,
-                "priority": task.priority,
-                "due_date": str(task.due_date) if task.due_date else None,
-                "project_id": str(task.project_id) if task.project_id else None,
-                "message": f"Task '{task.title}' created successfully.",
-            })
+            return ToolResult.ok(
+                {
+                    "task_id": str(task.id),
+                    "title": task.title,
+                    "status": task.status,
+                    "priority": task.priority,
+                    "due_date": str(task.due_date) if task.due_date else None,
+                    "project_id": str(task.project_id) if task.project_id else None,
+                    "message": f"Task '{task.title}' created successfully.",
+                }
+            )
         except ValueError as e:
             return ToolResult.fail("VALIDATION_ERROR", str(e))
         except Exception as e:
@@ -229,11 +231,13 @@ class TaskSearchTool(AgentTool):
                 limit=limit,
                 **input_data,
             )
-            return ToolResult.ok({
-                "tasks": [t.model_dump(mode="json") for t in items],
-                "total": total,
-                "returned": len(items),
-            })
+            return ToolResult.ok(
+                {
+                    "tasks": [t.model_dump(mode="json") for t in items],
+                    "total": total,
+                    "returned": len(items),
+                }
+            )
         except Exception as e:
             logger.exception("task.search failed")
             return ToolResult.fail("INTERNAL_ERROR", f"Failed to search tasks: {e}")
@@ -308,13 +312,15 @@ class TaskUpdateTool(AgentTool):
             task = await task_service.update_task(task_id, context.user, task_update)
             if not task:
                 return ToolResult.fail("NOT_FOUND", f"Task {task_id} not found")
-            return ToolResult.ok({
-                "task_id": str(task.id),
-                "title": task.title,
-                "status": task.status,
-                "priority": task.priority,
-                "message": f"Task '{task.title}' updated successfully.",
-            })
+            return ToolResult.ok(
+                {
+                    "task_id": str(task.id),
+                    "title": task.title,
+                    "status": task.status,
+                    "priority": task.priority,
+                    "message": f"Task '{task.title}' updated successfully.",
+                }
+            )
         except ValueError as e:
             return ToolResult.fail("VALIDATION_ERROR", str(e))
         except Exception as e:
@@ -366,12 +372,14 @@ class TaskChangeStatusTool(AgentTool):
             task = await task_service.change_status(task_id, context.user, input_data["status"])
             if not task:
                 return ToolResult.fail("NOT_FOUND", f"Task {task_id} not found")
-            return ToolResult.ok({
-                "task_id": str(task.id),
-                "title": task.title,
-                "status": task.status,
-                "message": f"Task '{task.title}' status changed to {task.status}.",
-            })
+            return ToolResult.ok(
+                {
+                    "task_id": str(task.id),
+                    "title": task.title,
+                    "status": task.status,
+                    "message": f"Task '{task.title}' status changed to {task.status}.",
+                }
+            )
         except ValueError as e:
             return ToolResult.fail("VALIDATION_ERROR", str(e))
         except Exception as e:
@@ -420,17 +428,17 @@ class TaskChangePriorityTool(AgentTool):
 
         try:
             task_id = uuid.UUID(input_data["task_id"])
-            task = await task_service.change_priority(
-                task_id, context.user, input_data["priority"]
-            )
+            task = await task_service.change_priority(task_id, context.user, input_data["priority"])
             if not task:
                 return ToolResult.fail("NOT_FOUND", f"Task {task_id} not found")
-            return ToolResult.ok({
-                "task_id": str(task.id),
-                "title": task.title,
-                "priority": task.priority,
-                "message": f"Task '{task.title}' priority changed to {task.priority}.",
-            })
+            return ToolResult.ok(
+                {
+                    "task_id": str(task.id),
+                    "title": task.title,
+                    "priority": task.priority,
+                    "message": f"Task '{task.title}' priority changed to {task.priority}.",
+                }
+            )
         except ValueError as e:
             return ToolResult.fail("VALIDATION_ERROR", str(e))
         except Exception as e:
@@ -448,4 +456,3 @@ def get_task_tools() -> list[AgentTool]:
         TaskChangeStatusTool(),
         TaskChangePriorityTool(),
     ]
-

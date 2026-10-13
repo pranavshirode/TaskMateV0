@@ -4,19 +4,18 @@ This differs from the Sprint 2 AIOrchestrator by supporting
 multi-step reasoning, native tool calling, and permission checks.
 """
 
+import json
 import logging
 import uuid
-import json
-from typing import Optional, Any
+from typing import Any
 
 from app.agent.permissions import ToolPermissionService
 from app.agent.prompts import AGENT_SYSTEM_PROMPT
 from app.agent.tools.base import ToolContext
 from app.agent.tools.registry import ToolRegistry
 from app.ai.context.builder import ContextBuilder
-from app.ai.providers.base import AIProvider, AIMessage, MessageRole
+from app.ai.providers.base import AIMessage, AIProvider, MessageRole
 from app.core.config import Settings
-from app.models.conversation import Conversation
 from app.models.user import User
 from app.services.agent_execution import AgentExecutionService
 from app.services.conversation import ConversationService
@@ -51,7 +50,7 @@ class AgentOrchestrator:
         self,
         user: User,
         prompt: str,
-        conversation_id: Optional[uuid.UUID] = None,
+        conversation_id: uuid.UUID | None = None,
     ) -> dict[str, Any]:
         """Execute the agent workflow for a user request."""
         # 1. Setup conversation and execution
@@ -62,9 +61,7 @@ class AgentOrchestrator:
         else:
             conversation = await self.conversation_service.create_conversation(user.id, prompt[:50])
 
-        await self.conversation_service.add_message(
-            conversation.id, role="user", content=prompt
-        )
+        await self.conversation_service.add_message(conversation.id, role="user", content=prompt)
 
         execution = await self.execution_service.create_execution(
             user=user,
@@ -78,12 +75,10 @@ class AgentOrchestrator:
         workspace_context = await self.context_builder.build_context(user)
         system_content = f"{AGENT_SYSTEM_PROMPT}\n\nWorkspace Context:\n{workspace_context.formatted_text}"
 
-        messages = [
-            AIMessage(role=MessageRole.SYSTEM, content=system_content)
-        ]
+        messages = [AIMessage(role=MessageRole.SYSTEM, content=system_content)]
 
         # Load recent conversation history
-        # (For simplicity in this implementation, we just use the current prompt, but in reality 
+        # (For simplicity in this implementation, we just use the current prompt, but in reality
         # you'd load the last N messages from DB and convert them to AIMessage)
         messages.append(AIMessage(role=MessageRole.USER, content=prompt))
 
@@ -95,7 +90,7 @@ class AgentOrchestrator:
         try:
             while steps_taken < self.settings.AGENT_MAX_STEPS:
                 steps_taken += 1
-                
+
                 # Call AI
                 response = await self.ai_provider.generate(
                     messages=messages,
@@ -103,11 +98,13 @@ class AgentOrchestrator:
                 )
 
                 # Add assistant message to history
-                messages.append(AIMessage(
-                    role=MessageRole.ASSISTANT,
-                    content=response.content,
-                    tool_calls=response.tool_calls,
-                ))
+                messages.append(
+                    AIMessage(
+                        role=MessageRole.ASSISTANT,
+                        content=response.content,
+                        tool_calls=response.tool_calls,
+                    )
+                )
 
                 if not response.tool_calls:
                     # AI is done, returned text
@@ -127,32 +124,32 @@ class AgentOrchestrator:
                     )
 
                     # Check permission
-                    perm_result = await self.permission_service.check_tool_permission(
-                        user, tool_name, tool_input
-                    )
+                    perm_result = await self.permission_service.check_tool_permission(user, tool_name, tool_input)
 
                     if not perm_result.allowed:
                         error_msg = f"Permission denied: {perm_result.reason}"
                         await self.execution_service.fail_step(step, error_msg, latency_ms=0)
-                        messages.append(AIMessage(
-                            role=MessageRole.TOOL,
-                            content=json.dumps({"error": error_msg}),
-                            tool_call_id=tc.id,
-                            name=tool_name,
-                        ))
+                        messages.append(
+                            AIMessage(
+                                role=MessageRole.TOOL,
+                                content=json.dumps({"error": error_msg}),
+                                tool_call_id=tc.id,
+                                name=tool_name,
+                            )
+                        )
                         continue
 
                     if perm_result.requires_approval:
-                        await self.execution_service.update_execution(
-                            execution, status="WAITING_FOR_APPROVAL"
-                        )
+                        await self.execution_service.update_execution(execution, status="WAITING_FOR_APPROVAL")
                         msg = "This action requires your approval to proceed."
-                        messages.append(AIMessage(
-                            role=MessageRole.TOOL,
-                            content=json.dumps({"status": "WAITING_FOR_APPROVAL", "message": msg}),
-                            tool_call_id=tc.id,
-                            name=tool_name,
-                        ))
+                        messages.append(
+                            AIMessage(
+                                role=MessageRole.TOOL,
+                                content=json.dumps({"status": "WAITING_FOR_APPROVAL", "message": msg}),
+                                tool_call_id=tc.id,
+                                name=tool_name,
+                            )
+                        )
                         final_content = f"I need your approval to run `{tool_name}`."
                         break
 
@@ -161,12 +158,14 @@ class AgentOrchestrator:
                     if not tool:
                         error_msg = f"Tool '{tool_name}' not found."
                         await self.execution_service.fail_step(step, error_msg, latency_ms=0)
-                        messages.append(AIMessage(
-                            role=MessageRole.TOOL,
-                            content=json.dumps({"error": error_msg}),
-                            tool_call_id=tc.id,
-                            name=tool_name,
-                        ))
+                        messages.append(
+                            AIMessage(
+                                role=MessageRole.TOOL,
+                                content=json.dumps({"error": error_msg}),
+                                tool_call_id=tc.id,
+                                name=tool_name,
+                            )
+                        )
                         continue
 
                     context = ToolContext(
@@ -180,23 +179,27 @@ class AgentOrchestrator:
                     result = await tool.execute(tool_input, context)
 
                     if result.success:
-                        summary = f"Success"
+                        summary = "Success"
                         await self.execution_service.complete_step(step, summary, latency_ms=100)
-                        messages.append(AIMessage(
-                            role=MessageRole.TOOL,
-                            content=json.dumps(result.data or {"status": "success"}),
-                            tool_call_id=tc.id,
-                            name=tool_name,
-                        ))
+                        messages.append(
+                            AIMessage(
+                                role=MessageRole.TOOL,
+                                content=json.dumps(result.data or {"status": "success"}),
+                                tool_call_id=tc.id,
+                                name=tool_name,
+                            )
+                        )
                     else:
                         summary = f"Failed: {result.error.get('message') if result.error else 'Unknown error'}"
                         await self.execution_service.fail_step(step, summary, latency_ms=100)
-                        messages.append(AIMessage(
-                            role=MessageRole.TOOL,
-                            content=json.dumps({"error": result.error}),
-                            tool_call_id=tc.id,
-                            name=tool_name,
-                        ))
+                        messages.append(
+                            AIMessage(
+                                role=MessageRole.TOOL,
+                                content=json.dumps({"error": result.error}),
+                                tool_call_id=tc.id,
+                                name=tool_name,
+                            )
+                        )
 
                 if execution.status == "WAITING_FOR_APPROVAL":
                     break
@@ -208,14 +211,12 @@ class AgentOrchestrator:
             if execution.status not in ("WAITING_FOR_APPROVAL", "TIMEOUT", "FAILED"):
                 await self.execution_service.complete_execution(
                     execution,
-                    input_tokens=0, # Need actual usage tracking
+                    input_tokens=0,  # Need actual usage tracking
                     output_tokens=0,
                     total_tokens=0,
                 )
 
-            await self.conversation_service.add_message(
-                conversation.id, role="assistant", content=final_content
-            )
+            await self.conversation_service.add_message(conversation.id, role="assistant", content=final_content)
 
             return {
                 "conversation_id": str(conversation.id),
@@ -233,4 +234,3 @@ class AgentOrchestrator:
                 "status": "FAILED",
                 "message": "An internal error occurred during agent execution.",
             }
-

@@ -28,12 +28,11 @@ async def init_db():
             pool_pre_ping=True,
             echo=(settings.APP_ENV == "development"),
         )
-    async_session_factory = async_sessionmaker(
-        engine, class_=AsyncSession, expire_on_commit=False
-    )
+    async_session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
     if db_url.startswith("sqlite"):
         import app.models  # noqa: F401
         from app.db.base import Base
+
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
     logger.info("Database initialized")

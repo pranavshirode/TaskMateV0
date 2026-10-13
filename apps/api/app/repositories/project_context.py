@@ -1,7 +1,8 @@
 """Repository for Project Context Notes and Explicit Memory."""
+
 from __future__ import annotations
 
-from sqlalchemy import select, and_
+from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.requirements import ProjectContextNote
@@ -50,4 +51,3 @@ class ProjectContextNoteRepository(BaseRepository[ProjectContextNote]):
         )
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
-

@@ -3,36 +3,43 @@
 
 class AIError(Exception):
     """Base error for AI operations."""
+
     pass
 
 
 class AIProviderError(AIError):
     """Error communicating with the AI provider."""
+
     pass
 
 
 class AITimeoutError(AIProviderError):
     """AI provider request timed out."""
+
     pass
 
 
 class AIRateLimitError(AIProviderError):
     """AI provider rate limit exceeded."""
+
     pass
 
 
 class AIAuthenticationError(AIProviderError):
     """AI provider authentication failed."""
+
     pass
 
 
 class AIResponseError(AIError):
     """AI returned an invalid or unparseable response."""
+
     pass
 
 
 class AISchemaValidationError(AIError):
     """AI response failed schema validation."""
+
     pass
 
 
@@ -53,4 +60,5 @@ class AIEntityResolutionError(AIError):
 
 class AIUnavailableError(AIError):
     """AI service is not configured or unavailable."""
+
     pass

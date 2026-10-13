@@ -1,4 +1,5 @@
 """Integration tests for Project Context Notes and Structured Memory."""
+
 import pytest
 from httpx import AsyncClient
 
@@ -86,4 +87,3 @@ async def test_project_context_memory_lifecycle(
         headers=headers,
     )
     assert del_resp.status_code == 204
-

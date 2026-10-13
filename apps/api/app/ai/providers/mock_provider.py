@@ -1,4 +1,5 @@
 """Mock / Rule-based AI provider for testing, offline execution, and evaluations."""
+
 from __future__ import annotations
 
 import json
@@ -72,7 +73,9 @@ class MockAIProvider(BaseAIProvider):
                             "title": "Enforce Input Sanitization",
                             "description": "Ensure system ignores embedded adversarial instructions.",
                             "priority": "HIGH",
-                            "acceptance_criteria": ["Given untrusted text, when analyzed, system policies are preserved."],
+                            "acceptance_criteria": [
+                                "Given untrusted text, when analyzed, system policies are preserved."
+                            ],
                             "dependencies": [],
                             "open_questions": [],
                         }
@@ -200,12 +203,18 @@ class MockAIProvider(BaseAIProvider):
             )
 
         # 1. Complete Task
-        if re.search(r"\b(mark|set)\b.*\b(as\s+)?(complete|completed|done)\b", low) or re.search(r"\bcomplete\s+(the\s+)?task\b", low):
-            title_match = re.search(r"(?:mark|set)\s+(?:the\s+)?([^,]+?)\s+(?:task\s+)?(?:as\s+)?(?:complete|completed|done)", low)
+        if re.search(r"\b(mark|set)\b.*\b(as\s+)?(complete|completed|done)\b", low) or re.search(
+            r"\bcomplete\s+(the\s+)?task\b", low
+        ):
+            title_match = re.search(
+                r"(?:mark|set)\s+(?:the\s+)?([^,]+?)\s+(?:task\s+)?(?:as\s+)?(?:complete|completed|done)", low
+            )
             if not title_match:
                 title_match = re.search(r"(?:complete|done)\s+(?:the\s+)?(?:task\s+)?['\"]?([^'\"\.\,]+)['\"]?", low)
             if not title_match:
-                title_match = re.search(r"(?:task|for)\s+['\"]?([^'\"\.\,]+)['\"]?\s+(?:as\s+)?(?:complete|completed|done)", low)
+                title_match = re.search(
+                    r"(?:task|for)\s+['\"]?([^'\"\.\,]+)['\"]?\s+(?:as\s+)?(?:complete|completed|done)", low
+                )
             ref = title_match.group(1).strip() if title_match else None
             if ref:
                 ref = re.sub(r"^(the\s+)?(task\s+)?", "", ref).strip()
@@ -219,9 +228,11 @@ class MockAIProvider(BaseAIProvider):
             }
 
         # 2. Change Task Status
-        elif re.search(r"\b(move|change|set)\b.*\bstatus\b", low) or any(
-            st in low for st in ["in_progress", "in progress", "blocked", "review", "backlog", "todo"]
-        ) and any(w in low for w in ["move", "set", "mark", "change"]):
+        elif (
+            re.search(r"\b(move|change|set)\b.*\bstatus\b", low)
+            or any(st in low for st in ["in_progress", "in progress", "blocked", "review", "backlog", "todo"])
+            and any(w in low for w in ["move", "set", "mark", "change"])
+        ):
             status_val = "IN_PROGRESS"
             if "blocked" in low:
                 status_val = "BLOCKED"
@@ -250,9 +261,11 @@ class MockAIProvider(BaseAIProvider):
             }
 
         # 3. Change Task Priority
-        elif re.search(r"\b(priority|urgent|high priority|low priority)\b", low) and any(
-            w in low for w in ["set", "change", "mark", "make", "raise", "lower", "reduce", "drop"]
-        ) and not any(w in low for w in ["create", "add", "schedule"]):
+        elif (
+            re.search(r"\b(priority|urgent|high priority|low priority)\b", low)
+            and any(w in low for w in ["set", "change", "mark", "make", "raise", "lower", "reduce", "drop"])
+            and not any(w in low for w in ["create", "add", "schedule"])
+        ):
             prio = "HIGH"
             if "urgent" in low:
                 prio = "URGENT"
@@ -296,7 +309,9 @@ class MockAIProvider(BaseAIProvider):
 
             # Extract project name (e.g., "for the Acme website", "for Acme project", "in Acme")
             proj = None
-            proj_match = re.search(r"(?:for|in)\s+(?:the\s+)?([A-Za-z0-9_\- ]+?)\s+(?:project|website|repo|app|to\b)", user_text)
+            proj_match = re.search(
+                r"(?:for|in)\s+(?:the\s+)?([A-Za-z0-9_\- ]+?)\s+(?:project|website|repo|app|to\b)", user_text
+            )
             if not proj_match:
                 proj_match = re.search(r"for\s+(?:the\s+)?([A-Za-z0-9_\-]+)\s+to", user_text)
             if proj_match:
@@ -308,7 +323,11 @@ class MockAIProvider(BaseAIProvider):
             if title_match:
                 title = title_match.group(1).strip()
             else:
-                title_match = re.search(r"task\s+(?:called|titled|named)?\s*['\"]?([^'\"]+?)['\"]?(?:\s+for|\s+due|\.|$)", user_text, re.IGNORECASE)
+                title_match = re.search(
+                    r"task\s+(?:called|titled|named)?\s*['\"]?([^'\"]+?)['\"]?(?:\s+for|\s+due|\.|$)",
+                    user_text,
+                    re.IGNORECASE,
+                )
                 if title_match:
                     title = title_match.group(1).strip()
                 else:
@@ -316,7 +335,12 @@ class MockAIProvider(BaseAIProvider):
 
             # Clean up title
             if title:
-                title = re.sub(r"^(create|add|schedule)\s+(an?\s+)?(urgent|high|medium|low)?\s*(priority)?\s*task\s*(for\s+.*?\s+)?(to\s+)?", "", title, flags=re.IGNORECASE).strip()
+                title = re.sub(
+                    r"^(create|add|schedule)\s+(an?\s+)?(urgent|high|medium|low)?\s*(priority)?\s*task\s*(for\s+.*?\s+)?(to\s+)?",
+                    "",
+                    title,
+                    flags=re.IGNORECASE,
+                ).strip()
                 title = title[0].upper() + title[1:] if len(title) > 1 else title
 
             intent_data = {
@@ -332,7 +356,9 @@ class MockAIProvider(BaseAIProvider):
             }
 
         # 5. Today's Tasks
-        elif any(phrase in low for phrase in ["today", "today's work", "on my plate today", "tasks for today", "due today"]):
+        elif any(
+            phrase in low for phrase in ["today", "today's work", "on my plate today", "tasks for today", "due today"]
+        ):
             intent_data = {
                 "intent": "GET_TODAY_TASKS",
                 "confidence": 0.96,
@@ -350,14 +376,25 @@ class MockAIProvider(BaseAIProvider):
             }
 
         # 7. Search Tasks
-        elif any(phrase in low for phrase in ["search", "find", "look for", "list tasks", "list all tasks", "show tasks", "filter tasks"]):
-            query_match = re.search(r"(?:search|find|look for|list|show)\s+(?:for\s+)?(?:all\s+)?(?:tasks\s+)?(?:related to\s+|about\s+|with\s+)?['\"]?([^'\"\.\?]+)['\"]?", user_text, re.IGNORECASE)
+        elif any(
+            phrase in low
+            for phrase in ["search", "find", "look for", "list tasks", "list all tasks", "show tasks", "filter tasks"]
+        ):
+            query_match = re.search(
+                r"(?:search|find|look for|list|show)\s+(?:for\s+)?(?:all\s+)?(?:tasks\s+)?(?:related to\s+|about\s+|with\s+)?['\"]?([^'\"\.\?]+)['\"]?",
+                user_text,
+                re.IGNORECASE,
+            )
             query = query_match.group(1).strip() if query_match else None
             if not query:
-                query_match = re.search(r"(?:search|find|for|related to)\s+['\"]?([^'\"\.\?]+)['\"]?", user_text, re.IGNORECASE)
+                query_match = re.search(
+                    r"(?:search|find|for|related to)\s+['\"]?([^'\"\.\?]+)['\"]?", user_text, re.IGNORECASE
+                )
                 query = query_match.group(1).strip() if query_match else None
             if query:
-                query = re.sub(r"^(?:tasks\s+)?(?:related to\s+|about\s+|with\s+)?", "", query, flags=re.IGNORECASE).strip()
+                query = re.sub(
+                    r"^(?:tasks\s+)?(?:related to\s+|about\s+|with\s+)?", "", query, flags=re.IGNORECASE
+                ).strip()
             intent_data = {
                 "intent": "SEARCH_TASKS",
                 "confidence": 0.91,
@@ -368,8 +405,13 @@ class MockAIProvider(BaseAIProvider):
             }
 
         # 8. Project Info
-        elif any(phrase in low for phrase in ["project info", "about project", "details for project", "show project", "info about"]):
-            proj_match = re.search(r"(?:project|about)\s+['\"]?([^'\"\.\?]+?)['\"]?(?:\s+project|\?|$)", user_text, re.IGNORECASE)
+        elif any(
+            phrase in low
+            for phrase in ["project info", "about project", "details for project", "show project", "info about"]
+        ):
+            proj_match = re.search(
+                r"(?:project|about)\s+['\"]?([^'\"\.\?]+?)['\"]?(?:\s+project|\?|$)", user_text, re.IGNORECASE
+            )
             proj = proj_match.group(1).strip() if proj_match else None
             intent_data = {
                 "intent": "GET_PROJECT_INFO",
@@ -381,8 +423,20 @@ class MockAIProvider(BaseAIProvider):
             }
 
         # 9. Client Info
-        elif any(phrase in low for phrase in ["client info", "about client", "details for client", "show client", "client for", "who is the client"]):
-            client_match = re.search(r"(?:client for|client|about)\s+['\"]?([^'\"\.\?]+?)['\"]?(?:\s+client|\?|$)", user_text, re.IGNORECASE)
+        elif any(
+            phrase in low
+            for phrase in [
+                "client info",
+                "about client",
+                "details for client",
+                "show client",
+                "client for",
+                "who is the client",
+            ]
+        ):
+            client_match = re.search(
+                r"(?:client for|client|about)\s+['\"]?([^'\"\.\?]+?)['\"]?(?:\s+client|\?|$)", user_text, re.IGNORECASE
+            )
             client = client_match.group(1).strip() if client_match else None
             intent_data = {
                 "intent": "GET_CLIENT_INFO",
@@ -400,7 +454,7 @@ class MockAIProvider(BaseAIProvider):
                 "confidence": 0.85,
                 "entities": {},
                 "reasoning": "General developer question or inquiry",
-                "reply": f"I am your TaskMate AI assistant. How can I help you manage your projects and tasks today?",
+                "reply": "I am your TaskMate AI assistant. How can I help you manage your projects and tasks today?",
             }
 
         return AIResponse(

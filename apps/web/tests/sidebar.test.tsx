@@ -12,7 +12,9 @@ jest.mock("@/lib/api-client", () => ({
   apiClient: {
     getToken: jest.fn().mockReturnValue(null),
     clearToken: jest.fn(),
-    getMe: jest.fn().mockResolvedValue({ id: "u1", name: "Dev", email: "dev@test.com" }),
+    getMe: jest
+      .fn()
+      .mockResolvedValue({ id: "u1", name: "Dev", email: "dev@test.com" }),
   },
 }));
 

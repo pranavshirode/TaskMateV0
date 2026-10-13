@@ -1,21 +1,23 @@
 from datetime import date
+
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.db.session import get_db
+
 from app.api.deps import get_current_user
+from app.db.session import get_db
+from app.models.enums import TaskPriority, TaskStatus
 from app.models.user import User
-from app.models.enums import TaskStatus, TaskPriority
-from app.services.task import TaskService
-from app.services.task_event import TaskEventService
+from app.schemas.common import PaginatedResponse
 from app.schemas.task import (
     TaskCreate,
-    TaskUpdate,
+    TaskPriorityUpdate,
     TaskResponse,
     TaskStatusUpdate,
-    TaskPriorityUpdate,
+    TaskUpdate,
 )
 from app.schemas.task_event import TaskEventResponse
-from app.schemas.common import PaginatedResponse
+from app.services.task import TaskService
+from app.services.task_event import TaskEventService
 
 router = APIRouter()
 

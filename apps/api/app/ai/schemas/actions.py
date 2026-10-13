@@ -1,8 +1,10 @@
 """Action schemas for validated, resolved AI actions ready for execution."""
+
 from __future__ import annotations
 
 import enum
 from datetime import date
+
 from pydantic import BaseModel, Field
 
 
@@ -69,5 +71,6 @@ class GetClientInfoAction(BaseModel):
 
 class ResolvedAction(BaseModel):
     """An action that has been validated and resolved against the database."""
+
     type: ActionType
     parameters: dict = Field(default_factory=dict)

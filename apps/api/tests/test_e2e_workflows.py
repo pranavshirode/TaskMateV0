@@ -5,6 +5,7 @@ Workflow 1: Developer registers → creates client → creates project → creat
 Workflow 2: Developer creates multiple tasks → filters/searches → archives → verifies archived hidden
 Workflow 3: Developer creates project → adds repository → creates tasks → views project detail with summary
 """
+
 import pytest
 
 
@@ -14,41 +15,40 @@ class TestWorkflow1_FullDevLoop:
     @pytest.mark.asyncio
     async def test_full_developer_workflow(self, client):
         # 1. Register
-        reg = await client.post("/api/v1/auth/register", json={
-            "name": "Dev User", "email": "dev@workflow.com", "password": "workflow123"
-        })
+        reg = await client.post(
+            "/api/v1/auth/register", json={"name": "Dev User", "email": "dev@workflow.com", "password": "workflow123"}
+        )
         assert reg.status_code == 201
 
         # 2. Login
-        login = await client.post("/api/v1/auth/login", json={
-            "email": "dev@workflow.com", "password": "workflow123"
-        })
+        login = await client.post("/api/v1/auth/login", json={"email": "dev@workflow.com", "password": "workflow123"})
         assert login.status_code == 200
         token = login.json()["access_token"]
         client.headers["Authorization"] = f"Bearer {token}"
 
         # 3. Create client
-        cl = await client.post("/api/v1/clients", json={
-            "name": "Acme Corp", "company_name": "Acme Inc."
-        })
+        cl = await client.post("/api/v1/clients", json={"name": "Acme Corp", "company_name": "Acme Inc."})
         assert cl.status_code == 201
         client_id = cl.json()["id"]
 
         # 4. Create project
-        proj = await client.post("/api/v1/projects", json={
-            "name": "Acme Dashboard", "client_id": client_id, "status": "ACTIVE"
-        })
+        proj = await client.post(
+            "/api/v1/projects", json={"name": "Acme Dashboard", "client_id": client_id, "status": "ACTIVE"}
+        )
         assert proj.status_code == 201
         project_id = proj.json()["id"]
 
         # 5. Create task
-        task = await client.post("/api/v1/tasks", json={
-            "title": "Build login page",
-            "project_id": project_id,
-            "client_id": client_id,
-            "priority": "HIGH",
-            "status": "TODO",
-        })
+        task = await client.post(
+            "/api/v1/tasks",
+            json={
+                "title": "Build login page",
+                "project_id": project_id,
+                "client_id": client_id,
+                "priority": "HIGH",
+                "status": "TODO",
+            },
+        )
         assert task.status_code == 201
         task_id = task.json()["id"]
 
@@ -83,11 +83,14 @@ class TestWorkflow2_FilterAndArchive:
     async def test_filter_search_archive_workflow(self, auth_client):
         # Create multiple tasks
         for i in range(5):
-            await auth_client.post("/api/v1/tasks", json={
-                "title": f"Workflow Task {i}",
-                "priority": "HIGH" if i % 2 == 0 else "LOW",
-                "status": "TODO" if i < 3 else "BACKLOG",
-            })
+            await auth_client.post(
+                "/api/v1/tasks",
+                json={
+                    "title": f"Workflow Task {i}",
+                    "priority": "HIGH" if i % 2 == 0 else "LOW",
+                    "status": "TODO" if i < 3 else "BACKLOG",
+                },
+            )
 
         # Filter by status
         res = await auth_client.get("/api/v1/tasks?status=TODO")
@@ -123,17 +126,20 @@ class TestWorkflow3_ProjectWithReposAndTasks:
     @pytest.mark.asyncio
     async def test_project_repo_task_workflow(self, auth_client):
         # Create project
-        proj = await auth_client.post("/api/v1/projects", json={
-            "name": "Full Stack App", "status": "ACTIVE"
-        })
+        proj = await auth_client.post("/api/v1/projects", json={"name": "Full Stack App", "status": "ACTIVE"})
         assert proj.status_code == 201
         project_id = proj.json()["id"]
 
         # Add repository
-        repo = await auth_client.post(f"/api/v1/projects/{project_id}/repositories", json={
-            "name": "fullstack-app", "url": "https://github.com/dev/fullstack-app",
-            "provider": "GITHUB", "default_branch": "main"
-        })
+        repo = await auth_client.post(
+            f"/api/v1/projects/{project_id}/repositories",
+            json={
+                "name": "fullstack-app",
+                "url": "https://github.com/dev/fullstack-app",
+                "provider": "GITHUB",
+                "default_branch": "main",
+            },
+        )
         assert repo.status_code == 201
         repo_id = repo.json()["id"]
 
@@ -143,9 +149,7 @@ class TestWorkflow3_ProjectWithReposAndTasks:
 
         # Create tasks for the project
         for title, status in [("Setup DB", "COMPLETED"), ("Build API", "IN_PROGRESS"), ("Write Tests", "TODO")]:
-            await auth_client.post("/api/v1/tasks", json={
-                "title": title, "project_id": project_id, "status": status
-            })
+            await auth_client.post("/api/v1/tasks", json={"title": title, "project_id": project_id, "status": status})
 
         # Get project detail - should have task_summary
         detail = await auth_client.get(f"/api/v1/projects/{project_id}")

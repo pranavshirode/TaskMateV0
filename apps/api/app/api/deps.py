@@ -9,6 +9,7 @@ from app.services.auth import AuthService
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
+
 async def get_current_user(
     token: str = Depends(oauth2_scheme),
     db: AsyncSession = Depends(get_db),
@@ -34,15 +35,15 @@ async def get_current_user(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found",
-        )
+        ) from None
 
 
-from app.repositories.github_integration import GitHubIntegrationRepository
-from app.services.github_integration import GitHubIntegrationService
 from app.repositories.agent_execution import AgentExecutionRepository
-from app.services.agent_execution import AgentExecutionService
 from app.repositories.conversation import ConversationRepository
+from app.repositories.github_integration import GitHubIntegrationRepository
+from app.services.agent_execution import AgentExecutionService
 from app.services.conversation import ConversationService
+from app.services.github_integration import GitHubIntegrationService
 
 
 async def get_github_integration_service(
@@ -66,15 +67,15 @@ async def get_conversation_service(
     return ConversationService(repo)
 
 
-from app.agent.tools.registry import create_default_registry
-from app.agent.permissions import ToolPermissionService
 from app.agent.orchestrator import AgentOrchestrator
-from app.ai.providers import get_ai_provider
+from app.agent.permissions import ToolPermissionService
+from app.agent.tools.registry import create_default_registry
 from app.ai.context.builder import ContextBuilder
-from app.services.task import TaskService
-from app.services.project import ProjectService
-from app.services.client import ClientService
+from app.ai.providers import get_ai_provider
 from app.core.config import get_settings
+from app.services.client import ClientService
+from app.services.project import ProjectService
+from app.services.task import TaskService
 
 
 async def get_agent_orchestrator(
@@ -84,9 +85,7 @@ async def get_agent_orchestrator(
     tool_registry = create_default_registry()
     github_service = GitHubIntegrationService(GitHubIntegrationRepository(db))
     project_service = ProjectService(db)
-    permission_service = ToolPermissionService(
-        tool_registry, project_service, github_service, db, settings
-    )
+    permission_service = ToolPermissionService(tool_registry, project_service, github_service, db, settings)
     ai_provider = get_ai_provider()
     context_builder = ContextBuilder(db)
     execution_service = AgentExecutionService(AgentExecutionRepository(db))
@@ -108,9 +107,9 @@ async def get_agent_orchestrator(
     )
 
 
-from app.services.requirements_pipeline import RequirementsService
-from app.services.project_context import ProjectContextService
 from app.services.client_request import ClientRequestService
+from app.services.project_context import ProjectContextService
+from app.services.requirements_pipeline import RequirementsService
 from app.services.workflow_automation import WorkflowAutomationService
 
 

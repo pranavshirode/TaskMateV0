@@ -1,11 +1,16 @@
 import pytest
-from app.models.enums import TaskStatus, TaskPriority
+
+from app.models.enums import TaskPriority, TaskStatus
+
 
 @pytest.mark.asyncio
 async def test_create_task(auth_client):
-    response = await auth_client.post("/api/v1/tasks/", json={"title": "New Task", "status": "TODO", "priority": "MEDIUM"})
+    response = await auth_client.post(
+        "/api/v1/tasks/", json={"title": "New Task", "status": "TODO", "priority": "MEDIUM"}
+    )
     assert response.status_code == 201
     assert response.json()["title"] == "New Task"
+
 
 @pytest.mark.asyncio
 async def test_create_task_with_project(auth_client, create_test_project):
@@ -15,15 +20,17 @@ async def test_create_task_with_project(auth_client, create_test_project):
     assert response.status_code == 201
     assert response.json()["project_id"] == p.id
 
+
 @pytest.mark.asyncio
 async def test_create_task_with_labels(auth_client):
     response = await auth_client.post("/api/v1/tasks/", json={"title": "Labeled Task", "labels": ["bug", "urgent"]})
     assert response.status_code == 201
     data = response.json()
     assert "labels" in data
-    label_names = [l["name"] for l in data.get("labels", [])]
+    label_names = [lbl["name"] for lbl in data.get("labels", [])]
     if label_names:
         assert "bug" in label_names
+
 
 @pytest.mark.asyncio
 async def test_list_tasks(auth_client, create_test_task):
@@ -34,6 +41,7 @@ async def test_list_tasks(auth_client, create_test_task):
     assert response.status_code == 200
     assert response.json()["total"] >= 2
 
+
 @pytest.mark.asyncio
 async def test_get_task(auth_client, create_test_task):
     user_id = auth_client._test_user.id
@@ -41,6 +49,7 @@ async def test_get_task(auth_client, create_test_task):
     response = await auth_client.get(f"/api/v1/tasks/{t.id}")
     assert response.status_code == 200
     assert response.json()["id"] == t.id
+
 
 @pytest.mark.asyncio
 async def test_update_task(auth_client, create_test_task):
@@ -50,6 +59,7 @@ async def test_update_task(auth_client, create_test_task):
     assert response.status_code == 200
     assert response.json()["title"] == "Updated Title"
 
+
 @pytest.mark.asyncio
 async def test_archive_task(auth_client, create_test_task):
     user_id = auth_client._test_user.id
@@ -58,6 +68,7 @@ async def test_archive_task(auth_client, create_test_task):
     assert response.status_code == 200
     assert response.json()["archived_at"] is not None
 
+
 @pytest.mark.asyncio
 async def test_change_task_status(auth_client, create_test_task):
     user_id = auth_client._test_user.id
@@ -65,6 +76,7 @@ async def test_change_task_status(auth_client, create_test_task):
     response = await auth_client.patch(f"/api/v1/tasks/{t.id}/status", json={"status": "IN_PROGRESS"})
     assert response.status_code == 200
     assert response.json()["status"] == "IN_PROGRESS"
+
 
 @pytest.mark.asyncio
 async def test_change_task_status_creates_event(auth_client, create_test_task):
@@ -77,6 +89,7 @@ async def test_change_task_status_creates_event(auth_client, create_test_task):
     assert len(events) >= 1
     assert any(e["event_type"] == "STATUS_CHANGED" for e in events)
 
+
 @pytest.mark.asyncio
 async def test_change_task_priority(auth_client, create_test_task):
     user_id = auth_client._test_user.id
@@ -84,6 +97,7 @@ async def test_change_task_priority(auth_client, create_test_task):
     response = await auth_client.patch(f"/api/v1/tasks/{t.id}/priority", json={"priority": "URGENT"})
     assert response.status_code == 200
     assert response.json()["priority"] == "URGENT"
+
 
 @pytest.mark.asyncio
 async def test_filter_tasks_by_status(auth_client, create_test_task):
@@ -95,6 +109,7 @@ async def test_filter_tasks_by_status(auth_client, create_test_task):
     assert len(items) >= 1
     assert all(t["status"] == "BLOCKED" for t in items)
 
+
 @pytest.mark.asyncio
 async def test_filter_tasks_by_priority(auth_client, create_test_task):
     user_id = auth_client._test_user.id
@@ -102,6 +117,7 @@ async def test_filter_tasks_by_priority(auth_client, create_test_task):
     response = await auth_client.get("/api/v1/tasks/?priority=URGENT")
     assert response.status_code == 200
     assert response.json()["total"] >= 1
+
 
 @pytest.mark.asyncio
 async def test_filter_tasks_by_project(auth_client, create_test_task, create_test_project):
@@ -112,6 +128,7 @@ async def test_filter_tasks_by_project(auth_client, create_test_task, create_tes
     assert response.status_code == 200
     assert response.json()["total"] == 1
 
+
 @pytest.mark.asyncio
 async def test_search_tasks(auth_client, create_test_task):
     user_id = auth_client._test_user.id
@@ -119,6 +136,7 @@ async def test_search_tasks(auth_client, create_test_task):
     response = await auth_client.get("/api/v1/tasks/?search=Unicorn")
     assert response.status_code == 200
     assert response.json()["total"] >= 1
+
 
 @pytest.mark.asyncio
 async def test_task_pagination(auth_client, create_test_task):
@@ -130,6 +148,7 @@ async def test_task_pagination(auth_client, create_test_task):
     data = response.json()
     assert len(data["items"]) == 2
     assert data["total"] >= 5
+
 
 @pytest.mark.asyncio
 async def test_task_data_isolation(auth_client, create_test_task, create_test_user):

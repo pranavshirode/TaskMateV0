@@ -1,13 +1,14 @@
 """GitHub API client using httpx."""
 
+from typing import List
+
 import httpx
-from typing import List, Optional
 
 from app.integrations.github.schemas import (
-    GitHubUser,
-    GitHubRepository,
     GitHubIssue,
     GitHubPullRequest,
+    GitHubRepository,
+    GitHubUser,
 )
 
 
@@ -26,17 +27,13 @@ class GitHubClient:
 
     async def get_authenticated_user(self) -> GitHubUser:
         async with httpx.AsyncClient() as client:
-            response = await client.get(
-                f"{self.BASE_URL}/user", headers=self.headers
-            )
+            response = await client.get(f"{self.BASE_URL}/user", headers=self.headers)
             response.raise_for_status()
             return GitHubUser(**response.json())
 
     async def get_repository(self, owner: str, repo: str) -> GitHubRepository:
         async with httpx.AsyncClient() as client:
-            response = await client.get(
-                f"{self.BASE_URL}/repos/{owner}/{repo}", headers=self.headers
-            )
+            response = await client.get(f"{self.BASE_URL}/repos/{owner}/{repo}", headers=self.headers)
             response.raise_for_status()
             return GitHubRepository(**response.json())
 
@@ -88,4 +85,3 @@ class GitHubClient:
             )
             response.raise_for_status()
             return [GitHubPullRequest(**pr) for pr in response.json()]
-

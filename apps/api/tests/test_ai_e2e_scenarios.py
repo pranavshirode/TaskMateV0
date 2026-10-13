@@ -8,6 +8,7 @@ Verifies the 6 end-to-end flows:
 5. Project & client information retrieval
 6. Disambiguation and prompt injection security defense
 """
+
 import pytest
 from httpx import AsyncClient
 
@@ -21,9 +22,7 @@ async def test_scenario_1_create_task_natural_language(auth_client: AsyncClient)
     # User sends prompt
     chat_resp = await auth_client.post(
         "/api/v1/ai/chat",
-        json={
-            "message": "Create a high priority task for Acme website to fix the login bug due tomorrow"
-        },
+        json={"message": "Create a high priority task for Acme website to fix the login bug due tomorrow"},
     )
     assert chat_resp.status_code == 200
     data = chat_resp.json()
@@ -43,9 +42,7 @@ async def test_scenario_1_create_task_natural_language(auth_client: AsyncClient)
 @pytest.mark.asyncio
 async def test_scenario_2_complete_task_and_status_change(auth_client: AsyncClient):
     # Create task
-    t_resp = await auth_client.post(
-        "/api/v1/tasks/", json={"title": "Fix login bug", "status": "IN_PROGRESS"}
-    )
+    t_resp = await auth_client.post("/api/v1/tasks/", json={"title": "Fix login bug", "status": "IN_PROGRESS"})
     assert t_resp.status_code == 201
     task_id = t_resp.json()["id"]
 
@@ -138,4 +135,3 @@ async def test_scenario_6_security_and_prompt_injection_defense(auth_client: Asy
     data = inject_resp.json()
     assert data["intent"] == "GENERAL_QUESTION"
     assert "cannot execute" in data["message"].lower() or "assistant" in data["message"].lower()
-

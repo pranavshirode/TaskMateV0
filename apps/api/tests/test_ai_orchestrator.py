@@ -1,4 +1,5 @@
 import pytest
+
 from app.ai.providers.mock_provider import MockAIProvider
 from app.ai.services.orchestrator import AIOrchestrator
 from app.models.enums import TaskPriority, TaskStatus
@@ -23,7 +24,11 @@ async def test_orchestrator_create_task(db_session, create_test_user):
     assert response.intent == "CREATE_TASK"
     assert len(response.actions) == 1
     assert response.actions[0].type == "TASK_CREATED"
-    assert "Fix the login bug" in response.message or "Fix login bug" in response.message or "login bug" in response.message.lower()
+    assert (
+        "Fix the login bug" in response.message
+        or "Fix login bug" in response.message
+        or "login bug" in response.message.lower()
+    )
 
     # Verify task was actually created in DB via service
     task_service = TaskService(db_session)
@@ -37,9 +42,7 @@ async def test_orchestrator_create_task(db_session, create_test_user):
 async def test_orchestrator_complete_task(db_session, create_test_user):
     user, _ = await create_test_user("orch_comp@example.com")
     task_service = TaskService(db_session)
-    task = await task_service.create(
-        user.id, TaskCreate(title="Fix login bug", status=TaskStatus.IN_PROGRESS)
-    )
+    task = await task_service.create(user.id, TaskCreate(title="Fix login bug", status=TaskStatus.IN_PROGRESS))
 
     orchestrator = AIOrchestrator(db=db_session, provider=MockAIProvider())
     response = await orchestrator.chat(
@@ -67,4 +70,3 @@ async def test_orchestrator_today_tasks(db_session, create_test_user):
 
     assert response.intent == "GET_TODAY_TASKS"
     assert "today" in response.message.lower()
-

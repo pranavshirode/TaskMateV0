@@ -1,16 +1,16 @@
 """Pydantic schemas for GitHub resources."""
 
-from typing import Optional, List
 from datetime import datetime
+
 from pydantic import BaseModel
 
 
 class GitHubUser(BaseModel):
     id: int
     login: str
-    avatar_url: Optional[str] = None
-    name: Optional[str] = None
-    email: Optional[str] = None
+    avatar_url: str | None = None
+    name: str | None = None
+    email: str | None = None
 
 
 class GitHubRepository(BaseModel):
@@ -19,7 +19,7 @@ class GitHubRepository(BaseModel):
     full_name: str
     private: bool
     html_url: str
-    description: Optional[str] = None
+    description: str | None = None
     default_branch: str
 
 
@@ -30,7 +30,7 @@ class GitHubIssue(BaseModel):
     html_url: str
     created_at: datetime
     updated_at: datetime
-    body: Optional[str] = None
+    body: str | None = None
     user: GitHubUser
 
 
@@ -41,7 +41,6 @@ class GitHubPullRequest(BaseModel):
     html_url: str
     created_at: datetime
     updated_at: datetime
-    body: Optional[str] = None
+    body: str | None = None
     user: GitHubUser
-    merged: Optional[bool] = None
-
+    merged: bool | None = None

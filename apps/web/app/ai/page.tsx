@@ -2,7 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { apiClient, type Conversation, type AIChatAction } from "@/lib/api-client";
+import {
+  apiClient,
+  type Conversation,
+  type AIChatAction,
+} from "@/lib/api-client";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 interface Message {
@@ -64,7 +68,9 @@ export default function AIAssistantPage() {
       const detail = await apiClient.getAiConversation(id);
       setMessages((detail.messages as Message[]) || []);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Failed to load conversation messages");
+      setError(
+        e instanceof Error ? e.message : "Failed to load conversation messages"
+      );
     } finally {
       setLoadingHistory(false);
     }
@@ -111,7 +117,11 @@ export default function AIAssistantPage() {
       };
       setMessages((prev) => [...prev, botMsg]);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Failed to communicate with TaskMate AI");
+      setError(
+        e instanceof Error
+          ? e.message
+          : "Failed to communicate with TaskMate AI"
+      );
     } finally {
       setLoading(false);
     }
@@ -126,7 +136,9 @@ export default function AIAssistantPage() {
       }
       loadConversations();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to delete conversation");
+      setError(
+        err instanceof Error ? err.message : "Failed to delete conversation"
+      );
     }
   };
 
@@ -165,7 +177,9 @@ export default function AIAssistantPage() {
                   }`}
                 >
                   <span className="truncate flex-1">
-                    {c.last_message ? c.last_message.slice(0, 28) + "..." : "Conversation"}
+                    {c.last_message
+                      ? c.last_message.slice(0, 28) + "..."
+                      : "Conversation"}
                   </span>
                   <button
                     onClick={(e) => handleDeleteConversation(c.id, e)}
@@ -197,7 +211,8 @@ export default function AIAssistantPage() {
               <div>
                 <h3 className="text-xl font-bold">How can I help you today?</h3>
                 <p className="text-sm text-[var(--text-muted)] mt-1">
-                  Manage your tasks, projects, deadlines, and workload with natural language.
+                  Manage your tasks, projects, deadlines, and workload with
+                  natural language.
                 </p>
               </div>
 
@@ -240,7 +255,11 @@ export default function AIAssistantPage() {
                           className="flex items-center justify-between text-xs bg-black/20 p-2 rounded-lg"
                         >
                           <div className="flex items-center gap-2">
-                            <span className={act.success ? "text-green-400" : "text-red-400"}>
+                            <span
+                              className={
+                                act.success ? "text-green-400" : "text-red-400"
+                              }
+                            >
                               {act.success ? "✓" : "✗"}
                             </span>
                             <span>{act.message}</span>
@@ -282,7 +301,9 @@ export default function AIAssistantPage() {
                 <div className="scale-75 -ml-1">
                   <LoadingSpinner />
                 </div>
-                <span className="text-xs text-[var(--text-muted)]">TaskMate is thinking...</span>
+                <span className="text-xs text-[var(--text-muted)]">
+                  TaskMate is thinking...
+                </span>
               </div>
             </div>
           )}
@@ -326,4 +347,3 @@ export default function AIAssistantPage() {
     </div>
   );
 }
-

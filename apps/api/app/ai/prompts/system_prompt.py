@@ -1,4 +1,5 @@
 """Prompt management for TaskMate AI."""
+
 from __future__ import annotations
 
 PROMPT_VERSION = "2.0.0"
@@ -65,4 +66,3 @@ You must respond with valid JSON containing:
 def build_system_prompt(workspace_context_text: str) -> str:
     """Format system prompt with current user workspace context."""
     return SYSTEM_PROMPT_TEMPLATE.format(workspace_context=workspace_context_text)
-

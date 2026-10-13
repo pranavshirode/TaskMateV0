@@ -1,7 +1,10 @@
 from datetime import date
+
 from pydantic import BaseModel
-from app.schemas.task import TaskResponse
+
 from app.schemas.project import ProjectResponse
+from app.schemas.task import TaskResponse
+
 
 class DashboardResponse(BaseModel):
     date: date

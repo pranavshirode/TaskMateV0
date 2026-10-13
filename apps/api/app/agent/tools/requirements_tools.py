@@ -1,7 +1,9 @@
 """Agent tools for Requirements Analysis inspection."""
+
 from __future__ import annotations
 
 from typing import Any
+
 from app.agent.tools.base import BaseTool, ToolResult
 from app.repositories.requirements import RequirementsAnalysisRepository
 
@@ -88,4 +90,3 @@ class RequirementsListProjectTool(BaseTool):
         ]
 
         return ToolResult(success=True, data={"analyses": data, "count": len(data)})
-

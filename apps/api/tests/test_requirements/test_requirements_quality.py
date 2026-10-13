@@ -1,5 +1,5 @@
 """Unit and integration tests for AI Requirements Analysis quality, dynamic decomposition, and validation."""
-import pytest
+
 from app.ai.extractors.requirements_analyzer import (
     analyze_brief_dynamically,
     clean_metadata_leakage,
@@ -196,4 +196,3 @@ def test_validation_and_sanitization_engine():
     # Check NFRs were restored
     assert len(sanitized["non_functional_requirements"]) >= 3
     assert len(sanitized["clarification_questions"]) >= 1
-

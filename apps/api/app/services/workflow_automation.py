@@ -1,13 +1,13 @@
 """Workflow Automation Service for Daily Summaries, Consistency, and Audit Logging."""
+
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.errors import NotFoundError, ForbiddenError
+from app.core.errors import ForbiddenError
 from app.models.enums import (
     AutomationType,
     ClarificationStatus,
@@ -16,20 +16,15 @@ from app.models.enums import (
 )
 from app.models.requirements import (
     AutomationExecution,
-    ClarificationQuestion,
-    Requirement,
-    RequirementsAnalysis,
-    RequirementTaskLink,
 )
-from app.models.task import Task
 from app.repositories.automation import AutomationExecutionRepository
 from app.repositories.project import ProjectRepository
-from app.repositories.task import TaskRepository
 from app.repositories.requirements import (
     ClarificationQuestionRepository,
     RequirementRepository,
     RequirementsAnalysisRepository,
 )
+from app.repositories.task import TaskRepository
 from app.schemas.requirements import DailyProjectSummaryResponse
 
 
@@ -43,9 +38,7 @@ class WorkflowAutomationService:
         self.req_repo = RequirementRepository(db)
         self.question_repo = ClarificationQuestionRepository(db)
 
-    async def generate_daily_project_summary(
-        self, user_id: str, project_id: str
-    ) -> DailyProjectSummaryResponse:
+    async def generate_daily_project_summary(self, user_id: str, project_id: str) -> DailyProjectSummaryResponse:
         project = await self.project_repo.get_by_id(project_id)
         if not project or str(project.user_id) != user_id:
             raise ForbiddenError("Project not found or not owned by user")
@@ -56,9 +49,7 @@ class WorkflowAutomationService:
         next_week = today + timedelta(days=7)
 
         # 1. Fetch real tasks for this project
-        tasks, _ = await self.task_repo.list_by_user(
-            user_id=user_id, project_id=project_id, page=1, page_size=100
-        )
+        tasks, _ = await self.task_repo.list_by_user(user_id=user_id, project_id=project_id, page=1, page_size=100)
 
         completed_recently = []
         in_progress = []
@@ -94,22 +85,30 @@ class WorkflowAutomationService:
 
         for a in analyses:
             for r in a.requirements:
-                if r.status not in (RequirementStatus.APPROVED, RequirementStatus.IMPLEMENTED, RequirementStatus.REJECTED):
-                    unresolved_reqs.append({
-                        "id": r.id,
-                        "key": r.key,
-                        "title": r.title,
-                        "status": r.status.value,
-                        "priority": r.priority,
-                    })
+                if r.status not in (
+                    RequirementStatus.APPROVED,
+                    RequirementStatus.IMPLEMENTED,
+                    RequirementStatus.REJECTED,
+                ):
+                    unresolved_reqs.append(
+                        {
+                            "id": r.id,
+                            "key": r.key,
+                            "title": r.title,
+                            "status": r.status.value,
+                            "priority": r.priority,
+                        }
+                    )
             for q in a.questions:
                 if q.status == ClarificationStatus.UNRESOLVED:
-                    pending_questions.append({
-                        "id": q.id,
-                        "question_key": q.question_key,
-                        "question": q.question,
-                        "reason": q.reason,
-                    })
+                    pending_questions.append(
+                        {
+                            "id": q.id,
+                            "question_key": q.question_key,
+                            "question": q.question,
+                            "reason": q.reason,
+                        }
+                    )
 
         # Build natural summary text
         summary_text = (
@@ -162,10 +161,7 @@ class WorkflowAutomationService:
         for a in analyses:
             for r in a.requirements:
                 if r.task_links:
-                    all_completed = all(
-                        link.task and link.task.status == TaskStatus.COMPLETED
-                        for link in r.task_links
-                    )
+                    all_completed = all(link.task and link.task.status == TaskStatus.COMPLETED for link in r.task_links)
                     if all_completed and r.status != RequirementStatus.IMPLEMENTED:
                         r.status = RequirementStatus.IMPLEMENTED
                         await self.req_repo.update(r)
@@ -177,9 +173,7 @@ class WorkflowAutomationService:
             "status": "CONSISTENT",
         }
 
-    async def list_executions(
-        self, user_id: str, project_id: str | None = None
-    ) -> list[AutomationExecution]:
+    async def list_executions(self, user_id: str, project_id: str | None = None) -> list[AutomationExecution]:
         if project_id:
             return await self.exec_repo.list_by_project(project_id, user_id)
         return await self.exec_repo.list_by_user(user_id)

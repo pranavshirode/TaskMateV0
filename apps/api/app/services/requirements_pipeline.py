@@ -1,15 +1,24 @@
 """Requirements Analysis Service and Pipeline."""
+
 from __future__ import annotations
 
 import json
 import logging
-import uuid
 from datetime import datetime, timezone
-from typing import Any, Optional
+from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.errors import NotFoundError, ValidationError, ForbiddenError
+from app.ai.extractors.requirements_analyzer import (
+    analyze_brief_dynamically,
+    validate_and_sanitize_requirements_data,
+)
+from app.ai.prompts.requirements import (
+    REQUIREMENTS_ANALYSIS_SYSTEM_PROMPT,
+    TASK_PLANNING_SYSTEM_PROMPT,
+)
+from app.ai.providers.base import AIMessage, BaseAIProvider
+from app.core.errors import ForbiddenError, NotFoundError, ValidationError
 from app.models.enums import (
     AnalysisStatus,
     AutomationType,
@@ -29,6 +38,8 @@ from app.models.requirements import (
     RequirementsAnalysis,
     RequirementTaskLink,
 )
+from app.repositories.project import ProjectRepository
+from app.repositories.project_context import ProjectContextNoteRepository
 from app.repositories.requirements import (
     AnalysisRevisionRepository,
     ClarificationQuestionRepository,
@@ -36,14 +47,11 @@ from app.repositories.requirements import (
     RequirementsAnalysisRepository,
     RequirementTaskLinkRepository,
 )
-from app.repositories.project import ProjectRepository
-from app.repositories.project_context import ProjectContextNoteRepository
 from app.schemas.requirements import (
     ApproveTaskPlanRequest,
     ApproveTaskPlanResponse,
     CreatedTaskResult,
     GenerateTaskPlanResponse,
-    RequirementSchema,
     RequirementsAnalysisCreate,
     RequirementTraceabilityItem,
     RequirementUpdate,
@@ -53,15 +61,6 @@ from app.schemas.requirements import (
 )
 from app.schemas.task import TaskCreate
 from app.services.task import TaskService
-from app.ai.providers.base import AIMessage, BaseAIProvider
-from app.ai.extractors.requirements_analyzer import (
-    analyze_brief_dynamically,
-    validate_and_sanitize_requirements_data,
-)
-from app.ai.prompts.requirements import (
-    REQUIREMENTS_ANALYSIS_SYSTEM_PROMPT,
-    TASK_PLANNING_SYSTEM_PROMPT,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -90,9 +89,7 @@ class RequirementsService:
             raise ForbiddenError("Project not found or not owned by authenticated user")
         return project
 
-    async def create_analysis(
-        self, user_id: str, data: RequirementsAnalysisCreate
-    ) -> RequirementsAnalysis:
+    async def create_analysis(self, user_id: str, data: RequirementsAnalysisCreate) -> RequirementsAnalysis:
         await self._verify_project_ownership(user_id, data.project_id)
 
         analysis = RequirementsAnalysis(
@@ -110,23 +107,17 @@ class RequirementsService:
         created = await self.analysis_repo.create(analysis)
         return await self.analysis_repo.get_by_id_with_relations(created.id, user_id=user_id)  # type: ignore
 
-    async def get_analysis(
-        self, user_id: str, analysis_id: str
-    ) -> RequirementsAnalysis:
+    async def get_analysis(self, user_id: str, analysis_id: str) -> RequirementsAnalysis:
         analysis = await self.analysis_repo.get_by_id_with_relations(analysis_id, user_id=user_id)
         if not analysis:
             raise NotFoundError("Requirements analysis not found")
         return analysis
 
-    async def list_by_project(
-        self, user_id: str, project_id: str
-    ) -> list[RequirementsAnalysis]:
+    async def list_by_project(self, user_id: str, project_id: str) -> list[RequirementsAnalysis]:
         await self._verify_project_ownership(user_id, project_id)
         return await self.analysis_repo.list_by_project(project_id, user_id)
 
-    async def analyze(
-        self, user_id: str, analysis_id: str
-    ) -> RequirementsAnalysis:
+    async def analyze(self, user_id: str, analysis_id: str) -> RequirementsAnalysis:
         analysis = await self.get_analysis(user_id, analysis_id)
         project = await self.project_repo.get_by_id(analysis.project_id)
 
@@ -150,18 +141,18 @@ class RequirementsService:
             if answered_qs:
                 answered_q_str = "\n\nResolved Clarifications:\n" + "\n\n".join(answered_qs)
 
-        user_prompt = f"""Project: {project.name if project else 'Unknown'}
-Project Description: {project.description if project and project.description else 'None'}
+        user_prompt = f"""Project: {project.name if project else "Unknown"}
+Project Description: {project.description if project and project.description else "None"}
 Analysis Title: {analysis.title}
 Client Brief:
 {analysis.brief}
 
-Desired Outcome: {analysis.desired_outcome or 'Not specified'}
-Constraints: {analysis.constraints or 'Not specified'}
-Deadline: {analysis.deadline or 'Not specified'}
+Desired Outcome: {analysis.desired_outcome or "Not specified"}
+Constraints: {analysis.constraints or "Not specified"}
+Deadline: {analysis.deadline or "Not specified"}
 
 Project Context & Decisions:
-{context_str or 'No existing context notes.'}
+{context_str or "No existing context notes."}
 {answered_q_str}
 
 Analyze this client brief and return the complete requirements specification in JSON.
@@ -377,8 +368,8 @@ Analyze this client brief and return the complete requirements specification in 
         if data.status is not None:
             try:
                 req.status = RequirementStatus(data.status)
-            except ValueError:
-                raise ValidationError(f"Invalid requirement status: {data.status}")
+            except ValueError as err:
+                raise ValidationError(f"Invalid requirement status: {data.status}") from err
         if data.acceptance_criteria is not None:
             req.acceptance_criteria = data.acceptance_criteria
         if data.dependencies is not None:
@@ -387,9 +378,7 @@ Analyze this client brief and return the complete requirements specification in 
         req.updated_at = datetime.now(timezone.utc)
         return await self.req_repo.update(req)
 
-    async def approve_analysis(
-        self, user_id: str, analysis_id: str
-    ) -> RequirementsAnalysis:
+    async def approve_analysis(self, user_id: str, analysis_id: str) -> RequirementsAnalysis:
         analysis = await self.get_analysis(user_id, analysis_id)
 
         # Valid transitions: DRAFT, NEEDS_CLARIFICATION, READY_FOR_REVIEW -> APPROVED
@@ -408,18 +397,14 @@ Analyze this client brief and return the complete requirements specification in 
         await self.analysis_repo.update(analysis)
         return await self.get_analysis(user_id, analysis_id)
 
-    async def archive_analysis(
-        self, user_id: str, analysis_id: str
-    ) -> RequirementsAnalysis:
+    async def archive_analysis(self, user_id: str, analysis_id: str) -> RequirementsAnalysis:
         analysis = await self.get_analysis(user_id, analysis_id)
         analysis.status = AnalysisStatus.ARCHIVED
         analysis.updated_at = datetime.now(timezone.utc)
         await self.analysis_repo.update(analysis)
         return analysis
 
-    async def generate_task_plan(
-        self, user_id: str, analysis_id: str
-    ) -> GenerateTaskPlanResponse:
+    async def generate_task_plan(self, user_id: str, analysis_id: str) -> GenerateTaskPlanResponse:
         analysis = await self.get_analysis(user_id, analysis_id)
 
         # Filter approved/confirmed requirements
@@ -606,9 +591,7 @@ Create a structured implementation task plan in JSON breaking down these require
             message=f"Successfully created {len(created_tasks)} tasks with {links_created_count} traceability links.",
         )
 
-    async def get_traceability(
-        self, user_id: str, analysis_id: str
-    ) -> TraceabilityResponse:
+    async def get_traceability(self, user_id: str, analysis_id: str) -> TraceabilityResponse:
         analysis = await self.get_analysis(user_id, analysis_id)
 
         items: list[RequirementTraceabilityItem] = []

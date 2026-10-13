@@ -1,8 +1,10 @@
 """API endpoints for Workflow Automations and Daily Summaries."""
+
 from __future__ import annotations
 
 from typing import Any
-from fastapi import APIRouter, Depends, status
+
+from fastapi import APIRouter, Depends
 
 from app.api.deps import get_current_user, get_workflow_automation_service
 from app.models.user import User
@@ -40,4 +42,3 @@ async def list_automation_executions(
     service: WorkflowAutomationService = Depends(get_workflow_automation_service),
 ):
     return await service.list_executions(str(current_user.id), project_id=project_id)
-

@@ -1,14 +1,16 @@
 """Project Context Notes and Memory Service."""
+
 from __future__ import annotations
 
 from datetime import datetime, timezone
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.errors import NotFoundError, ForbiddenError, ValidationError
+from app.core.errors import ForbiddenError, NotFoundError, ValidationError
 from app.models.enums import ContextCategory
 from app.models.requirements import ProjectContextNote
-from app.repositories.project_context import ProjectContextNoteRepository
 from app.repositories.project import ProjectRepository
+from app.repositories.project_context import ProjectContextNoteRepository
 from app.schemas.requirements import ProjectContextNoteCreate, ProjectContextNoteUpdate
 
 
@@ -23,9 +25,7 @@ class ProjectContextService:
         if not project or str(project.user_id) != user_id:
             raise ForbiddenError("Project not found or not owned by authenticated user")
 
-    async def create_note(
-        self, user_id: str, project_id: str, data: ProjectContextNoteCreate
-    ) -> ProjectContextNote:
+    async def create_note(self, user_id: str, project_id: str, data: ProjectContextNoteCreate) -> ProjectContextNote:
         await self._verify_project_ownership(user_id, project_id)
 
         try:
@@ -57,9 +57,7 @@ class ProjectContextService:
             raise NotFoundError("Project context note not found")
         return note
 
-    async def update_note(
-        self, user_id: str, note_id: str, data: ProjectContextNoteUpdate
-    ) -> ProjectContextNote:
+    async def update_note(self, user_id: str, note_id: str, data: ProjectContextNoteUpdate) -> ProjectContextNote:
         note = await self.get_note(user_id, note_id)
 
         if data.title is not None:
@@ -69,8 +67,8 @@ class ProjectContextService:
         if data.category is not None:
             try:
                 note.category = ContextCategory(data.category.upper())
-            except ValueError:
-                raise ValidationError(f"Invalid category: {data.category}")
+            except ValueError as err:
+                raise ValidationError(f"Invalid category: {data.category}") from err
         if data.is_confirmed is not None:
             note.is_confirmed = data.is_confirmed
         if data.is_superseded is not None:

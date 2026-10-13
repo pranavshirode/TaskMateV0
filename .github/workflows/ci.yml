@@ -39,7 +39,7 @@ jobs:
       - name: Run tests
         env:
           APP_ENV: testing
-          DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/test
+          DATABASE_URL: sqlite+aiosqlite:///./test.db
         run: pytest -v
 
   frontend:

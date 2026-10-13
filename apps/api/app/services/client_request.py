@@ -1,14 +1,16 @@
 """Client Request Management and Impact Analysis Service."""
+
 from __future__ import annotations
 
 import json
 import logging
 from datetime import datetime, timezone
-from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.errors import NotFoundError, ForbiddenError, ValidationError
+from app.ai.prompts.requirements import CLIENT_REQUEST_IMPACT_SYSTEM_PROMPT
+from app.ai.providers.base import AIMessage, BaseAIProvider
+from app.core.errors import ForbiddenError, NotFoundError
 from app.models.enums import ClientRequestStatus, ClientRequestType
 from app.models.requirements import ClientRequest
 from app.repositories.client_request import ClientRequestRepository
@@ -18,8 +20,6 @@ from app.schemas.requirements import (
     ClientRequestCreate,
     ClientRequestImpactResponse,
 )
-from app.ai.providers.base import AIMessage, BaseAIProvider
-from app.ai.prompts.requirements import CLIENT_REQUEST_IMPACT_SYSTEM_PROMPT
 
 logger = logging.getLogger(__name__)
 
@@ -41,9 +41,7 @@ class ClientRequestService:
         if not project or str(project.user_id) != user_id:
             raise ForbiddenError("Project not found or not owned by authenticated user")
 
-    async def create_request(
-        self, user_id: str, project_id: str, data: ClientRequestCreate
-    ) -> ClientRequest:
+    async def create_request(self, user_id: str, project_id: str, data: ClientRequestCreate) -> ClientRequest:
         await self._verify_project_ownership(user_id, project_id)
 
         try:
@@ -61,9 +59,7 @@ class ClientRequestService:
         )
         return await self.repo.create(req)
 
-    async def list_requests(
-        self, user_id: str, project_id: str
-    ) -> list[ClientRequest]:
+    async def list_requests(self, user_id: str, project_id: str) -> list[ClientRequest]:
         await self._verify_project_ownership(user_id, project_id)
         return await self.repo.list_by_project(project_id, user_id)
 
@@ -73,9 +69,7 @@ class ClientRequestService:
             raise NotFoundError("Client request not found")
         return req
 
-    async def analyze_impact(
-        self, user_id: str, request_id: str
-    ) -> ClientRequestImpactResponse:
+    async def analyze_impact(self, user_id: str, request_id: str) -> ClientRequestImpactResponse:
         req = await self.get_request(user_id, request_id)
 
         # Retrieve existing project requirements analyses
@@ -91,7 +85,7 @@ Message:
 {req.content}
 
 Existing Project Requirements:
-{existing_reqs_str or 'No existing requirements recorded.'}
+{existing_reqs_str or "No existing requirements recorded."}
 
 Analyze the impact of this request against the existing requirements and determine if this is a new feature, change request, bug report, or clarification. Return the structured JSON assessment.
 """

@@ -15,4 +15,3 @@ You have access to tools that allow you to interact with the TaskMate workspace 
 
 When you're done fulfilling the user's request, provide a clear, concise summary of the actions you took.
 """
-

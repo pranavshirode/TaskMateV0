@@ -1,7 +1,7 @@
 """OpenAI provider implementation."""
+
 from __future__ import annotations
 
-import json
 import logging
 import time
 from typing import Any
@@ -16,9 +16,14 @@ from openai import (
 
 from app.ai.errors import (
     AIAuthenticationError as AppAIAuthenticationError,
+)
+from app.ai.errors import (
     AIProviderError,
+)
+from app.ai.errors import (
     AIRateLimitError as AppAIRateLimitError,
-    AIResponseError,
+)
+from app.ai.errors import (
     AITimeoutError as AppAITimeoutError,
 )
 from app.ai.providers.base import AIMessage, AIResponse, BaseAIProvider
@@ -64,14 +69,10 @@ class OpenAIProvider(BaseAIProvider):
             raise AIProviderError("OpenAI API key not configured")
 
         chosen_model = model or self._default_model
-        chosen_temperature = (
-            temperature if temperature is not None else self._default_temperature
-        )
+        chosen_temperature = temperature if temperature is not None else self._default_temperature
         chosen_max_tokens = max_tokens or self._default_max_tokens
 
-        openai_messages: list[dict[str, str]] = [
-            {"role": m.role, "content": m.content} for m in messages
-        ]
+        openai_messages: list[dict[str, str]] = [{"role": m.role, "content": m.content} for m in messages]
 
         kwargs: dict[str, Any] = {
             "model": chosen_model,
@@ -96,9 +97,7 @@ class OpenAIProvider(BaseAIProvider):
         except RateLimitError as e:
             raise AppAIRateLimitError("OpenAI rate limit exceeded") from e
         except AuthenticationError as e:
-            raise AppAIAuthenticationError(
-                "OpenAI authentication failed — check AI_API_KEY"
-            ) from e
+            raise AppAIAuthenticationError("OpenAI authentication failed — check AI_API_KEY") from e
         except APIError as e:
             raise AIProviderError(f"OpenAI API error: {e.message}") from e
         except Exception as e:
@@ -127,4 +126,3 @@ class OpenAIProvider(BaseAIProvider):
             return True
         except Exception:
             return False
-

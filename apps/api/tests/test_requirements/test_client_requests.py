@@ -1,4 +1,5 @@
 """Integration tests for Client Requests and Change Impact Analysis."""
+
 import pytest
 from httpx import AsyncClient
 
@@ -65,4 +66,3 @@ async def test_client_request_lifecycle_and_impact(
     )
     assert approve_resp.status_code == 200
     assert approve_resp.json()["status"] == "APPROVED"
-

@@ -1,39 +1,41 @@
 """Pydantic schemas for Requirements Analysis, Memory, Client Requests, and Automation."""
+
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Optional
-from pydantic import BaseModel, Field, ConfigDict
+from typing import Any
 
+from pydantic import BaseModel, ConfigDict, Field
 
 # --- Requirements Analysis ---
+
 
 class RequirementsAnalysisCreate(BaseModel):
     project_id: str
     title: str = Field(..., min_length=1, max_length=255)
     brief: str = Field(..., min_length=5)
-    desired_outcome: Optional[str] = None
-    constraints: Optional[str] = None
-    deadline: Optional[str] = None
-    repository_id: Optional[str] = None
+    desired_outcome: str | None = None
+    constraints: str | None = None
+    deadline: str | None = None
+    repository_id: str | None = None
 
 
 class RequirementsAnalysisUpdate(BaseModel):
-    title: Optional[str] = None
-    brief: Optional[str] = None
-    desired_outcome: Optional[str] = None
-    constraints: Optional[str] = None
-    deadline: Optional[str] = None
-    status: Optional[str] = None
+    title: str | None = None
+    brief: str | None = None
+    desired_outcome: str | None = None
+    constraints: str | None = None
+    deadline: str | None = None
+    status: str | None = None
 
 
 class RequirementUpdate(BaseModel):
-    title: Optional[str] = None
-    description: Optional[str] = None
-    priority: Optional[str] = None
-    status: Optional[str] = None
-    acceptance_criteria: Optional[list[str]] = None
-    dependencies: Optional[list[str]] = None
+    title: str | None = None
+    description: str | None = None
+    priority: str | None = None
+    status: str | None = None
+    acceptance_criteria: list[str] | None = None
+    dependencies: list[str] | None = None
 
 
 class AnswerClarificationRequest(BaseModel):
@@ -49,9 +51,9 @@ class RequirementSchema(BaseModel):
     description: str
     priority: str
     status: str
-    acceptance_criteria: Optional[list[Any]] = None
-    dependencies: Optional[list[Any]] = None
-    open_questions: Optional[list[Any]] = None
+    acceptance_criteria: list[Any] | None = None
+    dependencies: list[Any] | None = None
+    open_questions: list[Any] | None = None
     created_at: datetime
     updated_at: datetime
     # Traceability metrics
@@ -67,9 +69,9 @@ class ClarificationQuestionSchema(BaseModel):
     analysis_id: str
     question_key: str
     question: str
-    reason: Optional[str] = None
-    context_topic: Optional[str] = None
-    answer: Optional[str] = None
+    reason: str | None = None
+    context_topic: str | None = None
+    answer: str | None = None
     status: str
     created_at: datetime
 
@@ -80,7 +82,7 @@ class RequirementAssumptionSchema(BaseModel):
     id: str
     analysis_id: str
     description: str
-    reason: Optional[str] = None
+    reason: str | None = None
     confidence: str
     status: str
     created_at: datetime
@@ -94,7 +96,7 @@ class RequirementRiskSchema(BaseModel):
     description: str
     risk_type: str
     severity: str
-    mitigation: Optional[str] = None
+    mitigation: str | None = None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -108,7 +110,7 @@ class RequirementsAnalysisSummary(BaseModel):
     brief: str
     status: str
     version: int
-    approved_at: Optional[datetime] = None
+    approved_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
     total_requirements: int = 0
@@ -124,16 +126,16 @@ class RequirementsAnalysisDetail(BaseModel):
     user_id: str
     title: str
     brief: str
-    desired_outcome: Optional[str] = None
-    constraints: Optional[str] = None
-    deadline: Optional[str] = None
-    repository_id: Optional[str] = None
+    desired_outcome: str | None = None
+    constraints: str | None = None
+    deadline: str | None = None
+    repository_id: str | None = None
     status: str
     version: int
-    overview_data: Optional[dict[str, Any]] = None
-    technical_constraints: Optional[list[Any]] = None
-    non_functional_requirements: Optional[list[Any]] = None
-    approved_at: Optional[datetime] = None
+    overview_data: dict[str, Any] | None = None
+    technical_constraints: list[Any] | None = None
+    non_functional_requirements: list[Any] | None = None
+    approved_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
     requirements: list[RequirementSchema] = []
@@ -147,15 +149,16 @@ class RequirementsAnalysisDetail(BaseModel):
 
 # --- Task Planning ---
 
+
 class TaskPlanItem(BaseModel):
     title: str
-    description: Optional[str] = None
+    description: str | None = None
     priority: str = "MEDIUM"
     status: str = "TODO"
-    deadline: Optional[str] = None
+    deadline: str | None = None
     linked_requirement_keys: list[str] = []
-    acceptance_criteria: Optional[list[str]] = None
-    estimated_effort: Optional[str] = None
+    acceptance_criteria: list[str] | None = None
+    estimated_effort: str | None = None
 
 
 class GenerateTaskPlanResponse(BaseModel):
@@ -167,7 +170,7 @@ class GenerateTaskPlanResponse(BaseModel):
 
 class ApproveTaskPlanRequest(BaseModel):
     selected_tasks: list[TaskPlanItem]
-    idempotency_key: Optional[str] = None
+    idempotency_key: str | None = None
 
 
 class CreatedTaskResult(BaseModel):
@@ -187,6 +190,7 @@ class ApproveTaskPlanResponse(BaseModel):
 
 
 # --- Traceability ---
+
 
 class TaskTraceabilityInfo(BaseModel):
     id: str
@@ -216,6 +220,7 @@ class TraceabilityResponse(BaseModel):
 
 # --- Project Context Memory ---
 
+
 class ProjectContextNoteCreate(BaseModel):
     title: str = Field(..., min_length=1, max_length=255)
     content: str = Field(..., min_length=1)
@@ -225,11 +230,11 @@ class ProjectContextNoteCreate(BaseModel):
 
 
 class ProjectContextNoteUpdate(BaseModel):
-    title: Optional[str] = None
-    content: Optional[str] = None
-    category: Optional[str] = None
-    is_confirmed: Optional[bool] = None
-    is_superseded: Optional[bool] = None
+    title: str | None = None
+    content: str | None = None
+    category: str | None = None
+    is_confirmed: bool | None = None
+    is_superseded: bool | None = None
 
 
 class ProjectContextNoteResponse(BaseModel):
@@ -242,7 +247,7 @@ class ProjectContextNoteResponse(BaseModel):
     source: str
     is_confirmed: bool
     is_superseded: bool
-    superseded_by_id: Optional[str] = None
+    superseded_by_id: str | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -250,6 +255,7 @@ class ProjectContextNoteResponse(BaseModel):
 
 
 # --- Client Requests ---
+
 
 class ClientRequestCreate(BaseModel):
     title: str = Field(..., min_length=1, max_length=255)
@@ -275,8 +281,8 @@ class ClientRequestResponse(BaseModel):
     content: str
     request_type: str
     status: str
-    impact_summary: Optional[dict[str, Any]] = None
-    analysis_id: Optional[str] = None
+    impact_summary: dict[str, Any] | None = None
+    analysis_id: str | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -284,6 +290,7 @@ class ClientRequestResponse(BaseModel):
 
 
 # --- Automations & Summaries ---
+
 
 class DailyProjectSummaryResponse(BaseModel):
     project_id: str
@@ -302,12 +309,12 @@ class DailyProjectSummaryResponse(BaseModel):
 class AutomationExecutionResponse(BaseModel):
     id: str
     user_id: str
-    project_id: Optional[str] = None
+    project_id: str | None = None
     automation_type: str
     status: str
     trigger: str
-    result_data: Optional[dict[str, Any]] = None
-    error: Optional[str] = None
+    result_data: dict[str, Any] | None = None
+    error: str | None = None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)

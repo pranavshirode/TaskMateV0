@@ -1,4 +1,5 @@
 """API endpoints for Project Context Notes and Explicit Memory."""
+
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, status
@@ -26,7 +27,9 @@ async def list_project_context_notes(
     return notes
 
 
-@router.post("/projects/{project_id}/context", response_model=ProjectContextNoteResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/projects/{project_id}/context", response_model=ProjectContextNoteResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_project_context_note(
     project_id: str,
     data: ProjectContextNoteCreate,
@@ -63,4 +66,3 @@ async def delete_context_note(
     service: ProjectContextService = Depends(get_project_context_service),
 ):
     await service.delete_note(str(current_user.id), note_id)
-

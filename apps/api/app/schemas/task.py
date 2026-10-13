@@ -1,7 +1,10 @@
-from datetime import datetime, date
+from datetime import date, datetime
+
 from pydantic import BaseModel, ConfigDict, Field
-from app.models.enums import TaskStatus, TaskPriority
+
+from app.models.enums import TaskPriority, TaskStatus
 from app.schemas.task_label import TaskLabelResponse
+
 
 class TaskCreate(BaseModel):
     title: str = Field(..., min_length=1, max_length=500)
@@ -14,6 +17,7 @@ class TaskCreate(BaseModel):
     estimated_minutes: int | None = Field(None, ge=0)
     labels: list[str] | None = None
 
+
 class TaskUpdate(BaseModel):
     title: str | None = Field(None, min_length=1, max_length=500)
     description: str | None = None
@@ -25,11 +29,14 @@ class TaskUpdate(BaseModel):
     estimated_minutes: int | None = Field(None, ge=0)
     labels: list[str] | None = None
 
+
 class TaskStatusUpdate(BaseModel):
     status: TaskStatus
 
+
 class TaskPriorityUpdate(BaseModel):
     priority: TaskPriority
+
 
 class TaskResponse(BaseModel):
     id: str
@@ -50,8 +57,9 @@ class TaskResponse(BaseModel):
     completed_at: datetime | None
     archived_at: datetime | None
     labels: list[TaskLabelResponse]
-    
+
     model_config = ConfigDict(from_attributes=True)
+
 
 class TaskListResponse(BaseModel):
     id: str
@@ -72,5 +80,5 @@ class TaskListResponse(BaseModel):
     completed_at: datetime | None
     archived_at: datetime | None
     labels: list[TaskLabelResponse]
-    
+
     model_config = ConfigDict(from_attributes=True)

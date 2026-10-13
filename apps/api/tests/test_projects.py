@@ -1,11 +1,12 @@
 import pytest
-from app.models.enums import ProjectStatus
+
 
 @pytest.mark.asyncio
 async def test_create_project(auth_client):
     response = await auth_client.post("/api/v1/projects/", json={"name": "New Project", "status": "PLANNING"})
     assert response.status_code == 201
     assert response.json()["name"] == "New Project"
+
 
 @pytest.mark.asyncio
 async def test_create_project_with_client(auth_client, create_test_client_entity):
@@ -15,6 +16,7 @@ async def test_create_project_with_client(auth_client, create_test_client_entity
     assert response.status_code == 201
     assert response.json()["client_id"] == c.id
 
+
 @pytest.mark.asyncio
 async def test_list_projects(auth_client, create_test_project):
     user_id = auth_client._test_user.id
@@ -23,6 +25,7 @@ async def test_list_projects(auth_client, create_test_project):
     response = await auth_client.get("/api/v1/projects/")
     assert response.status_code == 200
     assert response.json()["total"] >= 2
+
 
 @pytest.mark.asyncio
 async def test_get_project_detail(auth_client, create_test_project, create_test_task):
@@ -35,6 +38,7 @@ async def test_get_project_detail(auth_client, create_test_project, create_test_
     assert data["id"] == p.id
     assert "task_summary" in data
 
+
 @pytest.mark.asyncio
 async def test_update_project(auth_client, create_test_project):
     user_id = auth_client._test_user.id
@@ -43,6 +47,7 @@ async def test_update_project(auth_client, create_test_project):
     assert response.status_code == 200
     assert response.json()["name"] == "Updated Project"
 
+
 @pytest.mark.asyncio
 async def test_archive_project(auth_client, create_test_project):
     user_id = auth_client._test_user.id
@@ -50,6 +55,7 @@ async def test_archive_project(auth_client, create_test_project):
     response = await auth_client.delete(f"/api/v1/projects/{p.id}")
     assert response.status_code == 200
     assert response.json()["status"] == "ARCHIVED"
+
 
 @pytest.mark.asyncio
 async def test_filter_projects_by_status(auth_client, create_test_project):
@@ -61,6 +67,7 @@ async def test_filter_projects_by_status(auth_client, create_test_project):
     response = await auth_client.get("/api/v1/projects/?status=COMPLETED")
     assert response.status_code == 200
     assert response.json()["total"] == 0
+
 
 @pytest.mark.asyncio
 async def test_filter_projects_by_client(auth_client, create_test_project, create_test_client_entity):
@@ -74,6 +81,7 @@ async def test_filter_projects_by_client(auth_client, create_test_project, creat
     data = response.json()
     assert data["total"] == 1
     assert data["items"][0]["client_id"] == c1.id
+
 
 @pytest.mark.asyncio
 async def test_project_data_isolation(auth_client, create_test_project, create_test_user):

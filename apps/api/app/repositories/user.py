@@ -10,7 +10,5 @@ class UserRepository(BaseRepository[User]):
         super().__init__(User, session)
 
     async def get_by_email(self, email: str) -> User | None:
-        result = await self.session.execute(
-            select(self.model).where(self.model.email == email)
-        )
+        result = await self.session.execute(select(self.model).where(self.model.email == email))
         return result.scalar_one_or_none()

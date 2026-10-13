@@ -8,9 +8,9 @@ from app.models.user import User
 from app.schemas.common import PaginatedResponse
 from app.schemas.project import (
     ProjectCreate,
-    ProjectUpdate,
-    ProjectResponse,
     ProjectDetailResponse,
+    ProjectResponse,
+    ProjectUpdate,
 )
 from app.services.project import ProjectService
 
@@ -42,9 +42,7 @@ async def list_projects(
     )
 
 
-@router.post(
-    "/", response_model=ProjectResponse, status_code=status.HTTP_201_CREATED
-)
+@router.post("/", response_model=ProjectResponse, status_code=status.HTTP_201_CREATED)
 async def create_project(
     data: ProjectCreate,
     db: AsyncSession = Depends(get_db),

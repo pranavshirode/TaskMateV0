@@ -1,9 +1,10 @@
 """Service layer for agent execution management."""
+
 from __future__ import annotations
 
 import uuid
 from datetime import datetime, timezone
-from typing import Any, Optional
+from typing import Any
 
 from app.models.agent_execution import AgentExecution, AgentExecutionStep
 from app.models.user import User
@@ -19,9 +20,9 @@ class AgentExecutionService:
     async def create_execution(
         self,
         user: User,
-        conversation_id: Optional[str | uuid.UUID] = None,
-        objective: Optional[str] = None,
-        model: Optional[str] = None,
+        conversation_id: str | uuid.UUID | None = None,
+        objective: str | None = None,
+        model: str | None = None,
     ) -> AgentExecution:
         return await self.repository.create_execution(
             user_id=str(user.id),
@@ -35,9 +36,7 @@ class AgentExecutionService:
             execution, status="RUNNING", started_at=datetime.now(timezone.utc)
         )
 
-    async def complete_execution(
-        self, execution: AgentExecution, **token_kwargs: Any
-    ) -> AgentExecution:
+    async def complete_execution(self, execution: AgentExecution, **token_kwargs: Any) -> AgentExecution:
         return await self.repository.update_execution(
             execution,
             status="COMPLETED",
@@ -45,9 +44,7 @@ class AgentExecutionService:
             **token_kwargs,
         )
 
-    async def fail_execution(
-        self, execution: AgentExecution, error: str
-    ) -> AgentExecution:
+    async def fail_execution(self, execution: AgentExecution, error: str) -> AgentExecution:
         return await self.repository.update_execution(
             execution,
             status="FAILED",
@@ -63,14 +60,10 @@ class AgentExecutionService:
             error="Execution time limit exceeded",
         )
 
-    async def get_execution(
-        self, execution_id: str | uuid.UUID, user: User
-    ) -> Optional[AgentExecution]:
+    async def get_execution(self, execution_id: str | uuid.UUID, user: User) -> AgentExecution | None:
         return await self.repository.get_execution(str(execution_id), str(user.id))
 
-    async def cancel_execution(
-        self, execution: AgentExecution
-    ) -> AgentExecution:
+    async def cancel_execution(self, execution: AgentExecution) -> AgentExecution:
         return await self.repository.update_execution(
             execution,
             status="CANCELLED",
@@ -83,11 +76,11 @@ class AgentExecutionService:
         execution: AgentExecution,
         step_number: int,
         tool_name: str,
-        tool_input: Optional[dict[str, Any]] = None,
+        tool_input: dict[str, Any] | None = None,
         status: str = "PENDING",
-        result_summary: Optional[str] = None,
+        result_summary: str | None = None,
         latency_ms: int = 0,
-        error: Optional[str] = None,
+        error: str | None = None,
     ) -> AgentExecutionStep:
         return await self.repository.add_step(
             execution_id=execution.id,

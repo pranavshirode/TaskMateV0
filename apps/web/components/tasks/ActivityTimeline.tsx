@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 interface TaskEvent {
   id: string;
@@ -15,7 +15,11 @@ interface ActivityTimelineProps {
 
 export default function ActivityTimeline({ events }: ActivityTimelineProps) {
   if (!events || events.length === 0) {
-    return <div className="text-sm text-[var(--text-muted)]">No activity recorded yet.</div>;
+    return (
+      <div className="text-sm text-[var(--text-muted)]">
+        No activity recorded yet.
+      </div>
+    );
   }
 
   return (
@@ -27,11 +31,14 @@ export default function ActivityTimeline({ events }: ActivityTimelineProps) {
           </div>
           <div>
             <div className="text-sm font-medium">
-              {event.user_name || 'System'} {event.event_type.replace('_', ' ').toLowerCase()}
+              {event.user_name || "System"}{" "}
+              {event.event_type.replace("_", " ").toLowerCase()}
             </div>
             {event.old_value && event.new_value && (
               <div className="text-xs text-[var(--text-muted)] mt-1">
-                Changed from <span className="line-through">{event.old_value}</span> to <span>{event.new_value}</span>
+                Changed from{" "}
+                <span className="line-through">{event.old_value}</span> to{" "}
+                <span>{event.new_value}</span>
               </div>
             )}
             <div className="text-xs text-[var(--text-muted)] mt-1">

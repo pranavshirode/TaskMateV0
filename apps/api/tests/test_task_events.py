@@ -1,5 +1,5 @@
 import pytest
-from app.models.enums import TaskStatus, TaskPriority
+
 
 @pytest.mark.asyncio
 async def test_task_creation_creates_event(auth_client):
@@ -11,6 +11,7 @@ async def test_task_creation_creates_event(auth_client):
     events = events_res.json()["items"]
     assert any(e["event_type"] == "TASK_CREATED" for e in events)
 
+
 @pytest.mark.asyncio
 async def test_status_change_creates_event(auth_client):
     res = await auth_client.post("/api/v1/tasks/", json={"title": "Status Event Task"})
@@ -20,6 +21,7 @@ async def test_status_change_creates_event(auth_client):
     events = events_res.json()["items"]
     assert any(e["event_type"] == "STATUS_CHANGED" for e in events)
 
+
 @pytest.mark.asyncio
 async def test_priority_change_creates_event(auth_client):
     res = await auth_client.post("/api/v1/tasks/", json={"title": "Priority Event Task"})
@@ -28,6 +30,7 @@ async def test_priority_change_creates_event(auth_client):
     events_res = await auth_client.get(f"/api/v1/tasks/{task_id}/events")
     events = events_res.json()["items"]
     assert any(e["event_type"] == "PRIORITY_CHANGED" for e in events)
+
 
 @pytest.mark.asyncio
 async def test_list_task_events(auth_client):

@@ -1,9 +1,10 @@
 """API endpoints for Client Requests and Change Impact Analysis."""
+
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, status
 
-from app.api.deps import get_current_user, get_client_request_service
+from app.api.deps import get_client_request_service, get_current_user
 from app.models.user import User
 from app.schemas.requirements import (
     ClientRequestCreate,
@@ -24,7 +25,9 @@ async def list_project_client_requests(
     return await service.list_requests(str(current_user.id), project_id)
 
 
-@router.post("/projects/{project_id}/client-requests", response_model=ClientRequestResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/projects/{project_id}/client-requests", response_model=ClientRequestResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_client_request(
     project_id: str,
     data: ClientRequestCreate,
@@ -59,4 +62,3 @@ async def approve_client_request(
     service: ClientRequestService = Depends(get_client_request_service),
 ):
     return await service.approve_request(str(current_user.id), request_id)
-

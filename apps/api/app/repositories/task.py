@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from datetime import date
 
-from sqlalchemy import select, desc, asc, case, or_
+from sqlalchemy import asc, case, desc, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.models.enums import TaskPriority, TaskStatus
 from app.models.task import Task
 from app.models.task_label import TaskLabel
-from app.models.enums import TaskStatus, TaskPriority
 from app.repositories.base import BaseRepository
 
 
@@ -35,9 +35,7 @@ class TaskRepository(BaseRepository[Task]):
         await self.session.refresh(task, ["labels"])
         return task
 
-    async def update(
-        self, task: Task, data: dict, labels: list | None = None
-    ) -> Task:
+    async def update(self, task: Task, data: dict, labels: list | None = None) -> Task:
         for key, value in data.items():
             setattr(task, key, value)
         if labels is not None:
@@ -167,9 +165,7 @@ class TaskRepository(BaseRepository[Task]):
         result = await self.session.execute(query)
         return list(result.scalars().all())
 
-    async def get_recently_updated(
-        self, user_id: str, limit: int = 10
-    ) -> list[Task]:
+    async def get_recently_updated(self, user_id: str, limit: int = 10) -> list[Task]:
         query = (
             select(self.model)
             .where(

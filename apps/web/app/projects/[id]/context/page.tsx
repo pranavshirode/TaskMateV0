@@ -1,13 +1,17 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
-import Link from 'next/link';
-import { apiClient, type Project, type ProjectContextNote } from '@/lib/api-client';
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
-import ErrorState from '@/components/ui/ErrorState';
-import Button from '@/components/ui/Button';
-import Input from '@/components/ui/Input';
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import Link from "next/link";
+import {
+  apiClient,
+  type Project,
+  type ProjectContextNote,
+} from "@/lib/api-client";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import ErrorState from "@/components/ui/ErrorState";
+import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
 
 export default function ProjectContextPage() {
   const { id: projectId } = useParams<{ id: string }>();
@@ -18,9 +22,9 @@ export default function ProjectContextPage() {
 
   // New note form
   const [showForm, setShowForm] = useState(false);
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [category, setCategory] = useState('DECISION');
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const [category, setCategory] = useState("DECISION");
   const [isConfirmed, setIsConfirmed] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -35,7 +39,9 @@ export default function ProjectContextPage() {
       setProject(projRes);
       setNotes(notesRes || []);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to load project context');
+      setError(
+        err instanceof Error ? err.message : "Failed to load project context"
+      );
     } finally {
       setIsLoading(false);
     }
@@ -57,24 +63,24 @@ export default function ProjectContextPage() {
         category,
         is_confirmed: isConfirmed,
       });
-      setTitle('');
-      setContent('');
+      setTitle("");
+      setContent("");
       setShowForm(false);
       fetchData();
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Failed to create note');
+      alert(err instanceof Error ? err.message : "Failed to create note");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDeleteNote = async (noteId: string) => {
-    if (!confirm('Delete this project context note?')) return;
+    if (!confirm("Delete this project context note?")) return;
     try {
       await apiClient.deleteProjectContextNote(noteId);
       fetchData();
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Failed to delete note');
+      alert(err instanceof Error ? err.message : "Failed to delete note");
     }
   };
 
@@ -97,7 +103,7 @@ export default function ProjectContextPage() {
           href={`/projects/${projectId}`}
           className="text-sm text-[var(--text-muted)] hover:text-[var(--foreground)]"
         >
-          ← Back to {project?.name || 'Project'}
+          ← Back to {project?.name || "Project"}
         </Link>
       </div>
 
@@ -107,17 +113,23 @@ export default function ProjectContextPage() {
             Project Memory & Decisions: {project?.name}
           </h1>
           <p className="text-sm text-[var(--text-muted)] mt-1">
-            Explicitly recorded architectural decisions, constraints, and client preferences remembered across AI sessions.
+            Explicitly recorded architectural decisions, constraints, and client
+            preferences remembered across AI sessions.
           </p>
         </div>
-        <Button variant={showForm ? 'secondary' : 'primary'} onClick={() => setShowForm(!showForm)}>
-          {showForm ? 'Cancel' : '+ Add Memory Note'}
+        <Button
+          variant={showForm ? "secondary" : "primary"}
+          onClick={() => setShowForm(!showForm)}
+        >
+          {showForm ? "Cancel" : "+ Add Memory Note"}
         </Button>
       </div>
 
       {showForm && (
         <div className="bg-[var(--sidebar-bg)] border border-[var(--sidebar-border)] rounded-xl p-6 mb-8">
-          <h2 className="text-base font-semibold mb-4">Record New Project Memory Note</h2>
+          <h2 className="text-base font-semibold mb-4">
+            Record New Project Memory Note
+          </h2>
           <form onSubmit={handleCreateNote} className="space-y-4">
             <div>
               <label className="block text-xs font-medium text-[var(--text-muted)] mb-1">
@@ -155,7 +167,10 @@ export default function ProjectContextPage() {
                   checked={isConfirmed}
                   onChange={(e) => setIsConfirmed(e.target.checked)}
                 />
-                <label htmlFor="confirmed_check" className="text-xs font-medium text-[var(--foreground)]">
+                <label
+                  htmlFor="confirmed_check"
+                  className="text-xs font-medium text-[var(--foreground)]"
+                >
                   Explicitly Confirmed Fact (Unchecked = Unconfirmed Assumption)
                 </label>
               </div>
@@ -176,11 +191,15 @@ export default function ProjectContextPage() {
             </div>
 
             <div className="flex justify-end gap-3">
-              <Button type="button" variant="secondary" onClick={() => setShowForm(false)}>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setShowForm(false)}
+              >
                 Cancel
               </Button>
               <Button type="submit" variant="primary" disabled={isSubmitting}>
-                {isSubmitting ? 'Saving...' : 'Save Decision'}
+                {isSubmitting ? "Saving..." : "Save Decision"}
               </Button>
             </div>
           </form>
@@ -202,10 +221,12 @@ export default function ProjectContextPage() {
                   </span>
                   <span
                     className={`text-xs px-2 py-0.5 rounded font-medium ${
-                      n.is_confirmed ? 'bg-green-500/20 text-green-300' : 'bg-amber-500/20 text-amber-300'
+                      n.is_confirmed
+                        ? "bg-green-500/20 text-green-300"
+                        : "bg-amber-500/20 text-amber-300"
                     }`}
                   >
-                    {n.is_confirmed ? '✓ Confirmed' : '⚠️ Unconfirmed'}
+                    {n.is_confirmed ? "✓ Confirmed" : "⚠️ Unconfirmed"}
                   </span>
                 </div>
                 <button
@@ -215,7 +236,9 @@ export default function ProjectContextPage() {
                   Delete
                 </button>
               </div>
-              <p className="text-sm text-[var(--text-muted)] whitespace-pre-wrap">{n.content}</p>
+              <p className="text-sm text-[var(--text-muted)] whitespace-pre-wrap">
+                {n.content}
+              </p>
               <span className="text-xs text-[var(--text-muted)] block mt-3">
                 Recorded {new Date(n.created_at).toLocaleDateString()}
               </span>
@@ -235,4 +258,3 @@ export default function ProjectContextPage() {
     </div>
   );
 }
-

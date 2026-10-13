@@ -8,13 +8,14 @@ import uuid
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 from app.models.user import User
 
 
 class ToolPermission(str, Enum):
     """Permission level required to execute a tool."""
+
     READ = "READ"
     WRITE = "WRITE"
     DESTRUCTIVE = "DESTRUCTIVE"
@@ -27,9 +28,10 @@ class ToolContext:
     Contains the authenticated user and execution metadata.
     Never contains raw credentials or API keys.
     """
+
     user: User
     execution_id: uuid.UUID
-    conversation_id: Optional[uuid.UUID] = None
+    conversation_id: uuid.UUID | None = None
     extra: dict[str, Any] = field(default_factory=dict)  # For service injection
 
 
@@ -40,9 +42,10 @@ class ToolResult:
     Every tool returns this format so the agent
     can understand results consistently.
     """
+
     success: bool
-    data: Optional[dict[str, Any]] = None
-    error: Optional[dict[str, str]] = None  # {"type": "...", "message": "..."}
+    data: dict[str, Any] | None = None
+    error: dict[str, str] | None = None  # {"type": "...", "message": "..."}
 
     @classmethod
     def ok(cls, data: dict[str, Any]) -> "ToolResult":

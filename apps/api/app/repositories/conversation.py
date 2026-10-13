@@ -1,15 +1,15 @@
 """Repository for conversation and AI log persistence."""
+
 from __future__ import annotations
 
 import uuid
 from datetime import datetime, timezone
-from typing import Any, Optional
 
 from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models.ai import AIRequestLog, Conversation, ConversationMessage
+from app.models.ai import Conversation, ConversationMessage
 
 
 class ConversationRepository:
@@ -18,9 +18,7 @@ class ConversationRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def create_conversation(
-        self, user_id: str | uuid.UUID, title: Optional[str] = None
-    ) -> Conversation:
+    async def create_conversation(self, user_id: str | uuid.UUID, title: str | None = None) -> Conversation:
         conversation = Conversation(
             id=str(uuid.uuid4()),
             user_id=str(user_id),
@@ -31,9 +29,7 @@ class ConversationRepository:
         await self.session.refresh(conversation)
         return conversation
 
-    async def get_conversation(
-        self, conversation_id: str | uuid.UUID, user_id: str | uuid.UUID
-    ) -> Optional[Conversation]:
+    async def get_conversation(self, conversation_id: str | uuid.UUID, user_id: str | uuid.UUID) -> Conversation | None:
         stmt = (
             select(Conversation)
             .options(selectinload(Conversation.messages))
@@ -45,9 +41,7 @@ class ConversationRepository:
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def list_conversations(
-        self, user_id: str | uuid.UUID, skip: int = 0, limit: int = 20
-    ) -> list[Conversation]:
+    async def list_conversations(self, user_id: str | uuid.UUID, skip: int = 0, limit: int = 20) -> list[Conversation]:
         stmt = (
             select(Conversation)
             .where(Conversation.user_id == str(user_id))
@@ -59,15 +53,11 @@ class ConversationRepository:
         return list(result.scalars().all())
 
     async def count_conversations(self, user_id: str | uuid.UUID) -> int:
-        stmt = select(func.count(Conversation.id)).where(
-            Conversation.user_id == str(user_id)
-        )
+        stmt = select(func.count(Conversation.id)).where(Conversation.user_id == str(user_id))
         result = await self.session.execute(stmt)
         return result.scalar_one() or 0
 
-    async def update_conversation_title(
-        self, conversation: Conversation, title: str
-    ) -> Conversation:
+    async def update_conversation_title(self, conversation: Conversation, title: str) -> Conversation:
         conversation.title = title
         await self.session.commit()
         await self.session.refresh(conversation)
@@ -78,7 +68,7 @@ class ConversationRepository:
         conversation_id: str | uuid.UUID,
         role: str,
         content: str,
-        intent: Optional[str] = None,
+        intent: str | None = None,
     ) -> ConversationMessage:
         message = ConversationMessage(
             id=str(uuid.uuid4()),
@@ -97,9 +87,7 @@ class ConversationRepository:
         await self.session.refresh(message)
         return message
 
-    async def get_recent_messages(
-        self, conversation_id: str | uuid.UUID, limit: int = 10
-    ) -> list[ConversationMessage]:
+    async def get_recent_messages(self, conversation_id: str | uuid.UUID, limit: int = 10) -> list[ConversationMessage]:
         stmt = (
             select(ConversationMessage)
             .where(ConversationMessage.conversation_id == str(conversation_id))
@@ -110,4 +98,3 @@ class ConversationRepository:
         messages = list(result.scalars().all())
         messages.reverse()
         return messages
-

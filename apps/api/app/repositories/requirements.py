@@ -1,21 +1,19 @@
 """Repositories for Requirements Analysis and Traceability."""
+
 from __future__ import annotations
 
-from typing import Any
-from sqlalchemy import select, and_, func
-from sqlalchemy.orm import selectinload
+from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
+from app.models.enums import ClarificationStatus
 from app.models.requirements import (
-    RequirementsAnalysis,
-    Requirement,
-    ClarificationQuestion,
-    RequirementAssumption,
-    RequirementRisk,
     AnalysisRevision,
+    ClarificationQuestion,
+    Requirement,
+    RequirementsAnalysis,
     RequirementTaskLink,
 )
-from app.models.enums import AnalysisStatus, ClarificationStatus, RequirementStatus
 from app.repositories.base import BaseRepository
 
 
@@ -28,7 +26,9 @@ class RequirementsAnalysisRepository(BaseRepository[RequirementsAnalysis]):
             select(RequirementsAnalysis)
             .where(RequirementsAnalysis.id == id)
             .options(
-                selectinload(RequirementsAnalysis.requirements).selectinload(Requirement.task_links).selectinload(RequirementTaskLink.task),
+                selectinload(RequirementsAnalysis.requirements)
+                .selectinload(Requirement.task_links)
+                .selectinload(RequirementTaskLink.task),
                 selectinload(RequirementsAnalysis.questions),
                 selectinload(RequirementsAnalysis.assumptions),
                 selectinload(RequirementsAnalysis.risks),
@@ -80,9 +80,7 @@ class RequirementRepository(BaseRepository[Requirement]):
         stmt = (
             select(Requirement)
             .where(Requirement.id == id)
-            .options(
-                selectinload(Requirement.task_links).selectinload(RequirementTaskLink.task)
-            )
+            .options(selectinload(Requirement.task_links).selectinload(RequirementTaskLink.task))
         )
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
@@ -91,9 +89,7 @@ class RequirementRepository(BaseRepository[Requirement]):
         stmt = (
             select(Requirement)
             .where(Requirement.analysis_id == analysis_id)
-            .options(
-                selectinload(Requirement.task_links).selectinload(RequirementTaskLink.task)
-            )
+            .options(selectinload(Requirement.task_links).selectinload(RequirementTaskLink.task))
             .order_by(Requirement.key.asc())
         )
         result = await self.session.execute(stmt)
@@ -186,4 +182,3 @@ class AnalysisRevisionRepository(BaseRepository[AnalysisRevision]):
         )
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
-

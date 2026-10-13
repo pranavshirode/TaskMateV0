@@ -1,8 +1,7 @@
 """Integration tests for Requirements Analysis Pipeline, Q&A, and Task Creation."""
+
 import pytest
 from httpx import AsyncClient
-
-from app.models.enums import AnalysisStatus, RequirementStatus, TaskStatus
 
 
 @pytest.mark.asyncio
@@ -167,4 +166,3 @@ async def test_requirements_archive_and_validation(
         headers=headers,
     )
     assert approve_err.status_code == 422
-

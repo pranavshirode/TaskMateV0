@@ -4,6 +4,7 @@ Builds a minimal, user-scoped representation of the developer's workspace
 (projects, clients, active tasks, current date) to provide ground truth
 for intent parsing and entity resolution.
 """
+
 from __future__ import annotations
 
 from datetime import date, datetime, timezone
@@ -79,7 +80,7 @@ class AIContext:
         lines.append("Open / Recent Tasks:")
         if self.recent_tasks:
             for t in self.recent_tasks[:15]:
-                proj_note = f" [Project: {t.get('project_name', 'None')}]" if t.get('project_name') else ""
+                proj_note = f" [Project: {t.get('project_name', 'None')}]" if t.get("project_name") else ""
                 lines.append(
                     f"- ID: {t['id']}, Title: '{t['title']}', Status: {t['status']}, Priority: {t['priority']}{proj_note}"
                 )
@@ -115,15 +116,17 @@ class AIContextBuilder:
         tasks: list[dict[str, Any]] = []
         proj_map = {p["id"]: p["name"] for p in projects}
         for t in tasks_resp.items:
-            tasks.append({
-                "id": t.id,
-                "title": t.title,
-                "status": t.status.value if hasattr(t.status, "value") else str(t.status),
-                "priority": t.priority.value if hasattr(t.priority, "value") else str(t.priority),
-                "project_id": t.project_id,
-                "project_name": proj_map.get(t.project_id, None),
-                "due_date": t.due_date.isoformat() if t.due_date else None,
-            })
+            tasks.append(
+                {
+                    "id": t.id,
+                    "title": t.title,
+                    "status": t.status.value if hasattr(t.status, "value") else str(t.status),
+                    "priority": t.priority.value if hasattr(t.priority, "value") else str(t.priority),
+                    "project_id": t.project_id,
+                    "project_name": proj_map.get(t.project_id),
+                    "due_date": t.due_date.isoformat() if t.due_date else None,
+                }
+            )
 
         ctx = AIContext(
             current_date=current_date,
@@ -159,11 +162,13 @@ class AIContextBuilder:
                 for a in analyses:
                     for r in a.requirements:
                         if r.status.value == "APPROVED" or str(r.status) == "APPROVED":
-                            approved_reqs.append({
-                                "key": r.key,
-                                "title": r.title,
-                                "description": r.description[:200],
-                            })
+                            approved_reqs.append(
+                                {
+                                    "key": r.key,
+                                    "title": r.title,
+                                    "description": r.description[:200],
+                                }
+                            )
 
                 ctx.set_project_memory(notes_data, approved_reqs)
             except Exception:
@@ -173,4 +178,3 @@ class AIContextBuilder:
 
 
 ContextBuilder = AIContextBuilder
-

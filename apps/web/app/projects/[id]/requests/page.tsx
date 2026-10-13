@@ -1,14 +1,19 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
-import Link from 'next/link';
-import { apiClient, type Project, type ClientRequest, type ImpactSummary } from '@/lib/api-client';
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
-import ErrorState from '@/components/ui/ErrorState';
-import Badge from '@/components/ui/Badge';
-import Button from '@/components/ui/Button';
-import Input from '@/components/ui/Input';
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import Link from "next/link";
+import {
+  apiClient,
+  type Project,
+  type ClientRequest,
+  type ImpactSummary,
+} from "@/lib/api-client";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import ErrorState from "@/components/ui/ErrorState";
+import Badge from "@/components/ui/Badge";
+import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
 
 export default function ProjectClientRequestsPage() {
   const { id: projectId } = useParams<{ id: string }>();
@@ -19,9 +24,9 @@ export default function ProjectClientRequestsPage() {
 
   // New request form
   const [showForm, setShowForm] = useState(false);
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [requestType, setRequestType] = useState('CHANGE_REQUEST');
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const [requestType, setRequestType] = useState("CHANGE_REQUEST");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Impact analysis modal
@@ -39,7 +44,9 @@ export default function ProjectClientRequestsPage() {
       setProject(projRes);
       setRequests(reqRes || []);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to load client requests');
+      setError(
+        err instanceof Error ? err.message : "Failed to load client requests"
+      );
     } finally {
       setIsLoading(false);
     }
@@ -60,12 +67,12 @@ export default function ProjectClientRequestsPage() {
         content: content.trim(),
         request_type: requestType,
       });
-      setTitle('');
-      setContent('');
+      setTitle("");
+      setContent("");
       setShowForm(false);
       fetchData();
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Failed to create request');
+      alert(err instanceof Error ? err.message : "Failed to create request");
     } finally {
       setIsSubmitting(false);
     }
@@ -75,10 +82,12 @@ export default function ProjectClientRequestsPage() {
     try {
       setAnalyzingReqId(requestId);
       const impact = await apiClient.analyzeClientRequestImpact(requestId);
-      setActiveImpact((impact.impact_summary || impact) as unknown as ImpactSummary);
+      setActiveImpact(
+        (impact.impact_summary || impact) as unknown as ImpactSummary
+      );
       fetchData();
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Failed to analyze impact');
+      alert(err instanceof Error ? err.message : "Failed to analyze impact");
     } finally {
       setAnalyzingReqId(null);
     }
@@ -90,7 +99,7 @@ export default function ProjectClientRequestsPage() {
       setActiveImpact(null);
       fetchData();
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Failed to approve request');
+      alert(err instanceof Error ? err.message : "Failed to approve request");
     }
   };
 
@@ -113,7 +122,7 @@ export default function ProjectClientRequestsPage() {
           href={`/projects/${projectId}`}
           className="text-sm text-[var(--text-muted)] hover:text-[var(--foreground)]"
         >
-          ← Back to {project?.name || 'Project'}
+          ← Back to {project?.name || "Project"}
         </Link>
       </div>
 
@@ -123,17 +132,23 @@ export default function ProjectClientRequestsPage() {
             Client Requests: {project?.name}
           </h1>
           <p className="text-sm text-[var(--text-muted)] mt-1">
-            Capture incoming emails, messages, or meeting requests and assess scope impact against approved requirements.
+            Capture incoming emails, messages, or meeting requests and assess
+            scope impact against approved requirements.
           </p>
         </div>
-        <Button variant={showForm ? 'secondary' : 'primary'} onClick={() => setShowForm(!showForm)}>
-          {showForm ? 'Cancel' : '+ Record Client Request'}
+        <Button
+          variant={showForm ? "secondary" : "primary"}
+          onClick={() => setShowForm(!showForm)}
+        >
+          {showForm ? "Cancel" : "+ Record Client Request"}
         </Button>
       </div>
 
       {showForm && (
         <div className="bg-[var(--sidebar-bg)] border border-[var(--sidebar-border)] rounded-xl p-6 mb-8">
-          <h2 className="text-base font-semibold mb-4">Record New Client Request / Message</h2>
+          <h2 className="text-base font-semibold mb-4">
+            Record New Client Request / Message
+          </h2>
           <form onSubmit={handleCreateRequest} className="space-y-4">
             <div>
               <label className="block text-xs font-medium text-[var(--text-muted)] mb-1">
@@ -179,11 +194,15 @@ export default function ProjectClientRequestsPage() {
             </div>
 
             <div className="flex justify-end gap-3">
-              <Button type="button" variant="secondary" onClick={() => setShowForm(false)}>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setShowForm(false)}
+              >
                 Cancel
               </Button>
               <Button type="submit" variant="primary" disabled={isSubmitting}>
-                {isSubmitting ? 'Recording...' : 'Record Request'}
+                {isSubmitting ? "Recording..." : "Record Request"}
               </Button>
             </div>
           </form>
@@ -211,9 +230,11 @@ export default function ProjectClientRequestsPage() {
                     onClick={() => handleAnalyzeImpact(r.id)}
                     disabled={analyzingReqId === r.id}
                   >
-                    {analyzingReqId === r.id ? 'Analyzing...' : '⚡ Assess Impact'}
+                    {analyzingReqId === r.id
+                      ? "Analyzing..."
+                      : "⚡ Assess Impact"}
                   </Button>
-                  {r.status !== 'APPROVED' && (
+                  {r.status !== "APPROVED" && (
                     <Button
                       variant="primary"
                       onClick={() => handleApproveRequest(r.id)}
@@ -224,23 +245,34 @@ export default function ProjectClientRequestsPage() {
                 </div>
               </div>
 
-              <p className="text-xs text-[var(--text-muted)] whitespace-pre-wrap mb-3">{r.content}</p>
+              <p className="text-xs text-[var(--text-muted)] whitespace-pre-wrap mb-3">
+                {r.content}
+              </p>
 
               {r.impact_summary && (
                 <div className="bg-[var(--background)] border border-[var(--sidebar-border)] rounded-lg p-3 text-xs">
                   <span className="font-semibold text-amber-400 block mb-1">
-                    AI Impact Assessment ({String(r.impact_summary.request_type || '')}):
+                    AI Impact Assessment (
+                    {String(r.impact_summary.request_type || "")}):
                   </span>
                   <p className="text-[var(--text-muted)] mb-2">
-                    {String(r.impact_summary.scope_change_summary || r.impact_summary.classification_explanation || '')}
+                    {String(
+                      r.impact_summary.scope_change_summary ||
+                        r.impact_summary.classification_explanation ||
+                        ""
+                    )}
                   </p>
                   {(r.impact_summary.recommended_actions?.length || 0) > 0 && (
                     <div>
-                      <span className="font-medium text-[var(--foreground)] block">Recommended Actions:</span>
+                      <span className="font-medium text-[var(--foreground)] block">
+                        Recommended Actions:
+                      </span>
                       <ul className="list-disc pl-4 space-y-0.5 text-[var(--text-muted)]">
-                        {r.impact_summary.recommended_actions?.map((act: string, i: number) => (
-                          <li key={i}>{act}</li>
-                        ))}
+                        {r.impact_summary.recommended_actions?.map(
+                          (act: string, i: number) => (
+                            <li key={i}>{act}</li>
+                          )
+                        )}
                       </ul>
                     </div>
                   )}
@@ -264,24 +296,34 @@ export default function ProjectClientRequestsPage() {
       {activeImpact && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
           <div className="bg-[var(--sidebar-bg)] border border-[var(--sidebar-border)] rounded-xl max-w-lg w-full p-6 shadow-2xl">
-            <h3 className="text-base font-bold mb-2">Change Impact Assessment</h3>
+            <h3 className="text-base font-bold mb-2">
+              Change Impact Assessment
+            </h3>
             <p className="text-xs text-[var(--text-muted)] mb-4">
-              {String(activeImpact.classification_explanation || '')}
+              {String(activeImpact.classification_explanation || "")}
             </p>
 
             <div className="space-y-3 text-xs mb-6">
               <div>
-                <span className="font-semibold text-[var(--foreground)] block">Scope Change Summary:</span>
-                <p className="text-[var(--text-muted)]">{String(activeImpact.scope_change_summary || '')}</p>
+                <span className="font-semibold text-[var(--foreground)] block">
+                  Scope Change Summary:
+                </span>
+                <p className="text-[var(--text-muted)]">
+                  {String(activeImpact.scope_change_summary || "")}
+                </p>
               </div>
 
               {(activeImpact.recommended_actions?.length || 0) > 0 && (
                 <div>
-                  <span className="font-semibold text-[var(--foreground)] block">Recommended Actions:</span>
+                  <span className="font-semibold text-[var(--foreground)] block">
+                    Recommended Actions:
+                  </span>
                   <ul className="list-disc pl-4 space-y-0.5 text-[var(--text-muted)]">
-                    {activeImpact.recommended_actions?.map((act: string, i: number) => (
-                      <li key={i}>{act}</li>
-                    ))}
+                    {activeImpact.recommended_actions?.map(
+                      (act: string, i: number) => (
+                        <li key={i}>{act}</li>
+                      )
+                    )}
                   </ul>
                 </div>
               )}
@@ -293,7 +335,9 @@ export default function ProjectClientRequestsPage() {
               </Button>
               <Button
                 variant="primary"
-                onClick={() => handleApproveRequest(String(activeImpact.request_id || ''))}
+                onClick={() =>
+                  handleApproveRequest(String(activeImpact.request_id || ""))
+                }
               >
                 Approve Change
               </Button>
@@ -304,4 +348,3 @@ export default function ProjectClientRequestsPage() {
     </div>
   );
 }
-

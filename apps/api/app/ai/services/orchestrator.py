@@ -7,6 +7,7 @@ Entity Resolution -> Domain Service Execution -> Response Synthesis & Logging.
 CRITICAL: The LLM NEVER directly accesses the database.
 All mutations and queries strictly go through existing domain services.
 """
+
 from __future__ import annotations
 
 import json
@@ -14,7 +15,6 @@ import logging
 import re
 import time
 import uuid
-from datetime import datetime, timezone
 from typing import Any
 
 from sqlalchemy import select
@@ -22,13 +22,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.context.builder import AIContextBuilder
 from app.ai.context.resolver import EntityResolver
-from app.ai.errors import AIError, AIResponseError
+from app.ai.errors import AIResponseError
 from app.ai.prompts.system_prompt import build_system_prompt
 from app.ai.providers import get_ai_provider
 from app.ai.providers.base import AIMessage, BaseAIProvider
-from app.ai.schemas.actions import ActionType
-from app.ai.schemas.intent import ExtractedEntities, IntentType, ParsedIntent
-from app.ai.schemas.responses import AIChatResponse, AIActionResult
+from app.ai.schemas.intent import ExtractedEntities, IntentType
+from app.ai.schemas.responses import AIActionResult, AIChatResponse
 from app.models.ai import AIRequestLog, Conversation, ConversationMessage
 from app.models.enums import TaskPriority, TaskStatus
 from app.schemas.task import TaskCreate, TaskPriorityUpdate, TaskStatusUpdate
@@ -65,9 +64,7 @@ class AIOrchestrator:
                 return conv
 
         # Create new conversation
-        short_title = (
-            first_message[:40] + "..." if len(first_message) > 40 else first_message
-        )
+        short_title = first_message[:40] + "..." if len(first_message) > 40 else first_message
         new_conv = Conversation(
             id=str(uuid.uuid4()),
             user_id=user_id,
@@ -77,9 +74,7 @@ class AIOrchestrator:
         await self.db.flush()
         return new_conv
 
-    async def _get_recent_messages(
-        self, conversation_id: str, limit: int = 10
-    ) -> list[ConversationMessage]:
+    async def _get_recent_messages(self, conversation_id: str, limit: int = 10) -> list[ConversationMessage]:
         result = await self.db.execute(
             select(ConversationMessage)
             .where(ConversationMessage.conversation_id == conversation_id)
@@ -110,9 +105,7 @@ class AIOrchestrator:
         except json.JSONDecodeError as e:
             raise AIResponseError(f"Failed to parse LLM JSON response: {str(e)}") from e
 
-    async def chat(
-        self, user_id: str, message: str, conversation_id: str | None = None
-    ) -> AIChatResponse:
+    async def chat(self, user_id: str, message: str, conversation_id: str | None = None) -> AIChatResponse:
         """Process a user message through the complete AI pipeline."""
         start_time = time.time()
 
@@ -203,14 +196,12 @@ class AIOrchestrator:
             entities_raw = parsed_dict.get("entities", {}) or {}
             entities = ExtractedEntities(**entities_raw)
             reply = parsed_dict.get("reply", "")
-            reasoning = parsed_dict.get("reasoning", "")
         except Exception as e:
             logger.warning("Failed to parse intent JSON, falling back to general question: %s", e)
             intent_val = "GENERAL_QUESTION"
             confidence = 0.5
             entities = ExtractedEntities()
             reply = ai_resp.content or "I couldn't clearly parse that request. Could you rephrase it?"
-            reasoning = "Parsing fallback"
 
         # 7. Entity Resolution
         resolved = EntityResolver.resolve(
@@ -274,9 +265,7 @@ class AIOrchestrator:
 
                 proj_msg = f" for project '{resolved.project_name}'" if resolved.project_name else ""
                 due_msg = f", due {resolved.due_date.isoformat()}" if resolved.due_date else ""
-                final_message = (
-                    f"Created task '{created_task.title}' ({priority.value} priority{due_msg}){proj_msg}."
-                )
+                final_message = f"Created task '{created_task.title}' ({priority.value} priority{due_msg}){proj_msg}."
                 actions.append(
                     AIActionResult(
                         type="TASK_CREATED",
@@ -490,7 +479,9 @@ class AIOrchestrator:
             else:
                 # GENERAL_QUESTION
                 if not final_message:
-                    final_message = "I am TaskMate AI, your workspace assistant. How can I assist you with your tasks or projects?"
+                    final_message = (
+                        "I am TaskMate AI, your workspace assistant. How can I assist you with your tasks or projects?"
+                    )
 
         except Exception as e:
             logger.error("Error executing domain action for intent %s: %s", intent_val, e)
@@ -529,4 +520,3 @@ class AIOrchestrator:
                 "tasks_count": len(context.recent_tasks),
             },
         )
-

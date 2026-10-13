@@ -1,9 +1,10 @@
 import pytest
-from app.ai.providers.base import AIMessage, BaseAIProvider
+
+from app.ai.errors import AIProviderError
+from app.ai.providers import get_ai_provider
+from app.ai.providers.base import AIMessage
 from app.ai.providers.mock_provider import MockAIProvider
 from app.ai.providers.openai_provider import OpenAIProvider
-from app.ai.providers import get_ai_provider
-from app.ai.errors import AIProviderError
 
 
 @pytest.mark.asyncio
@@ -39,4 +40,3 @@ async def test_openai_provider_without_key_raises_error():
 def test_get_ai_provider_factory():
     provider = get_ai_provider(provider_type="mock")
     assert isinstance(provider, MockAIProvider)
-

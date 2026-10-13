@@ -20,22 +20,23 @@ function CallbackContent() {
     // In a real app, we'd exchange the code for an access token on the backend.
     // For local development without a real OAuth app, we're accepting the token directly.
     // Here we'll just simulate it or use the code as token if running locally.
-    
-    apiClient.connectGitHub({ access_token: code })
-      .then(({ error }) => {
-        if (error) {
-          setStatus(`Failed to connect: ${error.message}`);
-        } else {
-          setStatus("Successfully connected GitHub!");
-        }
-        setTimeout(() => router.push("/settings/integrations"), 2000);
-      });
+
+    apiClient.connectGitHub({ access_token: code }).then(({ error }) => {
+      if (error) {
+        setStatus(`Failed to connect: ${error.message}`);
+      } else {
+        setStatus("Successfully connected GitHub!");
+      }
+      setTimeout(() => router.push("/settings/integrations"), 2000);
+    });
   }, [router, searchParams]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[50vh]">
       <div className="text-xl font-medium">{status}</div>
-      <p className="text-[var(--text-muted)] mt-2">Redirecting you back to settings...</p>
+      <p className="text-[var(--text-muted)] mt-2">
+        Redirecting you back to settings...
+      </p>
     </div>
   );
 }
@@ -47,4 +48,3 @@ export default function GitHubCallbackPage() {
     </Suspense>
   );
 }
-

@@ -17,7 +17,9 @@ export default function Header() {
         {user ? (
           <span className="text-sm font-medium">{user.name}</span>
         ) : (
-          <span className="text-sm text-[var(--text-muted)]">Developer Workspace</span>
+          <span className="text-sm text-[var(--text-muted)]">
+            Developer Workspace
+          </span>
         )}
       </div>
     </header>

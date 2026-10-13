@@ -1,17 +1,21 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { apiClient, type Project, type RequirementsAnalysis } from '@/lib/api-client';
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
-import ErrorState from '@/components/ui/ErrorState';
-import Badge from '@/components/ui/Badge';
-import Button from '@/components/ui/Button';
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import {
+  apiClient,
+  type Project,
+  type RequirementsAnalysis,
+} from "@/lib/api-client";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import ErrorState from "@/components/ui/ErrorState";
+import Badge from "@/components/ui/Badge";
+import Button from "@/components/ui/Button";
 
 export default function RequirementsIndexPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [analyses, setAnalyses] = useState<RequirementsAnalysis[]>([]);
-  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
+  const [selectedProjectId, setSelectedProjectId] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,7 +33,7 @@ export default function RequirementsIndexPage() {
         setAnalyses(analysisRes || []);
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to load projects');
+      setError(err instanceof Error ? err.message : "Failed to load projects");
     } finally {
       setIsLoading(false);
     }
@@ -46,7 +50,7 @@ export default function RequirementsIndexPage() {
       const res = await apiClient.listProjectAnalyses(projectId);
       setAnalyses(res || []);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to load analyses');
+      setError(err instanceof Error ? err.message : "Failed to load analyses");
     } finally {
       setIsLoading(false);
     }
@@ -56,9 +60,12 @@ export default function RequirementsIndexPage() {
     <div className="max-w-5xl mx-auto pb-12">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Requirements Analysis</h1>
+          <h1 className="text-2xl font-bold tracking-tight">
+            Requirements Analysis
+          </h1>
           <p className="text-sm text-[var(--text-muted)] mt-1">
-            AI-assisted client brief breakdown, clarification questions, and task traceability.
+            AI-assisted client brief breakdown, clarification questions, and
+            task traceability.
           </p>
         </div>
         {selectedProjectId && (
@@ -70,7 +77,9 @@ export default function RequirementsIndexPage() {
 
       {projects.length > 0 ? (
         <div className="mb-6 flex items-center gap-3">
-          <label className="text-sm font-medium text-[var(--text-muted)]">Select Project:</label>
+          <label className="text-sm font-medium text-[var(--text-muted)]">
+            Select Project:
+          </label>
           <select
             value={selectedProjectId}
             onChange={(e) => handleProjectChange(e.target.value)}
@@ -114,14 +123,29 @@ export default function RequirementsIndexPage() {
                 {a.brief}
               </p>
               <div className="flex flex-wrap gap-4 text-xs text-[var(--text-muted)] border-t border-[var(--sidebar-border)] pt-3">
-                <span>Requirements: <strong className="text-[var(--foreground)]">{a.total_requirements || a.requirements?.length || 0}</strong></span>
-                <span>Approved: <strong className="text-green-400">{a.approved_requirements || 0}</strong></span>
+                <span>
+                  Requirements:{" "}
+                  <strong className="text-[var(--foreground)]">
+                    {a.total_requirements || a.requirements?.length || 0}
+                  </strong>
+                </span>
+                <span>
+                  Approved:{" "}
+                  <strong className="text-green-400">
+                    {a.approved_requirements || 0}
+                  </strong>
+                </span>
                 {(a.unresolved_questions || 0) > 0 && (
                   <span className="text-amber-400 font-medium">
                     ⚠️ {a.unresolved_questions} Questions Unresolved
                   </span>
                 )}
-                <span>Created: {a.created_at ? new Date(a.created_at).toLocaleDateString() : '—'}</span>
+                <span>
+                  Created:{" "}
+                  {a.created_at
+                    ? new Date(a.created_at).toLocaleDateString()
+                    : "—"}
+                </span>
               </div>
             </Link>
           ))}
@@ -141,4 +165,3 @@ export default function RequirementsIndexPage() {
     </div>
   );
 }
-

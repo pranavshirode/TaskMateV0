@@ -4,8 +4,8 @@ These tools wrap ClientService methods, allowing the agent
 to read and list clients via natural language.
 """
 
-import uuid
 import logging
+import uuid
 from typing import Any
 
 from app.agent.tools.base import AgentTool, ToolContext, ToolPermission, ToolResult
@@ -102,11 +102,13 @@ class ClientListTool(AgentTool):
                 limit=limit,
                 **input_data,
             )
-            return ToolResult.ok({
-                "clients": [c.model_dump(mode="json") for c in items],
-                "total": total,
-                "returned": len(items),
-            })
+            return ToolResult.ok(
+                {
+                    "clients": [c.model_dump(mode="json") for c in items],
+                    "total": total,
+                    "returned": len(items),
+                }
+            )
         except Exception as e:
             logger.exception("client.list failed")
             return ToolResult.fail("INTERNAL_ERROR", f"Failed to list clients: {e}")
@@ -115,4 +117,3 @@ class ClientListTool(AgentTool):
 def get_client_tools() -> list[AgentTool]:
     """Return all client tools for registry registration."""
     return [ClientGetTool(), ClientListTool()]
-

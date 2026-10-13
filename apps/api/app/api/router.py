@@ -10,8 +10,20 @@ health_router.include_router(health.router)
 
 # V1 routes
 from app.api.routes import (
-    auth, clients, projects, repositories, tasks, dashboard, labels, ai,
-    integrations, agent, requirements, project_context, client_requests, automations,
+    agent,
+    ai,
+    auth,
+    automations,
+    client_requests,
+    clients,
+    dashboard,
+    integrations,
+    labels,
+    project_context,
+    projects,
+    repositories,
+    requirements,
+    tasks,
 )
 
 v1_router = APIRouter(prefix="/api/v1")

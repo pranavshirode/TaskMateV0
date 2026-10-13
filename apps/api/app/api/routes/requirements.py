@@ -1,4 +1,5 @@
 """API endpoints for Requirements Analysis and Traceability."""
+
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, status
@@ -11,10 +12,10 @@ from app.schemas.requirements import (
     ApproveTaskPlanResponse,
     ClarificationQuestionSchema,
     GenerateTaskPlanResponse,
-    RequirementSchema,
     RequirementsAnalysisCreate,
     RequirementsAnalysisDetail,
     RequirementsAnalysisSummary,
+    RequirementSchema,
     RequirementUpdate,
     TraceabilityResponse,
 )
@@ -155,4 +156,3 @@ async def get_traceability(
     service: RequirementsService = Depends(get_requirements_service),
 ):
     return await service.get_traceability(str(current_user.id), analysis_id)
-

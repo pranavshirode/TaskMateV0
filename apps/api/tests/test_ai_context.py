@@ -1,6 +1,8 @@
-import pytest
 from datetime import date, timedelta
-from app.ai.context.builder import AIContext, AIContextBuilder
+
+import pytest
+
+from app.ai.context.builder import AIContextBuilder
 from app.ai.context.resolver import EntityResolver
 from app.models.enums import TaskPriority, TaskStatus
 
@@ -57,8 +59,9 @@ async def test_context_builder_user_isolation(db_session, create_test_user):
     user2, _ = await create_test_user("user2@example.com")
 
     # Create project for user1
-    from app.services.project import ProjectService
     from app.schemas.project import ProjectCreate
+    from app.services.project import ProjectService
+
     ps = ProjectService(db_session)
     await ps.create(user1.id, ProjectCreate(name="User1 Secret Project"))
 
@@ -69,4 +72,3 @@ async def test_context_builder_user_isolation(db_session, create_test_user):
     # Verify user2 context does not see user1's project
     assert len(context_user2.projects) == 0
     assert "User1 Secret Project" not in context_user2.to_prompt_text()
-

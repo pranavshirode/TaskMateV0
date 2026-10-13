@@ -1,4 +1,4 @@
-from sqlalchemy import select, or_, desc, asc
+from sqlalchemy import asc, desc, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.client import Client

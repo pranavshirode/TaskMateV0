@@ -1,21 +1,21 @@
 """Agent API routes for multi-step AI execution."""
 
 import uuid
-from typing import Any, Optional
+from typing import Any
+
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
-from fastapi import APIRouter, Depends, HTTPException, status
 
-from app.api.deps import get_current_user, get_agent_orchestrator
-from app.models.user import User
 from app.agent.orchestrator import AgentOrchestrator
-
+from app.api.deps import get_agent_orchestrator, get_current_user
+from app.models.user import User
 
 router = APIRouter()
 
 
 class AgentRunRequest(BaseModel):
     prompt: str
-    conversation_id: Optional[uuid.UUID] = None
+    conversation_id: uuid.UUID | None = None
 
 
 class AgentRunResponse(BaseModel):
@@ -38,4 +38,3 @@ async def run_agent(
         conversation_id=request.conversation_id,
     )
     return result
-

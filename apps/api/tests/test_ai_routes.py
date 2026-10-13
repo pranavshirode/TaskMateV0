@@ -47,4 +47,3 @@ async def test_ai_chat_flow(auth_client: AsyncClient):
     # Delete conversation
     del_resp = await auth_client.delete(f"/api/v1/ai/conversations/{conv_id}")
     assert del_resp.status_code == 204
-

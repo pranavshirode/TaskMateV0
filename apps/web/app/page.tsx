@@ -1,12 +1,17 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useAuth } from '@/lib/auth-context';
-import { apiClient, type DashboardToday, type Task, type Project } from '@/lib/api-client';
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
-import ErrorState from '@/components/ui/ErrorState';
-import Badge from '@/components/ui/Badge';
-import Link from 'next/link';
+import { useEffect, useState } from "react";
+import { useAuth } from "@/lib/auth-context";
+import {
+  apiClient,
+  type DashboardToday,
+  type Task,
+  type Project,
+} from "@/lib/api-client";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import ErrorState from "@/components/ui/ErrorState";
+import Badge from "@/components/ui/Badge";
+import Link from "next/link";
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -21,7 +26,9 @@ export default function DashboardPage() {
       const res = await apiClient.getDashboardToday();
       setData(res);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to load dashboard data');
+      setError(
+        err instanceof Error ? err.message : "Failed to load dashboard data"
+      );
     } finally {
       setIsLoading(false);
     }
@@ -33,9 +40,9 @@ export default function DashboardPage() {
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return 'Good morning';
-    if (hour < 18) return 'Good afternoon';
-    return 'Good evening';
+    if (hour < 12) return "Good morning";
+    if (hour < 18) return "Good afternoon";
+    return "Good evening";
   };
 
   if (isLoading) {
@@ -64,7 +71,9 @@ export default function DashboardPage() {
         <Badge type="status" value={task.status} />
         <Badge type="priority" value={task.priority} />
         {task.due_date && (
-          <span className="text-xs text-[var(--text-muted)]">Due: {task.due_date}</span>
+          <span className="text-xs text-[var(--text-muted)]">
+            Due: {task.due_date}
+          </span>
         )}
       </div>
     </Link>
@@ -74,7 +83,7 @@ export default function DashboardPage() {
     <div className="max-w-5xl mx-auto space-y-8 pb-12">
       <header className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight mb-2">
-          {getGreeting()}, {user?.name || 'Developer'}
+          {getGreeting()}, {user?.name || "Developer"}
         </h1>
         <p className="text-[var(--text-muted)]">
           Here&apos;s what needs your attention today.
@@ -87,7 +96,9 @@ export default function DashboardPage() {
           <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
             <span>📅</span> Due Today
             {(data.due_today?.length || 0) > 0 && (
-              <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full">{data.due_today.length}</span>
+              <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full">
+                {data.due_today.length}
+              </span>
             )}
           </h2>
           {(data.due_today?.length || 0) > 0 ? (
@@ -97,7 +108,9 @@ export default function DashboardPage() {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-[var(--text-muted)]">No tasks due today. Enjoy your day!</p>
+            <p className="text-sm text-[var(--text-muted)]">
+              No tasks due today. Enjoy your day!
+            </p>
           )}
         </section>
 
@@ -106,7 +119,9 @@ export default function DashboardPage() {
           <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-red-400">
             <span>⚠️</span> Overdue
             {(data.overdue?.length || 0) > 0 && (
-              <span className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full">{data.overdue.length}</span>
+              <span className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full">
+                {data.overdue.length}
+              </span>
             )}
           </h2>
           {(data.overdue?.length || 0) > 0 ? (
@@ -116,7 +131,9 @@ export default function DashboardPage() {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-[var(--text-muted)]">No overdue tasks. Great job!</p>
+            <p className="text-sm text-[var(--text-muted)]">
+              No overdue tasks. Great job!
+            </p>
           )}
         </section>
 
@@ -125,7 +142,9 @@ export default function DashboardPage() {
           <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-orange-400">
             <span>🔥</span> High Priority
             {(data.high_priority?.length || 0) > 0 && (
-              <span className="text-xs bg-orange-500/20 text-orange-400 px-2 py-0.5 rounded-full">{data.high_priority.length}</span>
+              <span className="text-xs bg-orange-500/20 text-orange-400 px-2 py-0.5 rounded-full">
+                {data.high_priority.length}
+              </span>
             )}
           </h2>
           {(data.high_priority?.length || 0) > 0 ? (
@@ -135,7 +154,9 @@ export default function DashboardPage() {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-[var(--text-muted)]">No urgent or high priority tasks.</p>
+            <p className="text-sm text-[var(--text-muted)]">
+              No urgent or high priority tasks.
+            </p>
           )}
         </section>
 
@@ -154,13 +175,17 @@ export default function DashboardPage() {
                 >
                   <div className="font-medium text-sm">{project.name}</div>
                   {project.deadline && (
-                    <div className="text-xs text-[var(--text-muted)] mt-1">Deadline: {project.deadline}</div>
+                    <div className="text-xs text-[var(--text-muted)] mt-1">
+                      Deadline: {project.deadline}
+                    </div>
                   )}
                 </Link>
               ))}
             </div>
           ) : (
-            <p className="text-sm text-[var(--text-muted)]">No active projects yet.</p>
+            <p className="text-sm text-[var(--text-muted)]">
+              No active projects yet.
+            </p>
           )}
         </section>
       </div>
@@ -177,7 +202,9 @@ export default function DashboardPage() {
             ))}
           </div>
         ) : (
-          <p className="text-sm text-[var(--text-muted)]">No recent activity.</p>
+          <p className="text-sm text-[var(--text-muted)]">
+            No recent activity.
+          </p>
         )}
       </section>
 
@@ -187,22 +214,48 @@ export default function DashboardPage() {
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <span>📋</span> Requirements & Workspace Intelligence
           </h2>
-          <Link href="/requirements" className="text-xs text-[var(--primary)] hover:underline">
+          <Link
+            href="/requirements"
+            className="text-xs text-[var(--primary)] hover:underline"
+          >
             View All Requirements →
           </Link>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Link href="/requirements" className="p-4 rounded-lg border border-[var(--sidebar-border)] hover:border-[var(--primary)] transition-colors">
-            <div className="font-semibold text-sm mb-1">Requirements Analysis</div>
-            <p className="text-xs text-[var(--text-muted)]">Analyze client briefs, answer clarifying questions, and trace tasks.</p>
+          <Link
+            href="/requirements"
+            className="p-4 rounded-lg border border-[var(--sidebar-border)] hover:border-[var(--primary)] transition-colors"
+          >
+            <div className="font-semibold text-sm mb-1">
+              Requirements Analysis
+            </div>
+            <p className="text-xs text-[var(--text-muted)]">
+              Analyze client briefs, answer clarifying questions, and trace
+              tasks.
+            </p>
           </Link>
-          <Link href="/projects" className="p-4 rounded-lg border border-[var(--sidebar-border)] hover:border-[var(--primary)] transition-colors">
-            <div className="font-semibold text-sm mb-1">Project Decisions & Memory</div>
-            <p className="text-xs text-[var(--text-muted)]">Persist confirmed architectural decisions and constraints across AI sessions.</p>
+          <Link
+            href="/projects"
+            className="p-4 rounded-lg border border-[var(--sidebar-border)] hover:border-[var(--primary)] transition-colors"
+          >
+            <div className="font-semibold text-sm mb-1">
+              Project Decisions & Memory
+            </div>
+            <p className="text-xs text-[var(--text-muted)]">
+              Persist confirmed architectural decisions and constraints across
+              AI sessions.
+            </p>
           </Link>
-          <Link href="/projects" className="p-4 rounded-lg border border-[var(--sidebar-border)] hover:border-[var(--primary)] transition-colors">
-            <div className="font-semibold text-sm mb-1">Client Requests & Scope Impact</div>
-            <p className="text-xs text-[var(--text-muted)]">Assess incoming client requests against approved requirements.</p>
+          <Link
+            href="/projects"
+            className="p-4 rounded-lg border border-[var(--sidebar-border)] hover:border-[var(--primary)] transition-colors"
+          >
+            <div className="font-semibold text-sm mb-1">
+              Client Requests & Scope Impact
+            </div>
+            <p className="text-xs text-[var(--text-muted)]">
+              Assess incoming client requests against approved requirements.
+            </p>
           </Link>
         </div>
       </section>

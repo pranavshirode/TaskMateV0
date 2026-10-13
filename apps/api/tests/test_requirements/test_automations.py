@@ -1,4 +1,5 @@
 """Integration tests for Workflow Automations and Daily Project Summaries."""
+
 import pytest
 from httpx import AsyncClient
 
@@ -17,8 +18,8 @@ async def test_daily_project_summary_and_consistency(
     headers = {"Authorization": f"Bearer {token}"}
 
     # Create real tasks in various states
-    t1 = await create_test_task(user.id, title="Database Migration", project_id=proj.id)
-    t2 = await create_test_task(user.id, title="Frontend Form", project_id=proj.id)
+    await create_test_task(user.id, title="Database Migration", project_id=proj.id)
+    await create_test_task(user.id, title="Frontend Form", project_id=proj.id)
 
     # 1. Generate daily project summary
     summary_resp = await client.post(
@@ -50,4 +51,3 @@ async def test_daily_project_summary_and_consistency(
     assert len(executions) >= 1
     assert executions[0]["automation_type"] == "DAILY_PROJECT_SUMMARY"
     assert executions[0]["status"] == "SUCCESS"
-

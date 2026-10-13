@@ -4,9 +4,7 @@ import pytest
 class TestTaskEndpoints:
     @pytest.mark.asyncio
     async def test_create_task(self, auth_client):
-        res = await auth_client.post("/api/v1/tasks", json={
-            "title": "My First Task", "priority": "HIGH"
-        })
+        res = await auth_client.post("/api/v1/tasks", json={"title": "My First Task", "priority": "HIGH"})
         assert res.status_code == 201
         data = res.json()
         assert data["title"] == "My First Task"
@@ -111,9 +109,7 @@ class TestTaskEndpoints:
 class TestProjectEndpoints:
     @pytest.mark.asyncio
     async def test_create_project(self, auth_client):
-        res = await auth_client.post("/api/v1/projects", json={
-            "name": "My Project", "status": "PLANNING"
-        })
+        res = await auth_client.post("/api/v1/projects", json={"name": "My Project", "status": "PLANNING"})
         assert res.status_code == 201
         assert res.json()["name"] == "My Project"
 

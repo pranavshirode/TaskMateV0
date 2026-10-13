@@ -3,12 +3,13 @@
 All AI providers must implement this interface. The application code
 uses only this abstraction — never provider-specific APIs directly.
 """
+
 from __future__ import annotations
 
 import abc
 import enum
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any
 
 
 class MessageRole(str, enum.Enum):
@@ -21,6 +22,7 @@ class MessageRole(str, enum.Enum):
 @dataclass
 class ToolDefinition:
     """Definition of a tool the LLM can call."""
+
     name: str
     description: str
     parameters: dict[str, Any]
@@ -29,6 +31,7 @@ class ToolDefinition:
 @dataclass
 class ToolCallRequest:
     """A tool call requested by the LLM."""
+
     id: str
     name: str
     arguments: dict[str, Any]
@@ -37,16 +40,18 @@ class ToolCallRequest:
 @dataclass
 class AIMessage:
     """A message in the conversation sent to the AI provider."""
+
     role: str  # "system", "user", "assistant", "tool"
     content: str
     tool_calls: list[ToolCallRequest] = field(default_factory=list)
-    tool_call_id: Optional[str] = None
-    name: Optional[str] = None
+    tool_call_id: str | None = None
+    name: str | None = None
 
 
 @dataclass
 class AIResponse:
     """Standardised response from any AI provider."""
+
     content: str
     model: str = ""
     input_tokens: int = 0
@@ -86,8 +91,8 @@ class BaseAIProvider(abc.ABC):
         temperature: float | None = None,
         max_tokens: int | None = None,
         model: str | None = None,
-        tools: Optional[list[ToolDefinition]] = None,
-        tool_choice: Optional[str] = None,
+        tools: list[ToolDefinition] | None = None,
+        tool_choice: str | None = None,
     ) -> AIResponse:
         """Generate a completion from the AI model."""
         ...

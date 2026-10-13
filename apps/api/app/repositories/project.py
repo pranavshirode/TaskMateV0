@@ -1,10 +1,10 @@
 from datetime import date
 
-from sqlalchemy import select, func, desc, asc
+from sqlalchemy import asc, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.project import Project
 from app.models.enums import ProjectStatus, TaskStatus
+from app.models.project import Project
 from app.repositories.base import BaseRepository
 
 
@@ -63,21 +63,11 @@ class ProjectRepository(BaseRepository[Project]):
     async def get_task_summary(self, project_id: str) -> dict:
         from app.models.task import Task
 
-        base = select(func.count()).where(
-            Task.project_id == project_id, Task.archived_at.is_(None)
-        )
+        base = select(func.count()).where(Task.project_id == project_id, Task.archived_at.is_(None))
 
         total = (await self.session.execute(base)).scalar_one()
-        completed = (
-            await self.session.execute(
-                base.where(Task.status == TaskStatus.COMPLETED)
-            )
-        ).scalar_one()
-        in_progress = (
-            await self.session.execute(
-                base.where(Task.status == TaskStatus.IN_PROGRESS)
-            )
-        ).scalar_one()
+        completed = (await self.session.execute(base.where(Task.status == TaskStatus.COMPLETED))).scalar_one()
+        in_progress = (await self.session.execute(base.where(Task.status == TaskStatus.IN_PROGRESS))).scalar_one()
         overdue = (
             await self.session.execute(
                 base.where(

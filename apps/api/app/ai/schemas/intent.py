@@ -1,7 +1,9 @@
 """Intent definitions and schema for AI-parsed intents."""
+
 from __future__ import annotations
 
 import enum
+
 from pydantic import BaseModel, Field
 
 
@@ -21,6 +23,7 @@ class IntentType(str, enum.Enum):
 
 class ExtractedEntities(BaseModel):
     """Entities extracted from natural language by the LLM."""
+
     task_title: str | None = None
     task_description: str | None = None
     project_name: str | None = None
@@ -36,6 +39,7 @@ class ExtractedEntities(BaseModel):
 
 class ParsedIntent(BaseModel):
     """The structured output the LLM returns after understanding a user message."""
+
     intent: IntentType
     confidence: float = Field(ge=0.0, le=1.0)
     entities: ExtractedEntities = Field(default_factory=ExtractedEntities)

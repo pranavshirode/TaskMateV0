@@ -1,5 +1,6 @@
 import enum
 
+
 class TaskStatus(str, enum.Enum):
     BACKLOG = "BACKLOG"
     TODO = "TODO"
@@ -8,15 +9,18 @@ class TaskStatus(str, enum.Enum):
     REVIEW = "REVIEW"
     COMPLETED = "COMPLETED"
 
+
 class TaskPriority(str, enum.Enum):
     LOW = "LOW"
     MEDIUM = "MEDIUM"
     HIGH = "HIGH"
     URGENT = "URGENT"
 
+
 class ClientStatus(str, enum.Enum):
     ACTIVE = "ACTIVE"
     ARCHIVED = "ARCHIVED"
+
 
 class ProjectStatus(str, enum.Enum):
     PLANNING = "PLANNING"
@@ -25,10 +29,12 @@ class ProjectStatus(str, enum.Enum):
     COMPLETED = "COMPLETED"
     ARCHIVED = "ARCHIVED"
 
+
 class RepositoryProvider(str, enum.Enum):
     GITHUB = "GITHUB"
     GITLAB = "GITLAB"
     BITBUCKET = "BITBUCKET"
+
 
 class TaskEventType(str, enum.Enum):
     TASK_CREATED = "TASK_CREATED"
@@ -39,6 +45,7 @@ class TaskEventType(str, enum.Enum):
     TASK_COMPLETED = "TASK_COMPLETED"
     TASK_ARCHIVED = "TASK_ARCHIVED"
 
+
 class AnalysisStatus(str, enum.Enum):
     DRAFT = "DRAFT"
     NEEDS_CLARIFICATION = "NEEDS_CLARIFICATION"
@@ -46,10 +53,12 @@ class AnalysisStatus(str, enum.Enum):
     APPROVED = "APPROVED"
     ARCHIVED = "ARCHIVED"
 
+
 class RequirementCategory(str, enum.Enum):
     FUNCTIONAL = "FUNCTIONAL"
     NON_FUNCTIONAL = "NON_FUNCTIONAL"
     TECHNICAL_CONSTRAINT = "TECHNICAL_CONSTRAINT"
+
 
 class RequirementStatus(str, enum.Enum):
     PROPOSED = "PROPOSED"
@@ -59,9 +68,11 @@ class RequirementStatus(str, enum.Enum):
     IMPLEMENTED = "IMPLEMENTED"
     REJECTED = "REJECTED"
 
+
 class ClarificationStatus(str, enum.Enum):
     UNRESOLVED = "UNRESOLVED"
     RESOLVED = "RESOLVED"
+
 
 class ClientRequestType(str, enum.Enum):
     NEW_FEATURE = "NEW_FEATURE"
@@ -70,6 +81,7 @@ class ClientRequestType(str, enum.Enum):
     CLARIFICATION = "CLARIFICATION"
     OUT_OF_SCOPE = "OUT_OF_SCOPE"
 
+
 class ClientRequestStatus(str, enum.Enum):
     SUBMITTED = "SUBMITTED"
     ANALYZED = "ANALYZED"
@@ -77,11 +89,13 @@ class ClientRequestStatus(str, enum.Enum):
     APPROVED = "APPROVED"
     REJECTED = "REJECTED"
 
+
 class ContextCategory(str, enum.Enum):
     DECISION = "DECISION"
     CONSTRAINT = "CONSTRAINT"
     CLIENT_PREFERENCE = "CLIENT_PREFERENCE"
     ARCHITECTURAL_NOTE = "ARCHITECTURAL_NOTE"
+
 
 class AutomationType(str, enum.Enum):
     APPROVED_REQUIREMENTS_TO_TASKS = "APPROVED_REQUIREMENTS_TO_TASKS"

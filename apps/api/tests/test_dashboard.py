@@ -1,6 +1,9 @@
-import pytest
 from datetime import date, timedelta
-from app.models.enums import TaskStatus, TaskPriority
+
+import pytest
+
+from app.models.enums import TaskPriority, TaskStatus
+
 
 @pytest.mark.asyncio
 async def test_dashboard_today(auth_client):
@@ -13,15 +16,16 @@ async def test_dashboard_today(auth_client):
     assert "active_projects" in data
     assert "recently_updated" in data
 
+
 @pytest.mark.asyncio
 async def test_dashboard_due_today(auth_client, create_test_task):
     user_id = auth_client._test_user.id
-    today = date.today().isoformat()
     await create_test_task(user_id, title="Due Today Task", due_date=date.today())
     response = await auth_client.get("/api/v1/dashboard/today")
     assert response.status_code == 200
     data = response.json()
     assert isinstance(data["due_today"], list)
+
 
 @pytest.mark.asyncio
 async def test_dashboard_overdue(auth_client, create_test_task):
@@ -33,6 +37,7 @@ async def test_dashboard_overdue(auth_client, create_test_task):
     data = response.json()
     assert isinstance(data["overdue"], list)
 
+
 @pytest.mark.asyncio
 async def test_dashboard_high_priority(auth_client, create_test_task):
     user_id = auth_client._test_user.id
@@ -41,6 +46,7 @@ async def test_dashboard_high_priority(auth_client, create_test_task):
     assert response.status_code == 200
     data = response.json()
     assert isinstance(data["high_priority"], list)
+
 
 @pytest.mark.asyncio
 async def test_dashboard_completed_excluded(auth_client, create_test_task):

@@ -1,4 +1,5 @@
 """Agent execution models for tracking agent workflows."""
+
 from __future__ import annotations
 
 import uuid
@@ -15,9 +16,7 @@ class AgentExecution(Base):
 
     __tablename__ = "agent_executions"
 
-    id: Mapped[str] = mapped_column(
-        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
-    )
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
@@ -40,12 +39,10 @@ class AgentExecution(Base):
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     user = relationship("User")
-    steps: Mapped[list["AgentExecutionStep"]] = relationship(
+    steps: Mapped[list[AgentExecutionStep]] = relationship(
         back_populates="execution",
         cascade="all, delete-orphan",
         order_by="AgentExecutionStep.step_number",
@@ -57,9 +54,7 @@ class AgentExecutionStep(Base):
 
     __tablename__ = "agent_execution_steps"
 
-    id: Mapped[str] = mapped_column(
-        String(36), primary_key=True, default=lambda: str(uuid.uuid4())
-    )
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     execution_id: Mapped[str] = mapped_column(
         String(36),
         ForeignKey("agent_executions.id", ondelete="CASCADE"),
@@ -75,8 +70,6 @@ class AgentExecutionStep(Base):
     result_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
     latency_ms: Mapped[int] = mapped_column(Integer, default=0)
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
-    execution: Mapped["AgentExecution"] = relationship(back_populates="steps")
+    execution: Mapped[AgentExecution] = relationship(back_populates="steps")

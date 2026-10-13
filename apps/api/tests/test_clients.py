@@ -4,9 +4,9 @@ import pytest
 class TestClientEndpoints:
     @pytest.mark.asyncio
     async def test_create_client(self, auth_client):
-        res = await auth_client.post("/api/v1/clients", json={
-            "name": "Acme Corp", "company_name": "Acme Inc.", "email": "info@acme.com"
-        })
+        res = await auth_client.post(
+            "/api/v1/clients", json={"name": "Acme Corp", "company_name": "Acme Inc.", "email": "info@acme.com"}
+        )
         assert res.status_code == 201
         data = res.json()
         assert data["name"] == "Acme Corp"

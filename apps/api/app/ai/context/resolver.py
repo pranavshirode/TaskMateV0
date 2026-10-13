@@ -1,4 +1,5 @@
 """Entity Resolution: Matches natural language entity references to real DB records."""
+
 from __future__ import annotations
 
 import difflib
@@ -102,7 +103,9 @@ class EntityResolver:
         return TaskStatus.TODO
 
     @staticmethod
-    def match_item(query: str, items: list[dict[str, Any]], key: str = "name") -> tuple[dict[str, Any] | None, list[str]]:
+    def match_item(
+        query: str, items: list[dict[str, Any]], key: str = "name"
+    ) -> tuple[dict[str, Any] | None, list[str]]:
         """Match query against items with exact, case-insensitive, substring, and fuzzy matching."""
         if not query or not items:
             return None, []
@@ -193,4 +196,3 @@ class EntityResolver:
             priority=priority,
             ambiguous_matches=ambiguities,
         )
-

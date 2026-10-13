@@ -8,8 +8,8 @@ from app.db.session import get_db
 from app.models.user import User
 from app.schemas.repository import (
     RepositoryCreate,
-    RepositoryUpdate,
     RepositoryResponse,
+    RepositoryUpdate,
 )
 from app.services.repository import RepositoryService
 
@@ -17,9 +17,7 @@ project_router = APIRouter()
 repo_router = APIRouter()
 
 
-@project_router.get(
-    "/{project_id}/repositories", response_model=List[RepositoryResponse]
-)
+@project_router.get("/{project_id}/repositories", response_model=List[RepositoryResponse])
 async def list_project_repositories(
     project_id: str,
     db: AsyncSession = Depends(get_db),
@@ -65,9 +63,7 @@ async def update_repository(
     return await service.update(current_user.id, repository_id, data)
 
 
-@repo_router.delete(
-    "/{repository_id}", status_code=status.HTTP_204_NO_CONTENT
-)
+@repo_router.delete("/{repository_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_repository(
     repository_id: str,
     db: AsyncSession = Depends(get_db),

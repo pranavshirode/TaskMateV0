@@ -36,13 +36,9 @@ class RepositoryRepository(BaseRepository[Repository]):
             await self.session.commit()
 
     async def list_by_project(self, project_id: str) -> list[Repository]:
-        result = await self.session.execute(
-            select(self.model).where(self.model.project_id == project_id)
-        )
+        result = await self.session.execute(select(self.model).where(self.model.project_id == project_id))
         return list(result.scalars().all())
 
     async def get_by_id(self, id: str) -> Repository | None:
-        result = await self.session.execute(
-            select(self.model).where(self.model.id == id)
-        )
+        result = await self.session.execute(select(self.model).where(self.model.id == id))
         return result.scalar_one_or_none()

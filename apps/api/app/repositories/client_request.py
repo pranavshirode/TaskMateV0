@@ -1,10 +1,11 @@
 """Repositories for Client Requests and Automation Executions."""
+
 from __future__ import annotations
 
-from sqlalchemy import select, and_
+from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.requirements import ClientRequest, AutomationExecution
+from app.models.requirements import AutomationExecution, ClientRequest
 from app.repositories.base import BaseRepository
 
 
@@ -54,4 +55,3 @@ class AutomationExecutionRepository(BaseRepository[AutomationExecution]):
         )
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
-

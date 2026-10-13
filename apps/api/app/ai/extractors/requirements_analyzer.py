@@ -3,6 +3,7 @@
 Transforms client briefs into structured, specific, high-quality requirements specifications
 without generic placeholders or metadata leakage.
 """
+
 from __future__ import annotations
 
 import re
@@ -33,36 +34,38 @@ def extract_brief_and_context(user_text: str) -> dict[str, str]:
         "desired_outcome": "",
         "constraints": "",
     }
-    
+
     if "Client Brief:" in user_text:
         parts = user_text.split("Client Brief:")
         header = parts[0]
         remainder = parts[1]
-        
+
         # Extract project name
         proj_match = re.search(r"Project:\s*([^\n]+)", header)
         if proj_match:
             res["project_name"] = proj_match.group(1).strip()
-            
+
         desc_match = re.search(r"Project Description:\s*([^\n]+)", header)
         if desc_match:
             res["project_description"] = desc_match.group(1).strip()
-            
+
         title_match = re.search(r"Analysis Title:\s*([^\n]+)", header)
         if title_match:
             res["title"] = title_match.group(1).strip()
-            
+
         # Extract remainder sections
         brief_text = remainder
-        outcome_match = re.search(r"Desired Outcome:\s*([^\n]+(?:\n(?!Constraints:|Deadline:|Project Context:)[^\n]+)*)", remainder)
+        outcome_match = re.search(
+            r"Desired Outcome:\s*([^\n]+(?:\n(?!Constraints:|Deadline:|Project Context:)[^\n]+)*)", remainder
+        )
         if outcome_match:
             res["desired_outcome"] = outcome_match.group(1).strip()
             brief_text = brief_text.split("Desired Outcome:")[0]
-            
+
         constraints_match = re.search(r"Constraints:\s*([^\n]+(?:\n(?!Deadline:|Project Context:)[^\n]+)*)", remainder)
         if constraints_match:
             res["constraints"] = constraints_match.group(1).strip()
-            
+
         res["brief"] = brief_text.strip()
     return res
 
@@ -93,21 +96,57 @@ def analyze_brief_dynamically(
     low = brief.lower()
 
     # Domain detectors
-    has_auth = any(k in low for k in ["register", "log in", "login", "sign up", "password", "profile", "account", "addresses", "saved address", "credentials", "auth"])
-    has_catalog = any(k in low for k in ["browse", "search", "filter", "product", "items", "catalog", "listing", "categories"])
+    has_auth = any(
+        k in low
+        for k in [
+            "register",
+            "log in",
+            "login",
+            "sign up",
+            "password",
+            "profile",
+            "account",
+            "addresses",
+            "saved address",
+            "credentials",
+            "auth",
+        ]
+    )
+    has_catalog = any(
+        k in low for k in ["browse", "search", "filter", "product", "items", "catalog", "listing", "categories"]
+    )
     has_cart = any(k in low for k in ["cart", "shopping cart", "basket", "add products", "add to cart", "quantities"])
-    has_payment = any(k in low for k in ["payment", "stripe", "razorpay", "checkout", "credit card", "billing", "purchase", "online payment"])
+    has_payment = any(
+        k in low
+        for k in ["payment", "stripe", "razorpay", "checkout", "credit card", "billing", "purchase", "online payment"]
+    )
     has_order = any(k in low for k in ["order", "order history", "track", "delivery", "cancel", "status", "shipping"])
     has_notification = any(k in low for k in ["email", "confirmation", "notification", "push", "sms", "alert", "fcm"])
-    has_admin = any(k in low for k in ["admin", "inventory", "manage products", "add, edit, and delete", "manage inventory", "stock", "dashboard", "update order status"])
-    
+    has_admin = any(
+        k in low
+        for k in [
+            "admin",
+            "inventory",
+            "manage products",
+            "add, edit, and delete",
+            "manage inventory",
+            "stock",
+            "dashboard",
+            "update order status",
+        ]
+    )
+
     # Non-e-commerce domains
-    has_booking = any(k in low for k in ["appointment", "booking", "schedule", "calendar", "time slot", "doctor", "availability"])
+    has_booking = any(
+        k in low for k in ["appointment", "booking", "schedule", "calendar", "time slot", "doctor", "availability"]
+    )
     has_messaging = any(k in low for k in ["chat", "messaging", "comment", "discussion", "collaboration", "real-time"])
-    has_analytics = any(k in low for k in ["report", "analytics", "metrics", "export", "dashboard metrics", "chart", "statistics"])
+    has_analytics = any(
+        k in low for k in ["report", "analytics", "metrics", "export", "dashboard metrics", "chart", "statistics"]
+    )
 
     functional_requirements: list[dict[str, Any]] = []
-    
+
     # 1. Authentication
     if has_auth:
         fr_auth = {
@@ -164,7 +203,11 @@ def analyze_brief_dynamically(
 
     # 4. Payment Processing
     if has_payment:
-        gateways = "Stripe or Razorpay" if ("stripe" in low and "razorpay" in low) else ("Stripe" if "stripe" in low else ("Razorpay" if "razorpay" in low else "secure payment gateway"))
+        gateways = (
+            "Stripe or Razorpay"
+            if ("stripe" in low and "razorpay" in low)
+            else ("Stripe" if "stripe" in low else ("Razorpay" if "razorpay" in low else "secure payment gateway"))
+        )
         fr_payment = {
             "key": "",
             "title": "Secure Payment Processing & Checkout Integration",
@@ -295,19 +338,21 @@ def analyze_brief_dynamically(
             short_title = sentence[:45].strip()
             if len(short_title) > 40:
                 short_title = short_title.rsplit(" ", 1)[0]
-            functional_requirements.append({
-                "key": "",
-                "title": f"Feature: {short_title.title()}",
-                "description": sentence,
-                "priority": "HIGH" if idx == 1 else "MEDIUM",
-                "acceptance_criteria": [
-                    f"Given configured system state, when {short_title.lower()} executes, then valid status and feedback are returned.",
-                    f"Given invalid inputs or network interruption, when request is processed, then explicit error diagnostics are returned.",
-                ],
-                "dependencies": [],
-                "open_questions": [],
-                "domain_tag": f"CUSTOM_{idx}",
-            })
+            functional_requirements.append(
+                {
+                    "key": "",
+                    "title": f"Feature: {short_title.title()}",
+                    "description": sentence,
+                    "priority": "HIGH" if idx == 1 else "MEDIUM",
+                    "acceptance_criteria": [
+                        f"Given configured system state, when {short_title.lower()} executes, then valid status and feedback are returned.",
+                        "Given invalid inputs or network interruption, when request is processed, then explicit error diagnostics are returned.",
+                    ],
+                    "dependencies": [],
+                    "open_questions": [],
+                    "domain_tag": f"CUSTOM_{idx}",
+                }
+            )
 
     # Assign sequential keys and resolve legitimate prerequisites
     domain_to_key: dict[str, str] = {}
@@ -336,10 +381,9 @@ def analyze_brief_dynamically(
                 deps.append(domain_to_key["ORDER"])
             elif "PAYMENT" in domain_to_key and domain_to_key["PAYMENT"] != key:
                 deps.append(domain_to_key["PAYMENT"])
-        elif "Admin" in req["title"]:
-            if "AUTH" in domain_to_key and domain_to_key["AUTH"] != key:
-                deps.append(domain_to_key["AUTH"])
-        
+        elif "Admin" in req["title"] and "AUTH" in domain_to_key and domain_to_key["AUTH"] != key:
+            deps.append(domain_to_key["AUTH"])
+
         # Only keep valid earlier keys
         curr_idx = int(key.split("-")[1])
         valid_deps = [d for d in deps if int(d.split("-")[1]) < curr_idx]
@@ -382,10 +426,16 @@ def analyze_brief_dynamically(
     if constraints:
         for c in [x.strip() for x in constraints.split(",") if x.strip()]:
             c_low = c.lower()
-            cat = "FRONTEND" if any(k in c_low for k in ["react", "vue", "ios", "android", "mobile"]) else (
-                "BACKEND" if any(k in c_low for k in ["node", "express", "python", "fastapi", "django"]) else (
-                    "DATABASE" if any(k in c_low for k in ["postgres", "sql", "mongo", "redis"]) else (
-                        "PAYMENT" if any(k in c_low for k in ["stripe", "razorpay", "paypal"]) else "GENERAL"
+            cat = (
+                "FRONTEND"
+                if any(k in c_low for k in ["react", "vue", "ios", "android", "mobile"])
+                else (
+                    "BACKEND"
+                    if any(k in c_low for k in ["node", "express", "python", "fastapi", "django"])
+                    else (
+                        "DATABASE"
+                        if any(k in c_low for k in ["postgres", "sql", "mongo", "redis"])
+                        else ("PAYMENT" if any(k in c_low for k in ["stripe", "razorpay", "paypal"]) else "GENERAL")
                     )
                 )
             )
@@ -595,15 +645,17 @@ def validate_and_sanitize_requirements_data(
         if priority not in ("LOW", "MEDIUM", "HIGH", "URGENT", "CRITICAL"):
             priority = "MEDIUM"
 
-        sanitized_frs.append({
-            "key": key,
-            "title": raw_title,
-            "description": raw_desc,
-            "priority": priority,
-            "acceptance_criteria": clean_criteria,
-            "dependencies": valid_deps,
-            "open_questions": fr.get("open_questions") or [],
-        })
+        sanitized_frs.append(
+            {
+                "key": key,
+                "title": raw_title,
+                "description": raw_desc,
+                "priority": priority,
+                "acceptance_criteria": clean_criteria,
+                "dependencies": valid_deps,
+                "open_questions": fr.get("open_questions") or [],
+            }
+        )
 
     # Validate Non-functional requirements
     raw_nfrs = parsed.get("non_functional_requirements")
@@ -624,13 +676,15 @@ def validate_and_sanitize_requirements_data(
                 n_desc = f_nfr["description"]
                 if not n_title:
                     n_title = f_nfr["title"]
-            sanitized_nfrs.append({
-                "key": key,
-                "title": n_title or f"Non-Functional {j}",
-                "category": n_cat,
-                "description": n_desc,
-                "priority": n_prio if n_prio in ("LOW", "MEDIUM", "HIGH", "URGENT", "CRITICAL") else "MEDIUM",
-            })
+            sanitized_nfrs.append(
+                {
+                    "key": key,
+                    "title": n_title or f"Non-Functional {j}",
+                    "category": n_cat,
+                    "description": n_desc,
+                    "priority": n_prio if n_prio in ("LOW", "MEDIUM", "HIGH", "URGENT", "CRITICAL") else "MEDIUM",
+                }
+            )
     else:
         sanitized_nfrs = fallback_nfrs
 
@@ -645,12 +699,16 @@ def validate_and_sanitize_requirements_data(
                 continue
             q_text = clean_metadata_leakage(str(q.get("question", ""))).strip()
             if q_text:
-                sanitized_questions.append({
-                    "question_key": f"Q-{k}",
-                    "question": q_text,
-                    "reason": clean_metadata_leakage(str(q.get("reason", ""))).strip() or "Clarify technical specification.",
-                    "context_topic": clean_metadata_leakage(str(q.get("context_topic", ""))).strip() or "Requirements",
-                })
+                sanitized_questions.append(
+                    {
+                        "question_key": f"Q-{k}",
+                        "question": q_text,
+                        "reason": clean_metadata_leakage(str(q.get("reason", ""))).strip()
+                        or "Clarify technical specification.",
+                        "context_topic": clean_metadata_leakage(str(q.get("context_topic", ""))).strip()
+                        or "Requirements",
+                    }
+                )
     if not sanitized_questions:
         sanitized_questions = fallback_questions
 
@@ -659,9 +717,13 @@ def validate_and_sanitize_requirements_data(
     if not isinstance(overview, dict) or not overview.get("project_objective"):
         overview = fallback_data["overview"]
     else:
-        overview["project_objective"] = clean_metadata_leakage(str(overview.get("project_objective", ""))).strip() or title
+        overview["project_objective"] = (
+            clean_metadata_leakage(str(overview.get("project_objective", ""))).strip() or title
+        )
         overview["business_problem"] = clean_metadata_leakage(str(overview.get("business_problem", ""))).strip()
-        overview["intended_outcome"] = clean_metadata_leakage(str(overview.get("intended_outcome", ""))).strip() or desired_outcome
+        overview["intended_outcome"] = (
+            clean_metadata_leakage(str(overview.get("intended_outcome", ""))).strip() or desired_outcome
+        )
         if not overview.get("in_scope"):
             overview["in_scope"] = [f["title"] for f in sanitized_frs]
         if not overview.get("out_of_scope"):

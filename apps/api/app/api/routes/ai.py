@@ -1,8 +1,9 @@
 """AI API Routes."""
+
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import delete, func, select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -56,9 +57,7 @@ async def list_conversations(
     for c in conversations:
         # Get message count and last message
         cnt_res = await db.execute(
-            select(func.count(ConversationMessage.id)).where(
-                ConversationMessage.conversation_id == c.id
-            )
+            select(func.count(ConversationMessage.id)).where(ConversationMessage.conversation_id == c.id)
         )
         msg_count = cnt_res.scalar_one() or 0
 

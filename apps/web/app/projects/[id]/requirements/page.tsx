@@ -1,14 +1,18 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { apiClient, type Project, type RequirementsAnalysis } from '@/lib/api-client';
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
-import ErrorState from '@/components/ui/ErrorState';
-import Badge from '@/components/ui/Badge';
-import Button from '@/components/ui/Button';
-import Input from '@/components/ui/Input';
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
+import {
+  apiClient,
+  type Project,
+  type RequirementsAnalysis,
+} from "@/lib/api-client";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import ErrorState from "@/components/ui/ErrorState";
+import Badge from "@/components/ui/Badge";
+import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
 
 export default function ProjectRequirementsPage() {
   const { id: projectId } = useParams<{ id: string }>();
@@ -22,11 +26,11 @@ export default function ProjectRequirementsPage() {
 
   // Form states
   const [showForm, setShowForm] = useState(false);
-  const [title, setTitle] = useState('');
-  const [brief, setBrief] = useState('');
-  const [desiredOutcome, setDesiredOutcome] = useState('');
-  const [constraints, setConstraints] = useState('');
-  const [deadline, setDeadline] = useState('');
+  const [title, setTitle] = useState("");
+  const [brief, setBrief] = useState("");
+  const [desiredOutcome, setDesiredOutcome] = useState("");
+  const [constraints, setConstraints] = useState("");
+  const [deadline, setDeadline] = useState("");
 
   const fetchData = async () => {
     try {
@@ -39,7 +43,11 @@ export default function ProjectRequirementsPage() {
       setProject(projRes);
       setAnalyses(analysisRes || []);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to load project requirements');
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to load project requirements"
+      );
     } finally {
       setIsLoading(false);
     }
@@ -68,7 +76,7 @@ export default function ProjectRequirementsPage() {
       await apiClient.analyzeBrief(created.id);
       router.push(`/projects/${projectId}/requirements/${created.id}`);
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Failed to analyze brief');
+      alert(err instanceof Error ? err.message : "Failed to analyze brief");
       setIsSubmitting(false);
     }
   };
@@ -92,7 +100,7 @@ export default function ProjectRequirementsPage() {
           href={`/projects/${projectId}`}
           className="text-sm text-[var(--text-muted)] hover:text-[var(--foreground)]"
         >
-          ← Back to {project?.name || 'Project'}
+          ← Back to {project?.name || "Project"}
         </Link>
       </div>
 
@@ -102,20 +110,23 @@ export default function ProjectRequirementsPage() {
             Requirements Analysis: {project?.name}
           </h1>
           <p className="text-sm text-[var(--text-muted)] mt-1">
-            Transform client briefs into reviewable functional requirements and actionable tasks.
+            Transform client briefs into reviewable functional requirements and
+            actionable tasks.
           </p>
         </div>
         <Button
-          variant={showForm ? 'secondary' : 'primary'}
+          variant={showForm ? "secondary" : "primary"}
           onClick={() => setShowForm(!showForm)}
         >
-          {showForm ? 'Cancel' : '+ New Brief Submission'}
+          {showForm ? "Cancel" : "+ New Brief Submission"}
         </Button>
       </div>
 
       {showForm && (
         <div className="bg-[var(--sidebar-bg)] border border-[var(--sidebar-border)] rounded-xl p-6 mb-8 shadow-sm">
-          <h2 className="text-lg font-semibold mb-4">Submit Client Brief for AI Analysis</h2>
+          <h2 className="text-lg font-semibold mb-4">
+            Submit Client Brief for AI Analysis
+          </h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-xs font-medium text-[var(--text-muted)] mb-1">
@@ -188,7 +199,7 @@ export default function ProjectRequirementsPage() {
                 Cancel
               </Button>
               <Button type="submit" variant="primary" disabled={isSubmitting}>
-                {isSubmitting ? 'Analyzing Brief with AI...' : 'Analyze Brief'}
+                {isSubmitting ? "Analyzing Brief with AI..." : "Analyze Brief"}
               </Button>
             </div>
           </form>
@@ -196,7 +207,9 @@ export default function ProjectRequirementsPage() {
       )}
 
       {/* Existing Sessions List */}
-      <h2 className="text-lg font-semibold mb-4">Saved Requirements Sessions</h2>
+      <h2 className="text-lg font-semibold mb-4">
+        Saved Requirements Sessions
+      </h2>
       {analyses.length > 0 ? (
         <div className="space-y-3">
           {analyses.map((a) => (
@@ -216,7 +229,10 @@ export default function ProjectRequirementsPage() {
                   {a.brief}
                 </p>
                 <div className="flex gap-4 text-xs text-[var(--text-muted)]">
-                  <span>Requirements: {a.total_requirements || a.requirements?.length || 0}</span>
+                  <span>
+                    Requirements:{" "}
+                    {a.total_requirements || a.requirements?.length || 0}
+                  </span>
                   <span>Approved: {a.approved_requirements || 0}</span>
                   {(a.unresolved_questions || 0) > 0 && (
                     <span className="text-amber-400 font-medium">
@@ -247,4 +263,3 @@ export default function ProjectRequirementsPage() {
     </div>
   );
 }
-

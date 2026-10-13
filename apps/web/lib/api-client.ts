@@ -259,7 +259,12 @@ export interface TraceabilityItem {
   key: string;
   title: string;
   status: string;
-  linked_tasks: { id: string; title: string; status: string; priority: string }[];
+  linked_tasks: {
+    id: string;
+    title: string;
+    status: string;
+    priority: string;
+  }[];
   coverage_percent: number;
 }
 
@@ -320,24 +325,25 @@ export interface DailySummary {
 // ─── ApiClient ────────────────────────────────────────────────────────────────
 
 export class ApiClient {
-  private baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000') + '/api/v1';
+  private baseUrl =
+    (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000") + "/api/v1";
 
   setToken(token: string) {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('taskmate_token', token);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("taskmate_token", token);
     }
   }
 
   getToken(): string | null {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('taskmate_token');
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("taskmate_token");
     }
     return null;
   }
 
   clearToken() {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('taskmate_token');
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("taskmate_token");
     }
   }
 
@@ -345,15 +351,18 @@ export class ApiClient {
     return !!this.getToken();
   }
 
-  private async fetchAPI(endpoint: string, options: RequestInit = {}): Promise<unknown> {
+  private async fetchAPI(
+    endpoint: string,
+    options: RequestInit = {}
+  ): Promise<unknown> {
     const token = this.getToken();
     const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       ...(options.headers as Record<string, string>),
     };
 
     if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
+      headers["Authorization"] = `Bearer ${token}`;
     }
 
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
@@ -362,13 +371,13 @@ export class ApiClient {
     });
 
     if (!response.ok) {
-      let errorMsg = 'An error occurred';
+      let errorMsg = "An error occurred";
       try {
-        const errorData = await response.json() as Record<string, unknown>;
+        const errorData = (await response.json()) as Record<string, unknown>;
         const errObj = errorData.error as Record<string, string> | undefined;
         if (errObj?.message) {
           errorMsg = errObj.message;
-        } else if (typeof errorData.detail === 'string') {
+        } else if (typeof errorData.detail === "string") {
           errorMsg = errorData.detail;
         }
       } catch {
@@ -386,29 +395,45 @@ export class ApiClient {
 
   // ─── Auth ────────────────────────────────────────────────────────────────────
   login(data: LoginRequest): Promise<LoginResponse> {
-    return this.fetchAPI('/auth/login', { method: 'POST', body: JSON.stringify(data) }) as Promise<LoginResponse>;
+    return this.fetchAPI("/auth/login", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }) as Promise<LoginResponse>;
   }
 
   register(data: RegisterRequest): Promise<User> {
-    return this.fetchAPI('/auth/register', { method: 'POST', body: JSON.stringify(data) }) as Promise<User>;
+    return this.fetchAPI("/auth/register", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }) as Promise<User>;
   }
 
   getMe(): Promise<User> {
-    return this.fetchAPI('/auth/me') as Promise<User>;
+    return this.fetchAPI("/auth/me") as Promise<User>;
   }
 
-  updateMe(data: Partial<Pick<User, 'name' | 'email'>>): Promise<User> {
-    return this.fetchAPI('/auth/me', { method: 'PATCH', body: JSON.stringify(data) }) as Promise<User>;
+  updateMe(data: Partial<Pick<User, "name" | "email">>): Promise<User> {
+    return this.fetchAPI("/auth/me", {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }) as Promise<User>;
   }
 
   // ─── Clients ─────────────────────────────────────────────────────────────────
-  listClients(params?: Record<string, string>): Promise<PaginatedResponse<Client>> {
-    const query = params ? '?' + new URLSearchParams(params).toString() : '';
-    return this.fetchAPI(`/clients${query}`) as Promise<PaginatedResponse<Client>>;
+  listClients(
+    params?: Record<string, string>
+  ): Promise<PaginatedResponse<Client>> {
+    const query = params ? "?" + new URLSearchParams(params).toString() : "";
+    return this.fetchAPI(`/clients${query}`) as Promise<
+      PaginatedResponse<Client>
+    >;
   }
 
   createClient(data: Partial<Client>): Promise<Client> {
-    return this.fetchAPI('/clients', { method: 'POST', body: JSON.stringify(data) }) as Promise<Client>;
+    return this.fetchAPI("/clients", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }) as Promise<Client>;
   }
 
   getClient(id: string): Promise<Client> {
@@ -416,21 +441,33 @@ export class ApiClient {
   }
 
   updateClient(id: string, data: Partial<Client>): Promise<Client> {
-    return this.fetchAPI(`/clients/${id}`, { method: 'PATCH', body: JSON.stringify(data) }) as Promise<Client>;
+    return this.fetchAPI(`/clients/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }) as Promise<Client>;
   }
 
   archiveClient(id: string): Promise<null> {
-    return this.fetchAPI(`/clients/${id}`, { method: 'DELETE' }) as Promise<null>;
+    return this.fetchAPI(`/clients/${id}`, {
+      method: "DELETE",
+    }) as Promise<null>;
   }
 
   // ─── Projects ────────────────────────────────────────────────────────────────
-  listProjects(params?: Record<string, string>): Promise<PaginatedResponse<Project>> {
-    const query = params ? '?' + new URLSearchParams(params).toString() : '';
-    return this.fetchAPI(`/projects${query}`) as Promise<PaginatedResponse<Project>>;
+  listProjects(
+    params?: Record<string, string>
+  ): Promise<PaginatedResponse<Project>> {
+    const query = params ? "?" + new URLSearchParams(params).toString() : "";
+    return this.fetchAPI(`/projects${query}`) as Promise<
+      PaginatedResponse<Project>
+    >;
   }
 
   createProject(data: Partial<Project>): Promise<Project> {
-    return this.fetchAPI('/projects', { method: 'POST', body: JSON.stringify(data) }) as Promise<Project>;
+    return this.fetchAPI("/projects", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }) as Promise<Project>;
   }
 
   getProject(id: string): Promise<Project> {
@@ -438,21 +475,29 @@ export class ApiClient {
   }
 
   updateProject(id: string, data: Partial<Project>): Promise<Project> {
-    return this.fetchAPI(`/projects/${id}`, { method: 'PATCH', body: JSON.stringify(data) }) as Promise<Project>;
+    return this.fetchAPI(`/projects/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }) as Promise<Project>;
   }
 
   archiveProject(id: string): Promise<null> {
-    return this.fetchAPI(`/projects/${id}`, { method: 'DELETE' }) as Promise<null>;
+    return this.fetchAPI(`/projects/${id}`, {
+      method: "DELETE",
+    }) as Promise<null>;
   }
 
   // ─── Tasks ───────────────────────────────────────────────────────────────────
   listTasks(params?: Record<string, string>): Promise<PaginatedResponse<Task>> {
-    const query = params ? '?' + new URLSearchParams(params).toString() : '';
+    const query = params ? "?" + new URLSearchParams(params).toString() : "";
     return this.fetchAPI(`/tasks${query}`) as Promise<PaginatedResponse<Task>>;
   }
 
   createTask(data: Partial<Task>): Promise<Task> {
-    return this.fetchAPI('/tasks', { method: 'POST', body: JSON.stringify(data) }) as Promise<Task>;
+    return this.fetchAPI("/tasks", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }) as Promise<Task>;
   }
 
   getTask(id: string): Promise<Task> {
@@ -460,32 +505,51 @@ export class ApiClient {
   }
 
   updateTask(id: string, data: Partial<Task>): Promise<Task> {
-    return this.fetchAPI(`/tasks/${id}`, { method: 'PATCH', body: JSON.stringify(data) }) as Promise<Task>;
+    return this.fetchAPI(`/tasks/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }) as Promise<Task>;
   }
 
   archiveTask(id: string): Promise<null> {
-    return this.fetchAPI(`/tasks/${id}`, { method: 'DELETE' }) as Promise<null>;
+    return this.fetchAPI(`/tasks/${id}`, { method: "DELETE" }) as Promise<null>;
   }
 
   changeTaskStatus(id: string, status: string): Promise<Task> {
-    return this.fetchAPI(`/tasks/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }) as Promise<Task>;
+    return this.fetchAPI(`/tasks/${id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
+    }) as Promise<Task>;
   }
 
   changeTaskPriority(id: string, priority: string): Promise<Task> {
-    return this.fetchAPI(`/tasks/${id}/priority`, { method: 'PATCH', body: JSON.stringify({ priority }) }) as Promise<Task>;
+    return this.fetchAPI(`/tasks/${id}/priority`, {
+      method: "PATCH",
+      body: JSON.stringify({ priority }),
+    }) as Promise<Task>;
   }
 
   getTaskEvents(id: string): Promise<PaginatedResponse<TaskEvent>> {
-    return this.fetchAPI(`/tasks/${id}/events`) as Promise<PaginatedResponse<TaskEvent>>;
+    return this.fetchAPI(`/tasks/${id}/events`) as Promise<
+      PaginatedResponse<TaskEvent>
+    >;
   }
 
   // ─── Repositories ────────────────────────────────────────────────────────────
   listProjectRepos(projectId: string): Promise<Repository[]> {
-    return this.fetchAPI(`/projects/${projectId}/repositories`) as Promise<Repository[]>;
+    return this.fetchAPI(`/projects/${projectId}/repositories`) as Promise<
+      Repository[]
+    >;
   }
 
-  createRepo(projectId: string, data: Partial<Repository>): Promise<Repository> {
-    return this.fetchAPI(`/projects/${projectId}/repositories`, { method: 'POST', body: JSON.stringify(data) }) as Promise<Repository>;
+  createRepo(
+    projectId: string,
+    data: Partial<Repository>
+  ): Promise<Repository> {
+    return this.fetchAPI(`/projects/${projectId}/repositories`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }) as Promise<Repository>;
   }
 
   getRepo(id: string): Promise<Repository> {
@@ -493,33 +557,38 @@ export class ApiClient {
   }
 
   updateRepo(id: string, data: Partial<Repository>): Promise<Repository> {
-    return this.fetchAPI(`/repositories/${id}`, { method: 'PATCH', body: JSON.stringify(data) }) as Promise<Repository>;
+    return this.fetchAPI(`/repositories/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }) as Promise<Repository>;
   }
 
   deleteRepo(id: string): Promise<null> {
-    return this.fetchAPI(`/repositories/${id}`, { method: 'DELETE' }) as Promise<null>;
+    return this.fetchAPI(`/repositories/${id}`, {
+      method: "DELETE",
+    }) as Promise<null>;
   }
 
   // ─── Dashboard ───────────────────────────────────────────────────────────────
   getDashboardToday(): Promise<DashboardToday> {
-    return this.fetchAPI('/dashboard/today') as Promise<DashboardToday>;
+    return this.fetchAPI("/dashboard/today") as Promise<DashboardToday>;
   }
 
   // ─── Labels ──────────────────────────────────────────────────────────────────
   listLabels(): Promise<Label[]> {
-    return this.fetchAPI('/labels') as Promise<Label[]>;
+    return this.fetchAPI("/labels") as Promise<Label[]>;
   }
 
   // ─── AI ──────────────────────────────────────────────────────────────────────
   aiChat(message: string, conversationId?: string): Promise<AIChatResponse> {
-    return this.fetchAPI('/ai/chat', {
-      method: 'POST',
+    return this.fetchAPI("/ai/chat", {
+      method: "POST",
       body: JSON.stringify({ message, conversation_id: conversationId }),
     }) as Promise<AIChatResponse>;
   }
 
   listAiConversations(): Promise<Conversation[]> {
-    return this.fetchAPI('/ai/conversations') as Promise<Conversation[]>;
+    return this.fetchAPI("/ai/conversations") as Promise<Conversation[]>;
   }
 
   getAiConversation(id: string): Promise<Conversation> {
@@ -527,38 +596,55 @@ export class ApiClient {
   }
 
   deleteAiConversation(id: string): Promise<null> {
-    return this.fetchAPI(`/ai/conversations/${id}`, { method: 'DELETE' }) as Promise<null>;
+    return this.fetchAPI(`/ai/conversations/${id}`, {
+      method: "DELETE",
+    }) as Promise<null>;
   }
 
   getAiUsage(): Promise<Record<string, unknown>> {
-    return this.fetchAPI('/ai/usage') as Promise<Record<string, unknown>>;
+    return this.fetchAPI("/ai/usage") as Promise<Record<string, unknown>>;
   }
 
   // ─── GitHub Integration & Agent ──────────────────────────────────────────────
-  async getGitHubStatus(): Promise<{ data: GitHubStatus | null; error: Error | null }> {
+  async getGitHubStatus(): Promise<{
+    data: GitHubStatus | null;
+    error: Error | null;
+  }> {
     try {
-      const data = await this.fetchAPI('/integrations/github') as GitHubStatus;
+      const data = (await this.fetchAPI(
+        "/integrations/github"
+      )) as GitHubStatus;
       return { data, error: null };
     } catch (e) {
       return { data: null, error: e as Error };
     }
   }
 
-  async getGitHubAuthorizeUrl(): Promise<{ data: { url: string } | null; error: Error | null }> {
+  async getGitHubAuthorizeUrl(): Promise<{
+    data: { url: string } | null;
+    error: Error | null;
+  }> {
     try {
-      const data = await this.fetchAPI('/integrations/github/authorize') as { url: string };
+      const data = (await this.fetchAPI("/integrations/github/authorize")) as {
+        url: string;
+      };
       return { data, error: null };
     } catch (e) {
       return { data: null, error: e as Error };
     }
   }
 
-  async connectGitHub(data: { code?: string; access_token?: string; state?: string; scopes?: string }): Promise<{ data: GitHubStatus | null; error: Error | null }> {
+  async connectGitHub(data: {
+    code?: string;
+    access_token?: string;
+    state?: string;
+    scopes?: string;
+  }): Promise<{ data: GitHubStatus | null; error: Error | null }> {
     try {
-      const res = await this.fetchAPI('/integrations/github/connect', {
-        method: 'POST',
+      const res = (await this.fetchAPI("/integrations/github/connect", {
+        method: "POST",
         body: JSON.stringify(data),
-      }) as GitHubStatus;
+      })) as GitHubStatus;
       return { data: res, error: null };
     } catch (e) {
       return { data: null, error: e as Error };
@@ -567,26 +653,33 @@ export class ApiClient {
 
   async disconnectGitHub(): Promise<{ data: unknown; error: Error | null }> {
     try {
-      const res = await this.fetchAPI('/integrations/github', { method: 'DELETE' });
+      const res = await this.fetchAPI("/integrations/github", {
+        method: "DELETE",
+      });
       return { data: res, error: null };
     } catch (e) {
       return { data: null, error: e as Error };
     }
   }
 
-  async runAgent(data: AgentRunRequest): Promise<{ data: AgentRunResponse | null; error: Error | null }> {
+  async runAgent(
+    data: AgentRunRequest
+  ): Promise<{ data: AgentRunResponse | null; error: Error | null }> {
     try {
-      const res = await this.fetchAPI('/agent/run', {
-        method: 'POST',
+      const res = (await this.fetchAPI("/agent/run", {
+        method: "POST",
         body: JSON.stringify(data),
-      }) as AgentRunResponse;
+      })) as AgentRunResponse;
       return { data: res, error: null };
     } catch (e) {
       return { data: null, error: e as Error };
     }
   }
 
-  async sendMessage(data: { message: string; conversation_id?: string }): Promise<{ data: AIChatResponse | null; error: Error | null }> {
+  async sendMessage(data: {
+    message: string;
+    conversation_id?: string;
+  }): Promise<{ data: AIChatResponse | null; error: Error | null }> {
     try {
       const res = await this.aiChat(data.message, data.conversation_id);
       return { data: res, error: null };
@@ -604,138 +697,187 @@ export class ApiClient {
     constraints?: string;
     deadline?: string;
   }): Promise<RequirementsAnalysis> {
-    return this.fetchAPI('/requirements/', {
-      method: 'POST',
+    return this.fetchAPI("/requirements/", {
+      method: "POST",
       body: JSON.stringify(data),
     }) as Promise<RequirementsAnalysis>;
   }
 
   async getAnalysis(id: string): Promise<RequirementsAnalysis> {
-    return this.fetchAPI(`/requirements/${id}`) as Promise<RequirementsAnalysis>;
+    return this.fetchAPI(
+      `/requirements/${id}`
+    ) as Promise<RequirementsAnalysis>;
   }
 
-  async listProjectAnalyses(projectId: string): Promise<RequirementsAnalysis[]> {
-    return this.fetchAPI(`/requirements/project/${projectId}`) as Promise<RequirementsAnalysis[]>;
+  async listProjectAnalyses(
+    projectId: string
+  ): Promise<RequirementsAnalysis[]> {
+    return this.fetchAPI(`/requirements/project/${projectId}`) as Promise<
+      RequirementsAnalysis[]
+    >;
   }
 
   async analyzeBrief(analysisId: string): Promise<RequirementsAnalysis> {
     return this.fetchAPI(`/requirements/${analysisId}/analyze`, {
-      method: 'POST',
+      method: "POST",
     }) as Promise<RequirementsAnalysis>;
   }
 
-  async answerClarification(analysisId: string, questionId: string, answer: string): Promise<AnalysisQuestion> {
-    return this.fetchAPI(`/requirements/${analysisId}/questions/${questionId}/answer`, {
-      method: 'POST',
-      body: JSON.stringify({ answer }),
-    }) as Promise<AnalysisQuestion>;
+  async answerClarification(
+    analysisId: string,
+    questionId: string,
+    answer: string
+  ): Promise<AnalysisQuestion> {
+    return this.fetchAPI(
+      `/requirements/${analysisId}/questions/${questionId}/answer`,
+      {
+        method: "POST",
+        body: JSON.stringify({ answer }),
+      }
+    ) as Promise<AnalysisQuestion>;
   }
 
-  async updateRequirement(analysisId: string, reqId: string, data: Partial<Requirement>): Promise<Requirement> {
+  async updateRequirement(
+    analysisId: string,
+    reqId: string,
+    data: Partial<Requirement>
+  ): Promise<Requirement> {
     return this.fetchAPI(`/requirements/${analysisId}/requirements/${reqId}`, {
-      method: 'PUT',
+      method: "PUT",
       body: JSON.stringify(data),
     }) as Promise<Requirement>;
   }
 
   async approveAnalysis(analysisId: string): Promise<RequirementsAnalysis> {
     return this.fetchAPI(`/requirements/${analysisId}/approve`, {
-      method: 'POST',
+      method: "POST",
     }) as Promise<RequirementsAnalysis>;
   }
 
   async archiveAnalysis(analysisId: string): Promise<RequirementsAnalysis> {
     return this.fetchAPI(`/requirements/${analysisId}/archive`, {
-      method: 'POST',
+      method: "POST",
     }) as Promise<RequirementsAnalysis>;
   }
 
   async generateTaskPlan(analysisId: string): Promise<TaskPlan> {
     return this.fetchAPI(`/requirements/${analysisId}/generate-task-plan`, {
-      method: 'POST',
+      method: "POST",
     }) as Promise<TaskPlan>;
   }
 
-  async approveTaskPlan(analysisId: string, selectedTasks: ProposedTask[]): Promise<TaskApprovalResult> {
+  async approveTaskPlan(
+    analysisId: string,
+    selectedTasks: ProposedTask[]
+  ): Promise<TaskApprovalResult> {
     return this.fetchAPI(`/requirements/${analysisId}/approve-task-plan`, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify({ selected_tasks: selectedTasks }),
     }) as Promise<TaskApprovalResult>;
   }
 
   async getTraceability(analysisId: string): Promise<TraceabilityReport> {
-    return this.fetchAPI(`/requirements/${analysisId}/traceability`) as Promise<TraceabilityReport>;
+    return this.fetchAPI(
+      `/requirements/${analysisId}/traceability`
+    ) as Promise<TraceabilityReport>;
   }
 
   // ─── Sprint 4: Project Context Notes & Memory ─────────────────────────────────
-  async listProjectContextNotes(projectId: string, includeSuperseded = false): Promise<ProjectContextNote[]> {
-    return this.fetchAPI(`/projects/${projectId}/context?include_superseded=${includeSuperseded}`) as Promise<ProjectContextNote[]>;
+  async listProjectContextNotes(
+    projectId: string,
+    includeSuperseded = false
+  ): Promise<ProjectContextNote[]> {
+    return this.fetchAPI(
+      `/projects/${projectId}/context?include_superseded=${includeSuperseded}`
+    ) as Promise<ProjectContextNote[]>;
   }
 
-  async createProjectContextNote(projectId: string, data: Partial<ProjectContextNote>): Promise<ProjectContextNote> {
+  async createProjectContextNote(
+    projectId: string,
+    data: Partial<ProjectContextNote>
+  ): Promise<ProjectContextNote> {
     return this.fetchAPI(`/projects/${projectId}/context`, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify(data),
     }) as Promise<ProjectContextNote>;
   }
 
-  async updateProjectContextNote(noteId: string, data: Partial<ProjectContextNote>): Promise<ProjectContextNote> {
+  async updateProjectContextNote(
+    noteId: string,
+    data: Partial<ProjectContextNote>
+  ): Promise<ProjectContextNote> {
     return this.fetchAPI(`/context/${noteId}`, {
-      method: 'PUT',
+      method: "PUT",
       body: JSON.stringify(data),
     }) as Promise<ProjectContextNote>;
   }
 
   async deleteProjectContextNote(noteId: string): Promise<null> {
     return this.fetchAPI(`/context/${noteId}`, {
-      method: 'DELETE',
+      method: "DELETE",
     }) as Promise<null>;
   }
 
   // ─── Sprint 4: Client Requests ────────────────────────────────────────────────
   async listProjectClientRequests(projectId: string): Promise<ClientRequest[]> {
-    return this.fetchAPI(`/projects/${projectId}/client-requests`) as Promise<ClientRequest[]>;
+    return this.fetchAPI(`/projects/${projectId}/client-requests`) as Promise<
+      ClientRequest[]
+    >;
   }
 
-  async createClientRequest(projectId: string, data: Partial<ClientRequest>): Promise<ClientRequest> {
+  async createClientRequest(
+    projectId: string,
+    data: Partial<ClientRequest>
+  ): Promise<ClientRequest> {
     return this.fetchAPI(`/projects/${projectId}/client-requests`, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify(data),
     }) as Promise<ClientRequest>;
   }
 
   async getClientRequest(requestId: string): Promise<ClientRequest> {
-    return this.fetchAPI(`/client-requests/${requestId}`) as Promise<ClientRequest>;
+    return this.fetchAPI(
+      `/client-requests/${requestId}`
+    ) as Promise<ClientRequest>;
   }
 
   async analyzeClientRequestImpact(requestId: string): Promise<ClientRequest> {
     return this.fetchAPI(`/client-requests/${requestId}/analyze-impact`, {
-      method: 'POST',
+      method: "POST",
     }) as Promise<ClientRequest>;
   }
 
   async approveClientRequest(requestId: string): Promise<ClientRequest> {
     return this.fetchAPI(`/client-requests/${requestId}/approve`, {
-      method: 'POST',
+      method: "POST",
     }) as Promise<ClientRequest>;
   }
 
   // ─── Sprint 4: Automations ────────────────────────────────────────────────────
   async generateDailyProjectSummary(projectId: string): Promise<DailySummary> {
     return this.fetchAPI(`/automations/projects/${projectId}/daily-summary`, {
-      method: 'POST',
+      method: "POST",
     }) as Promise<DailySummary>;
   }
 
-  async syncProjectTaskConsistency(projectId: string): Promise<Record<string, unknown>> {
-    return this.fetchAPI(`/automations/projects/${projectId}/sync-consistency`, {
-      method: 'POST',
-    }) as Promise<Record<string, unknown>>;
+  async syncProjectTaskConsistency(
+    projectId: string
+  ): Promise<Record<string, unknown>> {
+    return this.fetchAPI(
+      `/automations/projects/${projectId}/sync-consistency`,
+      {
+        method: "POST",
+      }
+    ) as Promise<Record<string, unknown>>;
   }
 
-  async listAutomationExecutions(projectId?: string): Promise<AutomationExecution[]> {
-    const query = projectId ? `?project_id=${projectId}` : '';
-    return this.fetchAPI(`/automations/executions${query}`) as Promise<AutomationExecution[]>;
+  async listAutomationExecutions(
+    projectId?: string
+  ): Promise<AutomationExecution[]> {
+    const query = projectId ? `?project_id=${projectId}` : "";
+    return this.fetchAPI(`/automations/executions${query}`) as Promise<
+      AutomationExecution[]
+    >;
   }
 }
 

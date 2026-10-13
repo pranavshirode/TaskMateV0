@@ -1,4 +1,5 @@
 """Authorization and cross-user security isolation tests for Sprint 4 features."""
+
 import pytest
 from httpx import AsyncClient
 
@@ -19,7 +20,7 @@ async def test_cross_user_isolation(
     # User B setup
     user_b, token_b = await create_test_user(email="userb@example.com")
     cl_b = await create_test_client(user_b.id)
-    proj_b = await create_test_project(user_b.id, cl_b.id)
+    _ = await create_test_project(user_b.id, cl_b.id)
     headers_b = {"Authorization": f"Bearer {token_b}"}
 
     # User A creates a requirements analysis
@@ -108,4 +109,3 @@ async def test_cross_user_isolation(
         headers=headers_b,
     )
     assert cross_list_reqs.status_code in (403, 404)
-

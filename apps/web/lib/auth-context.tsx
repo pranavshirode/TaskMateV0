@@ -1,7 +1,13 @@
-'use client';
+"use client";
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { apiClient, User, LoginRequest, RegisterRequest } from './api-client';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
+import { apiClient, User, LoginRequest, RegisterRequest } from "./api-client";
 
 type AuthContextType = {
   user: User | null;
@@ -28,7 +34,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const userData = await apiClient.getMe();
           setUser(userData);
         } catch (error) {
-          console.error('Failed to validate token:', error);
+          console.error("Failed to validate token:", error);
           apiClient.clearToken();
           setToken(null);
           setUser(null);
@@ -59,7 +65,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, register, isLoading }}>
+    <AuthContext.Provider
+      value={{ user, token, login, logout, register, isLoading }}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -68,7 +76,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 }

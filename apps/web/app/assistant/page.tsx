@@ -23,11 +23,17 @@ interface Message {
 }
 
 const QUICK_ACTIONS = [
-  { label: "📅 What should I work on today?", prompt: "What should I work on today?" },
+  {
+    label: "📅 What should I work on today?",
+    prompt: "What should I work on today?",
+  },
   { label: "⚠️ Show overdue tasks", prompt: "Show me all overdue tasks" },
   { label: "➕ Create a task", prompt: "Create a task " },
   { label: "🔴 High-priority tasks", prompt: "Show all high-priority tasks" },
-  { label: "🐙 Connect to GitHub", prompt: "Summarize my open issues on GitHub" }
+  {
+    label: "🐙 Connect to GitHub",
+    prompt: "Summarize my open issues on GitHub",
+  },
 ];
 
 export default function AssistantPage() {
@@ -94,7 +100,8 @@ export default function AssistantPage() {
           const assistantMessage: Message = {
             id: crypto.randomUUID(),
             role: "assistant",
-            content: data.message || data.result || "Agent executed successfully.",
+            content:
+              data.message || data.result || "Agent executed successfully.",
             timestamp: new Date(),
           };
           setMessages((prev) => [...prev, assistantMessage]);
@@ -112,7 +119,9 @@ export default function AssistantPage() {
             {
               id: crypto.randomUUID(),
               role: "assistant",
-              content: response.error?.message || "I'm having trouble processing your request.",
+              content:
+                response.error?.message ||
+                "I'm having trouble processing your request.",
               timestamp: new Date(),
             },
           ]);
@@ -125,7 +134,8 @@ export default function AssistantPage() {
             role: "assistant",
             content: data.message,
             actions: data.actions,
-            context_summary: (data.context_summary as Message['context_summary']) || undefined,
+            context_summary:
+              (data.context_summary as Message["context_summary"]) || undefined,
             requires_clarification: data.requires_clarification,
             suggestions: data.suggestions,
             intent: data.intent || undefined,
@@ -164,7 +174,8 @@ export default function AssistantPage() {
         <div>
           <h1 className="text-2xl font-bold">🤖 TaskMate AI</h1>
           <p className="text-sm text-[var(--text-muted)]">
-            Ask me to manage your tasks, check your schedule, or interact with GitHub.
+            Ask me to manage your tasks, check your schedule, or interact with
+            GitHub.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -190,9 +201,12 @@ export default function AssistantPage() {
           <div className="flex flex-col items-center justify-center h-full space-y-6">
             <div className="text-center">
               <p className="text-4xl mb-2">🤖</p>
-              <h2 className="text-xl font-semibold">How can I help you today?</h2>
+              <h2 className="text-xl font-semibold">
+                How can I help you today?
+              </h2>
               <p className="text-[var(--text-muted)] mt-1">
-                I can create tasks, check your schedule, and manage your workspace.
+                I can create tasks, check your schedule, and manage your
+                workspace.
               </p>
             </div>
             <div className="grid grid-cols-2 gap-2 w-full max-w-lg">
@@ -210,7 +224,10 @@ export default function AssistantPage() {
         )}
 
         {messages.map((msg) => (
-          <div key={msg.id} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+          <div
+            key={msg.id}
+            className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+          >
             <div
               className={`max-w-[80%] rounded-lg px-4 py-3 ${
                 msg.role === "user"
@@ -233,9 +250,14 @@ export default function AssistantPage() {
                       }`}
                     >
                       {action.success ? "✓" : "✗"}{" "}
-                      {(action.action_type || action.type || "action").replace(/_/g, " ").toLowerCase()}
+                      {(action.action_type || action.type || "action")
+                        .replace(/_/g, " ")
+                        .toLowerCase()}
                       {Boolean(action.data && action.data.title) && (
-                        <span className="font-medium"> — {String(action.data?.title)}</span>
+                        <span className="font-medium">
+                          {" "}
+                          — {String(action.data?.title)}
+                        </span>
                       )}
                     </div>
                   ))}
@@ -276,11 +298,24 @@ export default function AssistantPage() {
           <div className="flex justify-start">
             <div className="bg-[var(--sidebar-border)] rounded-lg px-4 py-3 flex items-center gap-3">
               <div className="flex space-x-1">
-                <div className="w-2 h-2 bg-[var(--text-muted)] rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                <div className="w-2 h-2 bg-[var(--text-muted)] rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                <div className="w-2 h-2 bg-[var(--text-muted)] rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                <div
+                  className="w-2 h-2 bg-[var(--text-muted)] rounded-full animate-bounce"
+                  style={{ animationDelay: "0ms" }}
+                />
+                <div
+                  className="w-2 h-2 bg-[var(--text-muted)] rounded-full animate-bounce"
+                  style={{ animationDelay: "150ms" }}
+                />
+                <div
+                  className="w-2 h-2 bg-[var(--text-muted)] rounded-full animate-bounce"
+                  style={{ animationDelay: "300ms" }}
+                />
               </div>
-              {agentMode && <span className="text-xs text-[var(--text-muted)]">Agent is thinking and using tools...</span>}
+              {agentMode && (
+                <span className="text-xs text-[var(--text-muted)]">
+                  Agent is thinking and using tools...
+                </span>
+              )}
             </div>
           </div>
         )}
