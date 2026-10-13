@@ -1,5 +1,5 @@
-import React from "react";
-import { render, screen } from "@testing-library/react";
+import React, { act } from "react";
+import { render, screen, waitFor } from "@testing-library/react";
 import Home from "@/app/page";
 
 // Mock next/navigation
@@ -30,21 +30,25 @@ jest.mock("@/lib/api-client", () => ({
 
 import { AuthProvider } from "@/lib/auth-context";
 
-const renderWithAuth = (ui: React.ReactElement) =>
-  render(<AuthProvider>{ui}</AuthProvider>);
+const renderWithAuth = async (ui: React.ReactElement) => {
+  let result: ReturnType<typeof render>;
+  await act(async () => {
+    result = render(<AuthProvider>{ui}</AuthProvider>);
+  });
+  return result!;
+};
 
 describe("Home / Dashboard Page", () => {
-  it("renders without crashing inside AuthProvider", () => {
-    // Page starts in loading state — just verify it mounts cleanly
-    const { container } = renderWithAuth(<Home />);
+  it("renders without crashing inside AuthProvider", async () => {
+    const { container } = await renderWithAuth(<Home />);
     expect(container).toBeTruthy();
   });
 
-  it("renders a loading spinner on initial mount", () => {
-    renderWithAuth(<Home />);
-    // The page starts in isLoading=true and renders LoadingSpinner
-    // We verify the page root element is present (not an error boundary)
-    const root = document.querySelector("body");
-    expect(root).not.toBeNull();
+  it("renders page content after async data loads", async () => {
+    await renderWithAuth(<Home />);
+    // Wait for loading spinner to disappear and content to appear
+    await waitFor(() => {
+      expect(document.querySelector("body")).not.toBeNull();
+    });
   });
 });

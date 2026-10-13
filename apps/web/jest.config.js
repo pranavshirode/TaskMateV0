@@ -10,6 +10,8 @@ const config = {
   testEnvironment: "jsdom",
   setupFilesAfterEnv: ["<rootDir>/jest.setup.ts"],
   testPathIgnorePatterns: ["<rootDir>/.next/", "<rootDir>/node_modules/"],
+  modulePathIgnorePatterns: ["<rootDir>/.next/"],
+  watchPathIgnorePatterns: ["<rootDir>/.next/"],
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/$1",
   },
