@@ -1,0 +1,13 @@
+# Build output
+.next/
+out/
+
+# Dependencies
+node_modules/
+
+# Generated files
+*.min.js
+*.min.css
+
+# Misc
+.DS_Store
