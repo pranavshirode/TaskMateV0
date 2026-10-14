@@ -55,7 +55,7 @@ def test_ecommerce_dynamic_requirements_decomposition():
         assert len(title) > 5
 
     # 3. Check domain capabilities present
-    assert any("Registration" in t or "Authentication" in t for t in titles)
+    assert any("Sign-in" in t or "Accounts" in t for t in titles)
     assert any("Catalog" in t or "Search" in t for t in titles)
     assert any("Cart" in t for t in titles)
     assert any("Payment" in t or "Checkout" in t for t in titles)
@@ -88,11 +88,13 @@ def test_ecommerce_dynamic_requirements_decomposition():
             dep_idx = int(dep.split("-")[1])
             assert dep_idx < curr_idx, f"Dependency {dep} in {fr['key']} is not strictly earlier"
 
-    # 6. Check measurable NFRs
-    assert len(nfrs) >= 3
+    # 6. NFRs reflect what the brief asks for (secure storage; Android and iOS) and nothing it doesn't
     nfr_categories = [n["category"] for n in nfrs]
     assert "SECURITY" in nfr_categories
-    assert "PERFORMANCE" in nfr_categories
+    assert "COMPATIBILITY" in nfr_categories
+    assert "PERFORMANCE" not in nfr_categories  # the brief never mentions speed
+    assert all(n["source"] in ("CLIENT_STATED", "AI_SUGGESTED") for n in nfrs)
+    assert all(f["source"] == "CLIENT_STATED" for f in frs)
 
     # 7. Check clarification questions
     assert len(questions) >= 2
@@ -125,36 +127,35 @@ def test_non_ecommerce_domain_decomposition():
 
     # Verify medical booking capabilities are extracted
     assert any("Booking" in t or "Scheduling" in t or "Appointment" in t for t in titles)
-    assert any("Authentication" in t or "Registration" in t for t in titles)
+    assert any("Sign-in" in t or "Accounts" in t for t in titles)
 
 
 def test_validation_and_sanitization_engine():
-    """Verify that corrupt or generic inputs are detected and repaired by the validator."""
+    """Corrupt AI output is cleaned and validated, but never padded with invented content."""
     corrupted_data = {
-        "overview": {
-            "project_objective": "Project: Test System Client Brief: Do something",
-        },
+        "overview": {"project_objective": "Project: Test System Client Brief: Do something"},
         "functional_requirements": [
             {
                 "key": "FR-99",  # Non-sequential
-                "title": "Core Feature Implementation",  # Generic title
-                "description": "Project: Test Client Brief: Persist records transactionally in database and validate inputs.",  # Leaked metadata
+                "title": "Grocery Search",
+                "description": "Project: Test Client Brief: Customers search groceries by name.",  # Leaked metadata
                 "priority": "INVALID_PRIORITY",
                 "acceptance_criteria": [
-                    "Given authenticated user, when input is supplied, expected result is returned.",  # Generic criteria
+                    "Given authenticated user, when input is supplied, expected result is returned.",  # Generic
+                    "given a product name, when searching, then matching products are listed",
                 ],
-                "dependencies": ["FR-99", "FR-100"],  # Self-dependency & forward dependency
+                "dependencies": ["FR-99", "FR-100"],  # Self & forward dependency
+                "source": "client_stated",
             },
             {
                 "key": "FR-1",
-                "title": "API Validation and Data Persistence",  # Generic title
-                "description": "",  # Empty description
-                "priority": "HIGH",
-                "acceptance_criteria": [],
-                "dependencies": ["FR-2"],  # Invalid forward dependency
+                "title": "Core Feature Implementation",  # Placeholder: must be dropped, not replaced
+                "description": "",
+                "dependencies": ["FR-2"],
             },
+            {"key": "FR-7", "title": "Cart", "description": "Cart.", "dependencies": ["FR-1"], "source": "made-up"},
         ],
-        "non_functional_requirements": [],  # Missing NFRs
+        "non_functional_requirements": [],  # Missing NFRs stay missing
         "clarification_questions": [],
     }
 
@@ -165,34 +166,39 @@ def test_validation_and_sanitization_engine():
         project_name="QuickGrocer",
     )
 
-    clean_frs = sanitized["functional_requirements"]
-    assert len(clean_frs) >= 2
+    frs = sanitized["functional_requirements"]
+    assert [f["key"] for f in frs] == ["FR-1", "FR-2"]
+    assert [f["title"] for f in frs] == ["Grocery Search", "Cart"]
 
-    # Check keys are sequential FR-1, FR-2
-    assert clean_frs[0]["key"] == "FR-1"
-    assert clean_frs[1]["key"] == "FR-2"
+    assert "Project:" not in frs[0]["description"] and "Client Brief:" not in frs[0]["description"]
+    assert frs[0]["priority"] == "MEDIUM"
+    assert frs[0]["acceptance_criteria"] == ["Given a product name, When searching, Then matching products are listed"]
+    assert frs[0]["dependencies"] == []
+    assert frs[1]["dependencies"] == ["FR-1"]
 
-    # Check generic titles were replaced
-    assert clean_frs[0]["title"] != "Core Feature Implementation"
-    assert clean_frs[1]["title"] != "API Validation and Data Persistence"
+    # Source labels are normalised; unknown labels never claim the client asked for something.
+    assert frs[0]["source"] == "CLIENT_STATED"
+    assert frs[1]["source"] == "AI_SUGGESTED"
 
-    # Check metadata leakage was stripped
-    assert "Project:" not in clean_frs[0]["description"]
-    assert "Client Brief:" not in clean_frs[0]["description"]
+    assert sanitized["non_functional_requirements"] == []
+    assert sanitized["assumptions"] == [] and sanitized["risks_and_dependencies"] == []
+    assert "Project:" not in sanitized["overview"]["project_objective"]
 
-    # Check generic criteria were replaced with specific Given-When-Then
-    for crit in clean_frs[0]["acceptance_criteria"]:
-        assert "expected result is returned" not in crit
-        assert "Given " in crit
-        assert "When " in crit
-        assert "Then " in crit
 
-    # Check self-dependency and forward dependency were stripped
-    assert "FR-1" not in clean_frs[0]["dependencies"]
-    assert "FR-99" not in clean_frs[0]["dependencies"]
-    assert "FR-100" not in clean_frs[0]["dependencies"]
-    assert "FR-2" not in clean_frs[0]["dependencies"]
+def test_sanitizer_asks_instead_of_inventing_when_nothing_found():
+    sanitized = validate_and_sanitize_requirements_data(parsed={"functional_requirements": []}, brief="hello")
 
-    # Check NFRs were restored
-    assert len(sanitized["non_functional_requirements"]) >= 3
-    assert len(sanitized["clarification_questions"]) >= 1
+    assert sanitized["functional_requirements"] == []
+    assert sanitized["non_functional_requirements"] == []
+    assert len(sanitized["clarification_questions"]) == 1
+    assert sanitized["clarification_questions"][0]["context_topic"] == "Scope"
+
+
+def test_offline_analyzer_does_not_invent_unrelated_requirements():
+    result = analyze_brief_dynamically("Build a booking app with Google login and Stripe payments")
+
+    text = str(result).lower()
+    for invented in ("ios 15", "android api", "pci-dss", "p95", "300ms", "sendgrid", "cdn"):
+        assert invented not in text
+    assert result["technical_constraints"] == []
+    assert any("booking" in f["title"].lower() for f in result["functional_requirements"])

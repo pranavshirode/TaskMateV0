@@ -9,7 +9,9 @@ import EmptyState from "@/components/ui/EmptyState";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 
+import { useFeedback } from "@/components/ui/Feedback";
 export default function RepositoriesPage() {
+  const { toast, confirm } = useFeedback();
   const [projects, setProjects] = useState<Project[]>([]);
   const [reposByProject, setReposByProject] = useState<
     Record<string, Repository[]>
@@ -64,17 +66,20 @@ export default function RepositoriesPage() {
       setAddingTo(null);
       fetchData();
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : "Failed to add repo");
+      toast(err instanceof Error ? err.message : "Failed to add repo", "error");
     }
   };
 
   const handleDeleteRepo = async (repoId: string) => {
-    if (!confirm("Remove this repository?")) return;
+    if (!(await confirm({ title: "Remove this repository?" }))) return;
     try {
       await apiClient.deleteRepo(repoId);
       fetchData();
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : "Failed to remove repo");
+      toast(
+        err instanceof Error ? err.message : "Failed to remove repo",
+        "error"
+      );
     }
   };
 

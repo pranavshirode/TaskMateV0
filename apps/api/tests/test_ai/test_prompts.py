@@ -1,10 +1,11 @@
 """Tests for prompt templates."""
+
 from app.ai.prompts.base import PromptTemplate
-from app.ai.prompts.system import SYSTEM_PROMPT
+from app.ai.prompts.general import GENERAL_ASSISTANT_PROMPT
 from app.ai.prompts.intent_detection import INTENT_DETECTION_PROMPT
+from app.ai.prompts.system import SYSTEM_PROMPT
 from app.ai.prompts.task_creation import TASK_CREATION_PROMPT
 from app.ai.prompts.task_search import TASK_SEARCH_PROMPT
-from app.ai.prompts.general import GENERAL_ASSISTANT_PROMPT
 
 
 class TestPromptTemplate:
@@ -47,8 +48,13 @@ class TestIntentDetectionPrompt:
 
 class TestAllPromptsVersioned:
     def test_all_have_versions(self):
-        prompts = [SYSTEM_PROMPT, INTENT_DETECTION_PROMPT, TASK_CREATION_PROMPT,
-                   TASK_SEARCH_PROMPT, GENERAL_ASSISTANT_PROMPT]
+        prompts = [
+            SYSTEM_PROMPT,
+            INTENT_DETECTION_PROMPT,
+            TASK_CREATION_PROMPT,
+            TASK_SEARCH_PROMPT,
+            GENERAL_ASSISTANT_PROMPT,
+        ]
         for p in prompts:
             assert p.version, f"{p.name} missing version"
             assert p.versioned_name, f"{p.name} missing versioned_name"

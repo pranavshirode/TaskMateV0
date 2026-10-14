@@ -244,6 +244,20 @@ class TaskService:
         return [TaskResponse.model_validate(t) for t in tasks]
 
     # Convenience aliases for agent tools
+    async def list_tasks(
+        self, user: Any, skip: int = 0, limit: int = 20, **filters: Any
+    ) -> tuple[list[TaskResponse], int]:
+        """Adapter for agent tools: user object + offset/limit; ignores filters this service doesn't support."""
+        user_id = str(user.id if hasattr(user, "id") else user)
+        known = {
+            k: v
+            for k, v in filters.items()
+            if k in ("search", "status", "priority", "project_id", "client_id") and v not in (None, "")
+        }
+        page_size = max(1, min(int(limit), 100))
+        result = await self.list(user_id, page=skip // page_size + 1, page_size=page_size, **known)
+        return result.items, result.total
+
     async def create_task(self, user: Any, data: TaskCreate) -> TaskResponse:
         user_id = str(user.id if hasattr(user, "id") else user)
         return await self.create(user_id, data)

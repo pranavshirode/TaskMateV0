@@ -6,6 +6,10 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
+import AuthShell from "@/components/layout/AuthShell";
+
+// Seeded by scripts/seed.py; offered only in local development.
+const DEMO_ACCOUNT = { email: "alex@taskmate.dev", password: "password123" };
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -15,12 +19,11 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const signIn = async (credentials: { email: string; password: string }) => {
     setError("");
     setIsSubmitting(true);
     try {
-      await login({ email, password });
+      await login(credentials);
       router.push("/");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Login failed");
@@ -30,54 +33,68 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="w-full max-w-md space-y-8">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold">TaskMate AI</h1>
-          <p className="text-[var(--text-muted)] mt-2">
-            Sign in to your workspace
-          </p>
-        </div>
-
-        <form
-          onSubmit={handleSubmit}
-          className="space-y-4 bg-[var(--sidebar-bg)] border border-[var(--sidebar-border)] rounded-xl p-8"
-        >
-          {error && (
-            <div className="bg-red-500/10 border border-red-500/30 text-red-500 text-sm rounded-lg p-3">
-              {error}
-            </div>
-          )}
-          <Input
-            label="Email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            placeholder="you@example.com"
-          />
-          <Input
-            label="Password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            placeholder="••••••••"
-          />
-          <Button type="submit" disabled={isSubmitting} className="w-full">
-            {isSubmitting ? "Signing in..." : "Sign in"}
+    <AuthShell
+      title="Welcome back"
+      subtitle="Sign in to your TaskMate workspace."
+    >
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          signIn({ email, password });
+        }}
+        className="space-y-4"
+      >
+        {error && (
+          <div
+            role="alert"
+            className="rounded-lg border border-[color-mix(in_srgb,var(--danger)_30%,transparent)] bg-[var(--danger-soft)] p-3 text-sm text-[var(--danger)]"
+          >
+            {error}
+          </div>
+        )}
+        <Input
+          label="Email"
+          type="email"
+          autoComplete="email"
+          autoFocus
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          placeholder="you@example.com"
+        />
+        <Input
+          label="Password"
+          type="password"
+          autoComplete="current-password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          placeholder="••••••••"
+        />
+        <Button type="submit" disabled={isSubmitting} className="w-full">
+          {isSubmitting ? "Signing in..." : "Sign in"}
+        </Button>
+        {process.env.NODE_ENV === "development" && (
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={isSubmitting}
+            className="w-full"
+            onClick={() => signIn(DEMO_ACCOUNT)}
+          >
+            Use demo account
           </Button>
-          <p className="text-sm text-center text-[var(--text-muted)]">
-            Don&apos;t have an account?{" "}
-            <Link
-              href="/register"
-              className="text-[var(--primary)] hover:underline"
-            >
-              Create one
-            </Link>
-          </p>
-        </form>
-      </div>
-    </div>
+        )}
+      </form>
+      <p className="mt-6 text-center text-sm text-[var(--text-muted)]">
+        New to TaskMate?{" "}
+        <Link
+          href="/register"
+          className="font-medium text-[var(--primary)] hover:underline"
+        >
+          Create an account
+        </Link>
+      </p>
+    </AuthShell>
   );
 }

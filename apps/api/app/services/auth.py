@@ -1,6 +1,7 @@
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.errors import AuthorizationError, NotFoundError, ValidationError
+from app.core.errors import AuthorizationError, ConflictError, NotFoundError, ValidationError
 from app.core.security import create_access_token, get_password_hash, verify_password
 from app.models.user import User
 from app.repositories.user import UserRepository
@@ -13,21 +14,21 @@ class AuthService:
         self.user_repo = UserRepository(session)
 
     async def register(self, data: UserRegister) -> UserResponse:
-        # Check if email already exists
-        existing = await self.user_repo.get_by_email(data.email)
-        if existing:
-            raise ValidationError("Email already registered")
+        # Emails are stored lowercased, so duplicates must be checked the same way.
+        email = data.email.lower().strip()
 
-        # Validate email format (basic check)
-        if "@" not in data.email or "." not in data.email:
+        if "@" not in email or "." not in email:
             raise ValidationError("Invalid email format")
 
-        user = User(
-            name=data.name,
-            email=data.email.lower().strip(),
-            password_hash=get_password_hash(data.password),
-        )
-        user = await self.user_repo.create(user)
+        if await self.user_repo.get_by_email(email):
+            raise ConflictError("Email already registered", code="EMAIL_TAKEN")
+
+        user = User(name=data.name, email=email, password_hash=get_password_hash(data.password))
+        try:
+            user = await self.user_repo.create(user)
+        except IntegrityError as exc:  # A concurrent registration won the race.
+            await self.session.rollback()
+            raise ConflictError("Email already registered", code="EMAIL_TAKEN") from exc
         return UserResponse.model_validate(user)
 
     async def login(self, data: UserLogin) -> TokenResponse:

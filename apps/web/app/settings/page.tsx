@@ -7,7 +7,7 @@ import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 
 export default function SettingsPage() {
-  const { user, logout } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
   const [name, setName] = useState(user?.name || "");
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -19,6 +19,7 @@ export default function SettingsPage() {
     setMessage("");
     try {
       await apiClient.updateMe({ name: name.trim() });
+      await refreshUser(); // so the sidebar and greeting show the new name immediately
       setMessage("Profile updated successfully.");
     } catch (err: unknown) {
       setMessage(

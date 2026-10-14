@@ -60,6 +60,25 @@ class AgentExecutionService:
             error="Execution time limit exceeded",
         )
 
+    async def update_execution(self, execution: AgentExecution, **fields: Any) -> AgentExecution:
+        return await self.repository.update_execution(execution, **fields)
+
+    async def complete_step(
+        self, step: AgentExecutionStep, result_summary: str, latency_ms: int = 0
+    ) -> AgentExecutionStep:
+        return await self.repository.update_step(
+            step, status="COMPLETED", result_summary=result_summary, latency_ms=latency_ms
+        )
+
+    async def update_step(self, step: AgentExecutionStep, **fields: Any) -> AgentExecutionStep:
+        return await self.repository.update_step(step, **fields)
+
+    async def fail_step(self, step: AgentExecutionStep, error: str, latency_ms: int = 0) -> AgentExecutionStep:
+        return await self.repository.update_step(step, status="FAILED", error=error, latency_ms=latency_ms)
+
+    async def transition_status(self, execution_id: str, user: User, from_status: str, to_status: str) -> bool:
+        return await self.repository.transition_status(str(execution_id), str(user.id), from_status, to_status)
+
     async def get_execution(self, execution_id: str | uuid.UUID, user: User) -> AgentExecution | None:
         return await self.repository.get_execution(str(execution_id), str(user.id))
 

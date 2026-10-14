@@ -102,5 +102,10 @@ class BaseAIProvider(abc.ABC):
         """Check if the provider is available and configured."""
         ...
 
+    @abc.abstractmethod
+    def get_model_info(self) -> ModelInfo:
+        """Describe the provider and default model (recorded on agent executions)."""
+        ...
+
 
 AIProvider = BaseAIProvider

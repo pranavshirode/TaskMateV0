@@ -10,7 +10,7 @@ from datetime import date
 from typing import Any
 
 from app.agent.tools.base import AgentTool, ToolContext, ToolPermission, ToolResult
-from app.schemas.task import TaskCreate, TaskUpdate
+from app.schemas.task import TaskCreate, TaskPriorityUpdate, TaskStatusUpdate, TaskUpdate
 
 logger = logging.getLogger(__name__)
 
@@ -92,7 +92,7 @@ class TaskCreateTool(AgentTool):
             # Parse UUIDs
             for field in ("project_id", "client_id"):
                 if field in input_data and isinstance(input_data[field], str):
-                    input_data[field] = uuid.UUID(input_data[field])
+                    input_data[field] = str(uuid.UUID(input_data[field]))  # validate, keep as str for schemas
 
             task_in = TaskCreate(**input_data)
             task = await task_service.create_task(context.user, task_in)
@@ -150,7 +150,7 @@ class TaskGetTool(AgentTool):
 
         try:
             task_id = uuid.UUID(input_data["task_id"])
-            task = await task_service.get_task(task_id, context.user)
+            task = await task_service.get_task(context.user, task_id)
             if not task:
                 return ToolResult.fail("NOT_FOUND", f"Task {task_id} not found")
             return ToolResult.ok(task.model_dump(mode="json"))
@@ -222,7 +222,7 @@ class TaskSearchTool(AgentTool):
             # Parse UUIDs
             for field in ("project_id", "client_id"):
                 if field in input_data and isinstance(input_data[field], str):
-                    input_data[field] = uuid.UUID(input_data[field])
+                    input_data[field] = str(uuid.UUID(input_data[field]))  # validate, keep as str for schemas
 
             limit = input_data.pop("limit", 20)
             items, total = await task_service.list_tasks(
@@ -306,10 +306,10 @@ class TaskUpdateTool(AgentTool):
             # Parse UUIDs
             for field in ("project_id", "client_id"):
                 if field in input_data and isinstance(input_data[field], str):
-                    input_data[field] = uuid.UUID(input_data[field])
+                    input_data[field] = str(uuid.UUID(input_data[field]))  # validate, keep as str for schemas
 
             task_update = TaskUpdate(**input_data)
-            task = await task_service.update_task(task_id, context.user, task_update)
+            task = await task_service.update_task(context.user, task_id, task_update)
             if not task:
                 return ToolResult.fail("NOT_FOUND", f"Task {task_id} not found")
             return ToolResult.ok(
@@ -369,7 +369,9 @@ class TaskChangeStatusTool(AgentTool):
 
         try:
             task_id = uuid.UUID(input_data["task_id"])
-            task = await task_service.change_status(task_id, context.user, input_data["status"])
+            task = await task_service.change_status(
+                str(context.user.id), str(task_id), TaskStatusUpdate(status=input_data["status"])
+            )
             if not task:
                 return ToolResult.fail("NOT_FOUND", f"Task {task_id} not found")
             return ToolResult.ok(
@@ -428,7 +430,9 @@ class TaskChangePriorityTool(AgentTool):
 
         try:
             task_id = uuid.UUID(input_data["task_id"])
-            task = await task_service.change_priority(task_id, context.user, input_data["priority"])
+            task = await task_service.change_priority(
+                str(context.user.id), str(task_id), TaskPriorityUpdate(priority=input_data["priority"])
+            )
             if not task:
                 return ToolResult.fail("NOT_FOUND", f"Task {task_id} not found")
             return ToolResult.ok(

@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import json
 import re
+from datetime import date, timedelta
 from typing import Any
 
 from app.ai.extractors.requirements_analyzer import analyze_brief_dynamically
-from app.ai.providers.base import AIMessage, AIResponse, BaseAIProvider
+from app.ai.providers.base import AIMessage, AIResponse, BaseAIProvider, ModelInfo, ToolCallRequest
 
 
 class MockAIProvider(BaseAIProvider):
@@ -19,6 +20,57 @@ class MockAIProvider(BaseAIProvider):
 
     async def health_check(self) -> bool:
         return True
+
+    async def _agent_turn(self, messages: list[AIMessage]) -> AIResponse:
+        """Offline stand-in for an LLM with tool calling: supports creating and finding tasks.
+
+        It proposes real tool calls, so offline demos still exercise permissions, approval and persistence.
+        """
+        last = messages[-1]
+        role = getattr(last.role, "value", last.role)
+
+        def reply(text: str, tool_calls: list[ToolCallRequest] | None = None) -> AIResponse:
+            return AIResponse(content=text, model="mock-model", tool_calls=tool_calls or [], latency_ms=5)
+
+        if role == "tool":  # Summarise the real tool result.
+            try:
+                data = json.loads(last.content)
+            except (TypeError, ValueError):
+                data = {}
+            if data.get("error"):
+                error = data["error"]
+                return reply(f"That didn't work: {error.get('message', error) if isinstance(error, dict) else error}")
+            if "tasks" in data:
+                titles = [t.get("title", "") for t in data["tasks"]][:8]
+                if not titles:
+                    return reply("I didn't find any matching tasks.")
+                return reply(f"I found {data.get('total', len(titles))} task(s): " + "; ".join(titles) + ".")
+            return reply(data.get("message") or "Done.")
+
+        user_text = next((m.content for m in reversed(messages) if getattr(m.role, "value", m.role) == "user"), "")
+        intent = json.loads((await self.generate([AIMessage(role="user", content=user_text)])).content)
+        entities = intent.get("entities") or {}
+
+        if intent.get("intent") == "CREATE_TASK":
+            if not entities.get("task_title"):
+                return reply("What should the task be called?")
+            args: dict[str, Any] = {"title": entities["task_title"], "priority": entities.get("priority") or "MEDIUM"}
+            offsets = {"today": 0, "tomorrow": 1, "next week": 7}
+            if entities.get("due_date") in offsets:
+                args["due_date"] = (date.today() + timedelta(days=offsets[entities["due_date"]])).isoformat()
+            return reply("", [ToolCallRequest(id="mock-call-1", name="task.create", arguments=args)])
+
+        if intent.get("intent") == "SEARCH_TASKS":
+            args = {"search": entities["search_query"]} if entities.get("search_query") else {}
+            return reply("", [ToolCallRequest(id="mock-call-1", name="task.search", arguments=args)])
+
+        return reply(
+            "I'm running in offline demo mode (AI_PROVIDER=mock), where I can create and find tasks. "
+            "Configure an AI provider key for full answers."
+        )
+
+    def get_model_info(self) -> ModelInfo:
+        return ModelInfo(provider="mock", model="mock-rule-based", max_tokens=4096, supports_json_mode=True)
 
     async def generate(
         self,
@@ -42,6 +94,9 @@ class MockAIProvider(BaseAIProvider):
                 total_tokens=80,
                 latency_ms=10,
             )
+
+        if tools:
+            return await self._agent_turn(messages)
 
         # Extract system & user text
         sys_text = ""
@@ -347,7 +402,7 @@ class MockAIProvider(BaseAIProvider):
                 "intent": "CREATE_TASK",
                 "confidence": 0.94,
                 "entities": {
-                    "task_title": title or "New Task",
+                    "task_title": title or None,  # no title: the orchestrator asks instead of inventing one
                     "project_name": proj,
                     "priority": prio,
                     "due_date": due,

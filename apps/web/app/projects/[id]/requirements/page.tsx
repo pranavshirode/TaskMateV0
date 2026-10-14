@@ -14,7 +14,9 @@ import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 
+import { useFeedback } from "@/components/ui/Feedback";
 export default function ProjectRequirementsPage() {
+  const { toast } = useFeedback();
   const { id: projectId } = useParams<{ id: string }>();
   const router = useRouter();
 
@@ -76,7 +78,10 @@ export default function ProjectRequirementsPage() {
       await apiClient.analyzeBrief(created.id);
       router.push(`/projects/${projectId}/requirements/${created.id}`);
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : "Failed to analyze brief");
+      toast(
+        err instanceof Error ? err.message : "Failed to analyze brief",
+        "error"
+      );
       setIsSubmitting(false);
     }
   };

@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -44,6 +44,8 @@ class AgentExecutionRepository:
                 AgentExecution.id == str(execution_id),
                 AgentExecution.user_id == str(user_id),
             )
+            # Always reflect the database: status may have been changed by transition_status().
+            .execution_options(populate_existing=True)
         )
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
@@ -61,13 +63,20 @@ class AgentExecutionRepository:
         step_number: int,
         tool_name: str,
         tool_input: dict | None = None,
+        status: str = "PENDING",
+        result_summary: str | None = None,
+        latency_ms: int = 0,
+        error: str | None = None,
     ) -> AgentExecutionStep:
         step = AgentExecutionStep(
             execution_id=execution_id,
             step_number=step_number,
             tool_name=tool_name,
             tool_input=tool_input,
-            status="PENDING",
+            status=status,
+            result_summary=result_summary,
+            latency_ms=latency_ms,
+            error=error,
         )
         self.session.add(step)
         await self.session.commit()
@@ -80,6 +89,23 @@ class AgentExecutionRepository:
         await self.session.commit()
         await self.session.refresh(step)
         return step
+
+    async def transition_status(self, execution_id: str, user_id: str, from_status: str, to_status: str) -> bool:
+        """Atomically move an execution between states; False if it was not in `from_status`.
+
+        Used so an approval can only be acted on once, even with concurrent or repeated requests.
+        """
+        result = await self.session.execute(
+            update(AgentExecution)
+            .where(
+                AgentExecution.id == str(execution_id),
+                AgentExecution.user_id == str(user_id),
+                AgentExecution.status == from_status,
+            )
+            .values(status=to_status)
+        )
+        await self.session.commit()
+        return result.rowcount == 1  # type: ignore[attr-defined]  # CursorResult for UPDATE statements
 
     async def cancel_execution(self, execution_id: uuid.UUID, user_id: uuid.UUID) -> AgentExecution | None:
         execution = await self.get_execution(execution_id, user_id)

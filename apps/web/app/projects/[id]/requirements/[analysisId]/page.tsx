@@ -20,7 +20,9 @@ import ErrorState from "@/components/ui/ErrorState";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 
+import { useFeedback } from "@/components/ui/Feedback";
 export default function RequirementsAnalysisDetailPage() {
+  const { toast, confirm } = useFeedback();
   const { id: projectId, analysisId } = useParams<{
     id: string;
     analysisId: string;
@@ -75,19 +77,20 @@ export default function RequirementsAnalysisDetailPage() {
 
   const handleReanalyze = async () => {
     if (
-      !confirm(
-        "Re-run AI analysis on this brief? Existing answered questions will be preserved."
-      )
+      !(await confirm({
+        title:
+          "Re-run AI analysis on this brief? Existing answered questions will be preserved.",
+      }))
     )
       return;
     try {
       setIsActionLoading(true);
       const res = await apiClient.analyzeBrief(analysisId);
       setAnalysis(res);
-      alert("Analysis updated successfully!");
+      toast("Analysis updated successfully!");
       fetchAnalysisData();
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : "Operation failed");
+      toast(err instanceof Error ? err.message : "Operation failed", "error");
     } finally {
       setIsActionLoading(false);
     }
@@ -95,19 +98,20 @@ export default function RequirementsAnalysisDetailPage() {
 
   const handleApproveAnalysis = async () => {
     if (
-      !confirm(
-        "Approve this requirements specification? This confirms that requirements are ready for task planning."
-      )
+      !(await confirm({
+        title:
+          "Approve this requirements specification? This confirms that requirements are ready for task planning.",
+      }))
     )
       return;
     try {
       setIsActionLoading(true);
       const res = await apiClient.approveAnalysis(analysisId);
       setAnalysis(res);
-      alert("Requirements specification approved!");
+      toast("Requirements specification approved!");
       fetchAnalysisData();
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : "Operation failed");
+      toast(err instanceof Error ? err.message : "Operation failed", "error");
     } finally {
       setIsActionLoading(false);
     }
@@ -122,7 +126,10 @@ export default function RequirementsAnalysisDetailPage() {
       setAnswerText("");
       fetchAnalysisData();
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : "Failed to save answer");
+      toast(
+        err instanceof Error ? err.message : "Failed to save answer",
+        "error"
+      );
     } finally {
       setIsActionLoading(false);
     }
@@ -138,8 +145,9 @@ export default function RequirementsAnalysisDetailPage() {
       );
       setShowPlanModal(true);
     } catch (err: unknown) {
-      alert(
-        err instanceof Error ? err.message : "Failed to generate task plan"
+      toast(
+        err instanceof Error ? err.message : "Failed to generate task plan",
+        "error"
       );
     } finally {
       setIsActionLoading(false);
@@ -153,12 +161,15 @@ export default function RequirementsAnalysisDetailPage() {
     try {
       setIsCreatingTasks(true);
       const res = await apiClient.approveTaskPlan(analysisId, selected);
-      alert(res.message);
+      toast(res.message || "Tasks created");
       setShowPlanModal(false);
       fetchAnalysisData();
       setActiveTab("traceability");
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : "Failed to create tasks");
+      toast(
+        err instanceof Error ? err.message : "Failed to create tasks",
+        "error"
+      );
     } finally {
       setIsCreatingTasks(false);
     }
@@ -430,6 +441,14 @@ export default function RequirementsAnalysisDetailPage() {
             </button>
           </div>
 
+          {(analysis.requirements || []).length === 0 && (
+            <div className="rounded-xl border border-dashed border-[var(--sidebar-border)] p-6 text-center text-sm text-[var(--text-muted)]">
+              No concrete requirements could be identified from this brief yet.
+              Answer the clarification questions, or add detail to the brief,
+              then re-run the analysis.
+            </div>
+          )}
+
           {(analysis.requirements || [])
             .filter((r: Requirement) => {
               if (categoryFilter === "FUNCTIONAL")
@@ -450,7 +469,7 @@ export default function RequirementsAnalysisDetailPage() {
                 >
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-2">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-[var(--primary)]/10 text-[var(--primary)]">
+                      <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-[color-mix(in_srgb,var(--primary)_10%,transparent)] text-[var(--primary)]">
                         {req.key}
                       </span>
                       <span
@@ -462,6 +481,22 @@ export default function RequirementsAnalysisDetailPage() {
                       >
                         {isNfr ? "Non-Functional" : "Functional"}
                       </span>
+                      {req.source === "CLIENT_STATED" && (
+                        <span
+                          title="The client asked for this in the brief"
+                          className="text-[10px] font-medium px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                        >
+                          Client stated
+                        </span>
+                      )}
+                      {req.source === "AI_SUGGESTED" && (
+                        <span
+                          title="An AI recommendation the client did not ask for. Confirm it with the client before approving."
+                          className="text-[10px] font-medium px-2 py-0.5 rounded border border-dashed border-amber-500/50 text-amber-600 dark:text-amber-400"
+                        >
+                          AI suggested
+                        </span>
+                      )}
                       <h3 className="font-semibold text-sm">{req.title}</h3>
                     </div>
                     <div className="flex items-center gap-2">
@@ -768,7 +803,7 @@ export default function RequirementsAnalysisDetailPage() {
                       onClick={() => toggleTaskSelection(index)}
                       className={`border rounded-xl p-4 cursor-pointer transition-colors ${
                         isChecked
-                          ? "border-[var(--primary)] bg-[var(--primary)]/5"
+                          ? "border-[var(--primary)] bg-[color-mix(in_srgb,var(--primary)_5%,transparent)]"
                           : "border-[var(--sidebar-border)] bg-[var(--background)] opacity-60"
                       }`}
                     >

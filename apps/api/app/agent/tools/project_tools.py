@@ -49,7 +49,7 @@ class ProjectGetTool(AgentTool):
 
         try:
             project_id = uuid.UUID(input_data["project_id"])
-            project = await project_service.get_project(project_id, context.user)
+            project = await project_service.get_project(context.user, project_id)
             if not project:
                 return ToolResult.fail("NOT_FOUND", f"Project {project_id} not found")
             return ToolResult.ok(project.model_dump(mode="json"))
@@ -102,7 +102,7 @@ class ProjectListTool(AgentTool):
 
         try:
             if "client_id" in input_data and isinstance(input_data["client_id"], str):
-                input_data["client_id"] = uuid.UUID(input_data["client_id"])
+                input_data["client_id"] = str(uuid.UUID(input_data["client_id"]))
 
             limit = input_data.pop("limit", 20)
             items, total = await project_service.list_projects(

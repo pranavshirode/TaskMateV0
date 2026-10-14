@@ -2,7 +2,7 @@ from datetime import date
 
 from pydantic import BaseModel
 
-from app.schemas.project import ProjectResponse
+from app.schemas.project import ProjectDetailResponse
 from app.schemas.task import TaskResponse
 
 
@@ -11,5 +11,5 @@ class DashboardResponse(BaseModel):
     due_today: list[TaskResponse]
     overdue: list[TaskResponse]
     high_priority: list[TaskResponse]
-    active_projects: list[ProjectResponse]
+    active_projects: list[ProjectDetailResponse]  # includes task_summary for progress bars
     recently_updated: list[TaskResponse]

@@ -19,14 +19,14 @@ async def init_db():
     settings = get_settings()
     db_url = settings.DATABASE_URL
     if db_url.startswith("sqlite"):
-        engine = create_async_engine(db_url, echo=(settings.APP_ENV == "development"))
+        engine = create_async_engine(db_url, echo=settings.SQL_ECHO)
     else:
         engine = create_async_engine(
             db_url,
             pool_size=5,
             max_overflow=10,
             pool_pre_ping=True,
-            echo=(settings.APP_ENV == "development"),
+            echo=settings.SQL_ECHO,
         )
     async_session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
     if db_url.startswith("sqlite"):

@@ -8,9 +8,10 @@ from datetime import datetime, timezone
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.ai.errors import AIError
 from app.ai.prompts.requirements import CLIENT_REQUEST_IMPACT_SYSTEM_PROMPT
 from app.ai.providers.base import AIMessage, BaseAIProvider
-from app.core.errors import ForbiddenError, NotFoundError
+from app.core.errors import AppError, ForbiddenError, NotFoundError
 from app.models.enums import ClientRequestStatus, ClientRequestType
 from app.models.requirements import ClientRequest
 from app.repositories.client_request import ClientRequestRepository
@@ -95,23 +96,26 @@ Analyze the impact of this request against the existing requirements and determi
             AIMessage(role="user", content=user_prompt),
         ]
 
-        response = await self.ai_provider.generate(
-            messages,
-            response_format={"type": "json_object"},
-            temperature=0.2,
-        )
+        try:
+            response = await self.ai_provider.generate(
+                messages,
+                response_format={"type": "json_object"},
+                temperature=0.2,
+            )
+        except AIError as e:
+            raise AppError(503, "AI_UNAVAILABLE", "The AI service is unavailable right now. Please try again.") from e
 
         try:
             parsed = json.loads(response.content)
-        except Exception:
-            parsed = {
-                "request_type": req.request_type.value,
-                "classification_explanation": "Client request analyzed via rule-based classifier.",
-                "affected_requirements": [],
-                "affected_tasks": [],
-                "scope_change_summary": "Introduces request for developer consideration.",
-                "recommended_actions": ["Review brief with client", "Confirm any additional budget or deadline impact"],
-            }
+            if not isinstance(parsed, dict):
+                raise ValueError("impact analysis must be a JSON object")
+        except (ValueError, TypeError) as e:
+            # Do not store a canned "analysis": the request stays un-reviewed so the developer knows to retry.
+            raise AppError(
+                502,
+                "AI_INVALID_RESPONSE",
+                "The AI returned an unreadable impact analysis. Nothing was saved; please retry.",
+            ) from e
 
         req.impact_summary = parsed
         req.status = ClientRequestStatus.IMPACT_REVIEWED

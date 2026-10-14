@@ -25,7 +25,9 @@ describe("AssistantPage", () => {
 
   it("renders quick action buttons", () => {
     render(<AssistantPage />);
-    expect(screen.getByText(/What should I work on today/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/What should I work on today/i)
+    ).toBeInTheDocument();
     expect(screen.getByText(/Show overdue tasks/i)).toBeInTheDocument();
     expect(screen.getByText(/Create a task/i)).toBeInTheDocument();
     expect(screen.getByText(/High-priority tasks/i)).toBeInTheDocument();

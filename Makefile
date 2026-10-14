@@ -1,9 +1,17 @@
-.PHONY: help install dev up down build test lint format migrate migration logs clean evaluate-ai
+.PHONY: help hitme setup install dev up down build test lint format migrate migration logs clean evaluate-ai
 
 help: ## Show this help message
 	@echo TaskMate AI - Developer Commands
 	@echo ================================
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
+
+# ---- One command ----
+
+hitme: ## Run the whole app locally: install, migrate, seed, start API + web (Ctrl+C stops both)
+	./hitme.sh
+
+setup: ## Same setup as hitme (deps, .env, migrations, demo data) without starting servers
+	./hitme.sh --setup
 
 # ---- Setup ----
 

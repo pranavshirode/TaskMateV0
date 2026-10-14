@@ -34,6 +34,11 @@ class ValidationError(AppError):
         super().__init__(422, code, message)
 
 
+class ConflictError(AppError):
+    def __init__(self, message: str, code: str = "CONFLICT"):
+        super().__init__(409, code, message)
+
+
 class DatabaseError(AppError):
     def __init__(self, message: str, code: str = "DATABASE_ERROR"):
         super().__init__(503, code, message)
@@ -66,19 +71,20 @@ def register_error_handlers(app: FastAPI):
 
     @app.exception_handler(Exception)
     async def unhandled_error_handler(request: Request, exc: Exception):
-        request_id = getattr(request.state, "request_id", None)
-        logger.error(
-            "Unhandled exception",
-            exc_info=exc,
-            extra={"request_id": request_id},
-        )
-        return JSONResponse(
-            status_code=500,
-            content=ErrorResponse(
-                error=ErrorDetail(
-                    code="INTERNAL_SERVER_ERROR",
-                    message="An unexpected error occurred.",
-                    request_id=request_id,
-                )
-            ).model_dump(),
-        )
+        return internal_error_response(request, exc)
+
+
+def internal_error_response(request: Request, exc: Exception) -> JSONResponse:
+    """Log an unexpected exception and build the generic 500 body (no internals leaked)."""
+    request_id = getattr(request.state, "request_id", None)
+    logger.error("Unhandled exception", exc_info=exc, extra={"request_id": request_id})
+    return JSONResponse(
+        status_code=500,
+        content=ErrorResponse(
+            error=ErrorDetail(
+                code="INTERNAL_SERVER_ERROR",
+                message="An unexpected error occurred.",
+                request_id=request_id,
+            )
+        ).model_dump(),
+    )

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import time
 from typing import Any
@@ -26,7 +27,14 @@ from app.ai.errors import (
 from app.ai.errors import (
     AITimeoutError as AppAITimeoutError,
 )
-from app.ai.providers.base import AIMessage, AIResponse, BaseAIProvider
+from app.ai.providers.base import (
+    AIMessage,
+    AIResponse,
+    BaseAIProvider,
+    ModelInfo,
+    ToolCallRequest,
+    ToolDefinition,
+)
 from app.core.config import get_settings
 
 logger = logging.getLogger(__name__)
@@ -47,6 +55,7 @@ class OpenAIProvider(BaseAIProvider):
         self._client = (
             AsyncOpenAI(
                 api_key=self._api_key,
+                base_url=settings.AI_BASE_URL or None,
                 timeout=float(self._timeout),
                 max_retries=self._max_retries,
             )
@@ -62,7 +71,7 @@ class OpenAIProvider(BaseAIProvider):
         temperature: float | None = None,
         max_tokens: int | None = None,
         model: str | None = None,
-        tools: Any = None,
+        tools: list[ToolDefinition] | None = None,
         tool_choice: Any = None,
     ) -> AIResponse:
         if not self._client:
@@ -72,7 +81,7 @@ class OpenAIProvider(BaseAIProvider):
         chosen_temperature = temperature if temperature is not None else self._default_temperature
         chosen_max_tokens = max_tokens or self._default_max_tokens
 
-        openai_messages: list[dict[str, str]] = [{"role": m.role, "content": m.content} for m in messages]
+        openai_messages = [_to_openai_message(m) for m in messages]
 
         kwargs: dict[str, Any] = {
             "model": chosen_model,
@@ -85,9 +94,27 @@ class OpenAIProvider(BaseAIProvider):
             kwargs["response_format"] = {"type": "json_object"}
             for msg in openai_messages:
                 if msg["role"] == "system":
-                    if "JSON" not in msg["content"]:
+                    if "JSON" not in (msg["content"] or ""):
                         msg["content"] += "\n\nYou MUST respond with valid JSON only."
                     break
+
+        # OpenAI function names may not contain dots, so "task.create" is sent as "task__create".
+        tool_names: dict[str, str] = {}
+        if tools:
+            tool_names = {_encode_tool_name(t.name): t.name for t in tools}
+            kwargs["tools"] = [
+                {
+                    "type": "function",
+                    "function": {
+                        "name": _encode_tool_name(t.name),
+                        "description": t.description,
+                        "parameters": t.parameters,
+                    },
+                }
+                for t in tools
+            ]
+            if tool_choice:
+                kwargs["tool_choice"] = tool_choice
 
         start_time = time.time()
         try:
@@ -108,6 +135,17 @@ class OpenAIProvider(BaseAIProvider):
         content = choice.message.content or ""
         usage = response.usage
 
+        tool_calls = []
+        for tc in choice.message.tool_calls or []:
+            try:
+                arguments = json.loads(tc.function.arguments or "{}")
+            except (json.JSONDecodeError, TypeError):
+                arguments = {}
+            if not isinstance(arguments, dict):
+                arguments = {}
+            name = tool_names.get(tc.function.name, tc.function.name)
+            tool_calls.append(ToolCallRequest(id=tc.id, name=name, arguments=arguments))
+
         return AIResponse(
             content=content,
             model=response.model,
@@ -115,7 +153,18 @@ class OpenAIProvider(BaseAIProvider):
             output_tokens=usage.completion_tokens if usage else 0,
             total_tokens=usage.total_tokens if usage else 0,
             latency_ms=latency_ms,
+            finish_reason=choice.finish_reason or "",
+            tool_calls=tool_calls,
             raw={"finish_reason": choice.finish_reason},
+        )
+
+    def get_model_info(self) -> ModelInfo:
+        return ModelInfo(
+            provider="openai",
+            model=self._default_model,
+            max_tokens=self._default_max_tokens,
+            supports_json_mode=True,
+            supports_tool_calling=True,
         )
 
     async def health_check(self) -> bool:
@@ -126,3 +175,25 @@ class OpenAIProvider(BaseAIProvider):
             return True
         except Exception:
             return False
+
+
+def _encode_tool_name(name: str) -> str:
+    return name.replace(".", "__")
+
+
+def _to_openai_message(message: AIMessage) -> dict[str, Any]:
+    role = getattr(message.role, "value", message.role)
+    payload: dict[str, Any] = {"role": role, "content": message.content}
+    if role == "assistant" and message.tool_calls:
+        payload["content"] = message.content or None
+        payload["tool_calls"] = [
+            {
+                "id": tc.id,
+                "type": "function",
+                "function": {"name": _encode_tool_name(tc.name), "arguments": json.dumps(tc.arguments)},
+            }
+            for tc in message.tool_calls
+        ]
+    if role == "tool":
+        payload["tool_call_id"] = message.tool_call_id
+    return payload

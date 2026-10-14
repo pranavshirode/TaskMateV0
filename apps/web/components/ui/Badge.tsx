@@ -1,4 +1,5 @@
 import React from "react";
+import { humanize } from "@/lib/format";
 
 type BadgeType = "status" | "priority";
 
@@ -7,51 +8,76 @@ interface BadgeProps {
   value?: string;
 }
 
+// [dot colour, pill classes]
+const STATUS_STYLES: Record<string, [string, string]> = {
+  BACKLOG: [
+    "bg-slate-400",
+    "bg-slate-500/10 text-slate-600 dark:text-slate-300",
+  ],
+  TODO: ["bg-sky-500", "bg-sky-500/10 text-sky-700 dark:text-sky-300"],
+  IN_PROGRESS: [
+    "bg-amber-500",
+    "bg-amber-500/10 text-amber-700 dark:text-amber-300",
+  ],
+  BLOCKED: ["bg-red-500", "bg-red-500/10 text-red-700 dark:text-red-300"],
+  REVIEW: [
+    "bg-violet-500",
+    "bg-violet-500/10 text-violet-700 dark:text-violet-300",
+  ],
+  COMPLETED: [
+    "bg-emerald-500",
+    "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+  ],
+  ACTIVE: [
+    "bg-emerald-500",
+    "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+  ],
+  APPROVED: [
+    "bg-emerald-500",
+    "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+  ],
+  PLANNING: ["bg-sky-500", "bg-sky-500/10 text-sky-700 dark:text-sky-300"],
+  LEAD: ["bg-sky-500", "bg-sky-500/10 text-sky-700 dark:text-sky-300"],
+  ON_HOLD: [
+    "bg-amber-500",
+    "bg-amber-500/10 text-amber-700 dark:text-amber-300",
+  ],
+};
+
+const PRIORITY_STYLES: Record<string, [string, string]> = {
+  LOW: ["bg-slate-400", "bg-slate-500/10 text-slate-600 dark:text-slate-300"],
+  MEDIUM: ["bg-sky-500", "bg-sky-500/10 text-sky-700 dark:text-sky-300"],
+  HIGH: [
+    "bg-orange-500",
+    "bg-orange-500/10 text-orange-700 dark:text-orange-300",
+  ],
+  URGENT: ["bg-red-500", "bg-red-500/10 text-red-700 dark:text-red-300"],
+};
+
+const FALLBACK: [string, string] = [
+  "bg-slate-400",
+  "bg-slate-500/10 text-slate-600 dark:text-slate-300",
+];
+
+export function statusDotClass(status?: string) {
+  return (STATUS_STYLES[status || ""] || FALLBACK)[0];
+}
+
+export function priorityDotClass(priority?: string) {
+  return (PRIORITY_STYLES[priority || ""] || FALLBACK)[0];
+}
+
 export default function Badge({ type, value }: BadgeProps) {
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "BACKLOG":
-        return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300";
-      case "TODO":
-        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300";
-      case "IN_PROGRESS":
-        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300";
-      case "BLOCKED":
-        return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300";
-      case "REVIEW":
-        return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300";
-      case "COMPLETED":
-        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300";
-      default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300";
-    }
-  };
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case "LOW":
-        return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300";
-      case "MEDIUM":
-        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300";
-      case "HIGH":
-        return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300";
-      case "URGENT":
-        return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300";
-      default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300";
-    }
-  };
-
   const safeVal = value || "ACTIVE";
-  const colorClass =
-    type === "status" ? getStatusColor(safeVal) : getPriorityColor(safeVal);
-  const displayValue = safeVal.replace("_", " ");
+  const table = type === "status" ? STATUS_STYLES : PRIORITY_STYLES;
+  const [dot, pill] = table[safeVal] || FALLBACK;
 
   return (
     <span
-      className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${colorClass}`}
+      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ${pill}`}
     >
-      {displayValue}
+      <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
+      {humanize(safeVal)}
     </span>
   );
 }

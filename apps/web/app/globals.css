@@ -3,25 +3,55 @@
 @tailwind utilities;
 
 @layer base {
+  /*
+   * Design tokens. The original names (--sidebar-bg, --sidebar-border, ...) are
+   * kept because every page uses them: --sidebar-bg is the card/surface colour
+   * and --sidebar-border the hairline border.
+   */
   :root {
-    --background: #ffffff;
-    --foreground: #171717;
-    --sidebar-bg: #f8f9fa;
-    --sidebar-border: #e5e7eb;
-    --primary: #2563eb;
-    --primary-hover: #1d4ed8;
-    --text-muted: #6b7280;
+    --background: #f6f7f9;
+    --foreground: #16181d;
+    --sidebar-bg: #ffffff;
+    --sidebar-border: #e4e6eb;
+    --surface-hover: #f1f2f5;
+    --nav-bg: #fbfbfc;
+    --primary: #4f46e5;
+    --primary-hover: #4338ca;
+    --primary-soft: rgba(79, 70, 229, 0.1);
+    --text-muted: #6b7180;
+    --danger: #dc2626;
+    --danger-soft: rgba(220, 38, 38, 0.08);
+    --warning: #d97706;
+    --warning-soft: rgba(217, 119, 6, 0.1);
+    --success: #16a34a;
+    --success-soft: rgba(22, 163, 74, 0.1);
+    --shadow:
+      0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.06);
+    --shadow-lg: 0 12px 32px rgba(16, 24, 40, 0.14);
+    color-scheme: light;
   }
 
   @media (prefers-color-scheme: dark) {
     :root {
-      --background: #0a0a0a;
-      --foreground: #ededed;
-      --sidebar-bg: #111111;
-      --sidebar-border: #2d2d2d;
-      --primary: #3b82f6;
-      --primary-hover: #2563eb;
-      --text-muted: #9ca3af;
+      --background: #0d0e11;
+      --foreground: #e8e9ec;
+      --sidebar-bg: #16171b;
+      --sidebar-border: #2a2c32;
+      --surface-hover: #1f2026;
+      --nav-bg: #111215;
+      --primary: #6d65f5;
+      --primary-hover: #5b53ea;
+      --primary-soft: rgba(109, 101, 245, 0.16);
+      --text-muted: #9a9ead;
+      --danger: #f05252;
+      --danger-soft: rgba(240, 82, 82, 0.12);
+      --warning: #f59e0b;
+      --warning-soft: rgba(245, 158, 11, 0.12);
+      --success: #22c55e;
+      --success-soft: rgba(34, 197, 94, 0.12);
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.55);
+      color-scheme: dark;
     }
   }
 
@@ -29,8 +59,45 @@
     color: var(--foreground);
     background: var(--background);
     font-family:
+      "Inter",
       system-ui,
       -apple-system,
+      "Segoe UI",
       sans-serif;
   }
+
+  :focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-xl border border-[var(--sidebar-border)] bg-[var(--sidebar-bg)];
+    box-shadow: var(--shadow);
+  }
+
+  .field {
+    @apply w-full rounded-lg border border-[var(--sidebar-border)] bg-[var(--background)] px-3 py-2 text-sm text-[var(--foreground)] placeholder:text-[var(--text-muted)] focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary-soft)];
+  }
+
+  .kbd {
+    @apply inline-flex min-w-[1.25rem] items-center justify-center rounded border border-[var(--sidebar-border)] bg-[var(--background)] px-1 font-mono text-[10px] text-[var(--text-muted)];
+  }
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.animate-pop {
+  animation: pop-in 160ms ease-out;
 }

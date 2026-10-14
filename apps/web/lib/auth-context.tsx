@@ -15,6 +15,8 @@ type AuthContextType = {
   login: (data: LoginRequest) => Promise<void>;
   logout: () => void;
   register: (data: RegisterRequest) => Promise<void>;
+  /** Re-fetch the profile, e.g. after the user renames themselves. */
+  refreshUser: () => Promise<void>;
   isLoading: boolean;
 };
 
@@ -58,6 +60,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await apiClient.register(data);
   }, []);
 
+  const refreshUser = useCallback(async () => {
+    setUser(await apiClient.getMe());
+  }, []);
+
   const logout = useCallback(() => {
     apiClient.clearToken();
     setToken(null);
@@ -66,7 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, token, login, logout, register, isLoading }}
+      value={{ user, token, login, logout, register, refreshUser, isLoading }}
     >
       {children}
     </AuthContext.Provider>

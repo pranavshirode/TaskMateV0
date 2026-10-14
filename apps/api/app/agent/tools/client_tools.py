@@ -49,7 +49,7 @@ class ClientGetTool(AgentTool):
 
         try:
             client_id = uuid.UUID(input_data["client_id"])
-            client = await client_service.get_client(client_id, context.user)
+            client = await client_service.get_client(context.user, client_id)
             if not client:
                 return ToolResult.fail("NOT_FOUND", f"Client {client_id} not found")
             return ToolResult.ok(client.model_dump(mode="json"))

@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react";
 import { apiClient } from "@/lib/api-client";
 
+import { useFeedback } from "@/components/ui/Feedback";
 export default function IntegrationsPage() {
+  const { toast, confirm } = useFeedback();
   const [githubConnected, setGithubConnected] = useState<boolean>(false);
   const [githubUsername, setGithubUsername] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -27,12 +29,14 @@ export default function IntegrationsPage() {
     if (data?.url) {
       window.location.href = data.url;
     } else {
-      alert("Failed to get authorization URL");
+      toast("Failed to get authorization URL", "error");
     }
   }
 
   async function handleDisconnect() {
-    if (confirm("Are you sure you want to disconnect GitHub?")) {
+    if (
+      await confirm({ title: "Are you sure you want to disconnect GitHub?" })
+    ) {
       await apiClient.disconnectGitHub();
       fetchStatus();
     }

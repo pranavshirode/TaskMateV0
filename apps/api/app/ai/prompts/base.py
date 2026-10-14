@@ -1,6 +1,6 @@
 """Base prompt template with version tracking."""
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 
@@ -11,6 +11,7 @@ class PromptTemplate:
     All prompts used in production must have a version.
     This enables evaluation comparison across prompt iterations.
     """
+
     name: str
     version: str
     template: str

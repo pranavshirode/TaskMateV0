@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.errors import NotFoundError, ValidationError
+from app.core.errors import NotFoundError
 from app.repositories.project import ProjectRepository
 from app.repositories.repository import RepositoryRepository
 from app.schemas.repository import RepositoryCreate, RepositoryResponse, RepositoryUpdate
@@ -14,10 +14,13 @@ class RepositoryService:
         self.repo_repo = RepositoryRepository(session)
         self.project_repo = ProjectRepository(session)
 
-    async def _verify_project_ownership(self, user_id: str, project_id: str) -> None:
+    async def _verify_project_ownership(
+        self, user_id: str, project_id: str, missing: str = "Project not found"
+    ) -> None:
+        # 404 (not 422) for other users' records, consistent with the rest of the API and without revealing existence.
         project = await self.project_repo.get_by_id(project_id)
         if not project or str(project.user_id) != user_id:
-            raise ValidationError("Invalid project_id or project does not belong to user")
+            raise NotFoundError(missing)
 
     async def create(self, user_id: str, project_id: str, data: RepositoryCreate) -> RepositoryResponse:
         await self._verify_project_ownership(user_id, project_id)
@@ -33,7 +36,7 @@ class RepositoryService:
         if not repo:
             raise NotFoundError("Repository not found")
 
-        await self._verify_project_ownership(user_id, str(repo.project_id))
+        await self._verify_project_ownership(user_id, str(repo.project_id), missing="Repository not found")
 
         return RepositoryResponse.model_validate(repo)
 
@@ -42,7 +45,7 @@ class RepositoryService:
         if not repo:
             raise NotFoundError("Repository not found")
 
-        await self._verify_project_ownership(user_id, str(repo.project_id))
+        await self._verify_project_ownership(user_id, str(repo.project_id), missing="Repository not found")
 
         update_data = data.model_dump(exclude_unset=True)
         repo = await self.repo_repo.update(repo, update_data)
@@ -53,7 +56,7 @@ class RepositoryService:
         if not repo:
             raise NotFoundError("Repository not found")
 
-        await self._verify_project_ownership(user_id, str(repo.project_id))
+        await self._verify_project_ownership(user_id, str(repo.project_id), missing="Repository not found")
 
         await self.repo_repo.delete(repo.id)
 

@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.router import health_router, v1_router
-from app.core.config import get_settings
+from app.core.config import get_settings, validate_settings
 from app.core.errors import register_error_handlers
 from app.core.logging import setup_logging
 from app.core.middleware import RequestIDMiddleware
@@ -23,6 +23,7 @@ async def lifespan(app: FastAPI):
 
 def create_app() -> FastAPI:
     settings = get_settings()
+    validate_settings(settings)
 
     app = FastAPI(
         title=settings.APP_NAME,
@@ -30,7 +31,9 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
-    # Middleware
+    # Middleware. The last one added is the outermost: CORS must wrap RequestIDMiddleware
+    # so that error responses produced there still get CORS headers.
+    app.add_middleware(RequestIDMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.CORS_ORIGINS,
@@ -38,7 +41,6 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    app.add_middleware(RequestIDMiddleware)
 
     # Error handlers
     register_error_handlers(app)

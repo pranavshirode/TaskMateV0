@@ -9,8 +9,8 @@ from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.ai.errors import AIError
 from app.ai.extractors.requirements_analyzer import (
-    analyze_brief_dynamically,
     validate_and_sanitize_requirements_data,
 )
 from app.ai.prompts.requirements import (
@@ -18,7 +18,7 @@ from app.ai.prompts.requirements import (
     TASK_PLANNING_SYSTEM_PROMPT,
 )
 from app.ai.providers.base import AIMessage, BaseAIProvider
-from app.core.errors import ForbiddenError, NotFoundError, ValidationError
+from app.core.errors import AppError, ConflictError, ForbiddenError, NotFoundError, ValidationError
 from app.models.enums import (
     AnalysisStatus,
     AutomationType,
@@ -163,29 +163,32 @@ Analyze this client brief and return the complete requirements specification in 
             AIMessage(role="user", content=user_prompt),
         ]
 
-        response = await self.ai_provider.generate(
-            messages,
-            response_format={"type": "json_object"},
-            temperature=0.2,
-        )
-
-        # Parse response
         try:
-            parsed = json.loads(response.content)
-        except Exception as e:
-            logger.warning(f"Failed to parse AI requirements JSON: {e}. Using rule-based fallback.")
-            parsed = self._fallback_requirements_extraction(analysis)
+            response = await self.ai_provider.generate(
+                messages,
+                response_format={"type": "json_object"},
+                temperature=0.2,
+            )
+        except AIError as e:
+            logger.warning("Requirements analysis provider error: %s", e)
+            raise AppError(503, "AI_UNAVAILABLE", "The AI service is unavailable right now. Please try again.") from e
 
-        # Validate and sanitize to guarantee quality and avoid leaked metadata or generic placeholders
-        project_name = project.name if project else ""
-        parsed = validate_and_sanitize_requirements_data(
-            parsed=parsed,
-            brief=analysis.brief,
-            project_name=project_name,
-            title=analysis.title,
-            desired_outcome=analysis.desired_outcome or "",
-            constraints=analysis.constraints or "",
-        )
+        # Invalid output is reported, never replaced with template requirements: the developer must not
+        # mistake generic text for an analysis of their client's brief.
+        try:
+            parsed = validate_and_sanitize_requirements_data(
+                parsed=json.loads(response.content),
+                brief=analysis.brief,
+                project_name=project.name if project else "",
+                title=analysis.title,
+                desired_outcome=analysis.desired_outcome or "",
+                constraints=analysis.constraints or "",
+            )
+        except (ValueError, TypeError) as e:
+            logger.warning("Requirements analysis returned invalid JSON: %s", e)
+            raise AppError(
+                502, "AI_INVALID_RESPONSE", "The AI returned an unreadable analysis. Nothing was saved; please retry."
+            ) from e
 
         # Store overview & constraints
         analysis.overview_data = parsed.get("overview", {})
@@ -220,6 +223,7 @@ Analyze this client brief and return the complete requirements specification in 
                     acceptance_criteria=fr.get("acceptance_criteria", []),
                     dependencies=fr.get("dependencies", []),
                     open_questions=fr.get("open_questions", []),
+                    source=fr.get("source"),
                 )
             )
 
@@ -238,6 +242,7 @@ Analyze this client brief and return the complete requirements specification in 
                     acceptance_criteria=[],
                     dependencies=[],
                     open_questions=[],
+                    source=nfr.get("source"),
                 )
             )
 
@@ -318,17 +323,6 @@ Analyze this client brief and return the complete requirements specification in 
 
         await self.analysis_repo.update(analysis)
         return await self.get_analysis(user_id, analysis.id)
-
-    def _fallback_requirements_extraction(self, analysis: RequirementsAnalysis) -> dict[str, Any]:
-        """Deterministic fallback extraction when AI returns non-JSON or offline."""
-        project_name = getattr(analysis, "project", None).name if getattr(analysis, "project", None) else ""
-        return analyze_brief_dynamically(
-            brief=analysis.brief,
-            title=analysis.title,
-            project_name=project_name,
-            desired_outcome=analysis.desired_outcome or "",
-            constraints=analysis.constraints or "",
-        )
 
     async def answer_question(
         self, user_id: str, analysis_id: str, question_id: str, answer: str
@@ -430,11 +424,14 @@ Create a structured implementation task plan in JSON breaking down these require
             AIMessage(role="user", content=user_prompt),
         ]
 
-        response = await self.ai_provider.generate(
-            messages,
-            response_format={"type": "json_object"},
-            temperature=0.2,
-        )
+        try:
+            response = await self.ai_provider.generate(
+                messages,
+                response_format={"type": "json_object"},
+                temperature=0.2,
+            )
+        except AIError as e:
+            raise AppError(503, "AI_UNAVAILABLE", "The AI service is unavailable right now. Please try again.") from e
 
         try:
             parsed = json.loads(response.content)
@@ -449,11 +446,11 @@ Create a structured implementation task plan in JSON breaking down these require
                     "status": "TODO",
                     "linked_requirement_keys": [r.key],
                     "acceptance_criteria": r.acceptance_criteria,
-                    "estimated_effort": "2-4 hours",
+                    "estimated_effort": None,  # no basis for an estimate without the AI plan
                 }
                 for r in analysis.requirements
             ]
-            rationale = "Generated default 1:1 task plan based on approved requirements."
+            rationale = "The AI plan could not be read, so this is a simple one-task-per-requirement draft. Review it."
 
         task_items: list[TaskPlanItem] = []
         for t in raw_tasks:
@@ -481,6 +478,13 @@ Create a structured implementation task plan in JSON breaking down these require
         self, user_id: str, analysis_id: str, data: ApproveTaskPlanRequest
     ) -> ApproveTaskPlanResponse:
         analysis = await self.get_analysis(user_id, analysis_id)
+
+        # Tasks may only be created from requirements the developer has approved.
+        if analysis.status != AnalysisStatus.APPROVED:
+            raise ConflictError(
+                "Approve the requirements analysis before creating tasks from it.",
+                code="ANALYSIS_NOT_APPROVED",
+            )
 
         if not data.selected_tasks:
             raise ValidationError("No tasks were selected for creation")

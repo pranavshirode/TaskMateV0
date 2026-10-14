@@ -54,6 +54,7 @@ class RequirementSchema(BaseModel):
     acceptance_criteria: list[Any] | None = None
     dependencies: list[Any] | None = None
     open_questions: list[Any] | None = None
+    source: str | None = None
     created_at: datetime
     updated_at: datetime
     # Traceability metrics

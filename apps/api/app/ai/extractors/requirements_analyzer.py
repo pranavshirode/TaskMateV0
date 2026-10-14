@@ -120,7 +120,7 @@ def analyze_brief_dynamically(
         k in low
         for k in ["payment", "stripe", "razorpay", "checkout", "credit card", "billing", "purchase", "online payment"]
     )
-    has_order = any(k in low for k in ["order", "order history", "track", "delivery", "cancel", "status", "shipping"])
+    has_order = any(k in low for k in ["order", "delivery", "shipping", "track my", "tracking"])
     has_notification = any(k in low for k in ["email", "confirmation", "notification", "push", "sms", "alert", "fcm"])
     has_admin = any(
         k in low
@@ -151,16 +151,17 @@ def analyze_brief_dynamically(
     if has_auth:
         fr_auth = {
             "key": "",
-            "title": "User Registration, Authentication & Profile Management",
-            "description": "Enable secure account registration and authentication via email and password, profile management, and maintenance of saved customer addresses.",
+            "title": "User Accounts & Sign-in",
+            "description": "Users can create an account, sign in and manage their profile. The sign-in method is as described in the brief.",
             "priority": "HIGH",
             "acceptance_criteria": [
-                "Given an unauthenticated visitor with valid credentials, When submitting the registration form, Then a new account is created with encrypted credentials and a session token is issued.",
-                "Given registered credentials, When the user logs in, Then credentials are authenticated and access to protected account features is granted.",
-                "Given an authenticated user, When updating profile details or saved delivery addresses, Then all input validations pass and changes persist successfully.",
+                "Given a new visitor, When they register, Then an account is created and they are signed in.",
+                "Given a registered user, When they sign in, Then they can access their account features.",
+                "Given a signed-in user, When they update their profile, Then the changes are saved.",
             ],
             "dependencies": [],
             "open_questions": [],
+            "source": "CLIENT_STATED",
             "domain_tag": "AUTH",
         }
         functional_requirements.append(fr_auth)
@@ -170,15 +171,16 @@ def analyze_brief_dynamically(
         fr_catalog = {
             "key": "",
             "title": "Product Catalog Browsing, Search & Filtering",
-            "description": "Provide a responsive product catalog enabling customers to search items by keyword, filter by categories or attributes, and view real-time availability and pricing.",
+            "description": "Customers can browse, search and filter products and see their details.",
             "priority": "HIGH",
             "acceptance_criteria": [
-                "Given the product catalog, When a user enters search keywords or applies category filters, Then relevant product listings update within 300ms.",
+                "Given the product catalog, When a user searches or filters, Then matching products are listed.",
                 "Given a selected product, When navigating to the item details, Then comprehensive descriptions, current pricing, and stock status are displayed.",
                 "Given a search query with no matching items, When submitted, Then a helpful empty state with suggested categories is presented.",
             ],
             "dependencies": [],
             "open_questions": [],
+            "source": "CLIENT_STATED",
             "domain_tag": "CATALOG",
         }
         functional_requirements.append(fr_catalog)
@@ -197,6 +199,7 @@ def analyze_brief_dynamically(
             ],
             "dependencies": [],
             "open_questions": [],
+            "source": "CLIENT_STATED",
             "domain_tag": "CART",
         }
         functional_requirements.append(fr_cart)
@@ -220,6 +223,7 @@ def analyze_brief_dynamically(
             ],
             "dependencies": [],
             "open_questions": [],
+            "source": "CLIENT_STATED",
             "domain_tag": "PAYMENT",
         }
         functional_requirements.append(fr_payment)
@@ -228,16 +232,17 @@ def analyze_brief_dynamically(
     if has_order:
         fr_order = {
             "key": "",
-            "title": "Order History, Real-Time Delivery Tracking & Cancellation",
-            "description": "Allow customers to view order history, monitor delivery progress through milestone statuses, and cancel eligible orders before fulfillment begins.",
+            "title": "Order History & Status",
+            "description": "Customers can see their orders and follow their status.",
             "priority": "HIGH",
             "acceptance_criteria": [
                 "Given an authenticated customer, When viewing their order history, Then all past purchases with item summaries, timestamps, and current delivery statuses are displayed.",
-                "Given an order in transit, When tracking delivery status, Then milestone updates (Placed, Confirmed, Shipped, Delivered) reflect current progress.",
-                "Given an eligible placed order within the cancellation window, When requesting cancellation, Then the order status transitions to CANCELLED and refund processing initiates.",
+                "Given a placed order, When the customer checks it, Then its current status is shown.",
+                "Given an order that may still be cancelled, When the customer cancels it, Then it is marked as cancelled (policy to be confirmed).",
             ],
             "dependencies": [],
             "open_questions": [],
+            "source": "CLIENT_STATED",
             "domain_tag": "ORDER",
         }
         functional_requirements.append(fr_order)
@@ -246,15 +251,16 @@ def analyze_brief_dynamically(
     if has_notification:
         fr_notif = {
             "key": "",
-            "title": "Automated Order Confirmation & Event Notifications",
-            "description": "Dispatch automated transactional emails upon successful purchase and transmit push alerts for fulfillment status transitions.",
+            "title": "Automated Notifications",
+            "description": "Send automated notifications for the events named in the brief (channels to be confirmed).",
             "priority": "MEDIUM",
             "acceptance_criteria": [
-                "Given a completed order payment, When checkout finalizes, Then a transactional confirmation email containing receipt, item list, and order ID is dispatched.",
-                "Given a delivery status update, When marked as out-for-delivery, Then an alert notification is sent to the customer device.",
+                "Given a completed purchase, When checkout finishes, Then a confirmation is sent to the customer.",
+                "Given a notifiable event, When it occurs, Then the user is notified through the agreed channel.",
             ],
             "dependencies": [],
             "open_questions": [],
+            "source": "CLIENT_STATED",
             "domain_tag": "NOTIFICATION",
         }
         functional_requirements.append(fr_notif)
@@ -269,10 +275,11 @@ def analyze_brief_dynamically(
             "acceptance_criteria": [
                 "Given an authenticated administrator, When adding, editing, or deleting a product, Then inventory data updates immediately across client applications.",
                 "Given customer orders pending fulfillment, When an admin updates the status to SHIPPED or COMPLETED, Then status changes persist and trigger customer notifications.",
-                "Given low inventory levels, When threshold is reached, Then inventory alerts are flagged in the admin portal.",
+                "Given an admin, When they view orders, Then they can update each order's status.",
             ],
             "dependencies": [],
             "open_questions": [],
+            "source": "CLIENT_STATED",
             "domain_tag": "ADMIN",
         }
         functional_requirements.append(fr_admin)
@@ -290,6 +297,7 @@ def analyze_brief_dynamically(
             ],
             "dependencies": [],
             "open_questions": [],
+            "source": "CLIENT_STATED",
             "domain_tag": "BOOKING",
         }
         functional_requirements.append(fr_booking)
@@ -307,6 +315,7 @@ def analyze_brief_dynamically(
             ],
             "dependencies": [],
             "open_questions": [],
+            "source": "CLIENT_STATED",
             "domain_tag": "MESSAGING",
         }
         functional_requirements.append(fr_msg)
@@ -324,6 +333,7 @@ def analyze_brief_dynamically(
             ],
             "dependencies": [],
             "open_questions": [],
+            "source": "CLIENT_STATED",
             "domain_tag": "ANALYTICS",
         }
         functional_requirements.append(fr_analytics)
@@ -331,8 +341,6 @@ def analyze_brief_dynamically(
     # Dynamic Fallback: if no domain matched, extract from sentences
     if not functional_requirements:
         sentences = [s.strip() for s in re.split(r"[.!?]+", brief) if len(s.strip()) > 15]
-        if not sentences:
-            sentences = [f"Implement core workflows for {title}"]
 
         for idx, sentence in enumerate(sentences[:4], start=1):
             short_title = sentence[:45].strip()
@@ -344,12 +352,10 @@ def analyze_brief_dynamically(
                     "title": f"Feature: {short_title.title()}",
                     "description": sentence,
                     "priority": "HIGH" if idx == 1 else "MEDIUM",
-                    "acceptance_criteria": [
-                        f"Given configured system state, when {short_title.lower()} executes, then valid status and feedback are returned.",
-                        "Given invalid inputs or network interruption, when request is processed, then explicit error diagnostics are returned.",
-                    ],
+                    "acceptance_criteria": [],
                     "dependencies": [],
                     "open_questions": [],
+                    "source": "CLIENT_STATED",
                     "domain_tag": f"CUSTOM_{idx}",
                 }
             )
@@ -389,135 +395,179 @@ def analyze_brief_dynamically(
         valid_deps = [d for d in deps if int(d.split("-")[1]) < curr_idx]
         req["dependencies"] = valid_deps
 
-    # Measurable Non-Functional Requirements
-    non_functional_requirements = [
-        {
-            "key": "NFR-1",
-            "title": "Data Protection, Password Hashing & PCI Compliance",
-            "category": "SECURITY",
-            "description": "All customer passwords must be securely hashed using Argon2 or bcrypt. Payment card information must never be stored directly in the database and must utilize tokenized PCI-DSS compliant gateway integrations.",
-            "priority": "HIGH",
-        },
-        {
-            "key": "NFR-2",
-            "title": "API Response Latency & App Responsiveness",
-            "category": "PERFORMANCE",
-            "description": "All backend API endpoints must maintain sub-300ms p95 response time under normal concurrent load. Mobile client app cold launch must complete within 2.0 seconds.",
-            "priority": "HIGH",
-        },
-        {
-            "key": "NFR-3",
-            "title": "Mobile Platform & Device Compatibility",
-            "category": "COMPATIBILITY",
-            "description": "The client user interface must provide responsive, consistent rendering across modern Android (API 29+) and iOS (15+) devices with adaptive layout support.",
-            "priority": "MEDIUM",
-        },
-        {
-            "key": "NFR-4",
-            "title": "Fault Tolerance, Resilience & Error Diagnostics",
-            "category": "RELIABILITY",
-            "description": "The system must provide graceful error degradation and unambiguous user feedback for network timeouts, failed payments, and out-of-stock items, preventing unhandled exceptions.",
-            "priority": "HIGH",
-        },
-    ]
+    has_security = (
+        has_auth or has_payment or any(k in low for k in ["secure", "security", "privacy", "gdpr", "encrypt"])
+    )
+    has_performance = any(k in low for k in ["fast", "quick", "performance", "speed", "scalable", "load", "concurrent"])
+    has_mobile = any(k in low for k in ["mobile", "android", "ios", "iphone", "phone", "app store", "play store"])
+    has_reliability = any(k in low for k in ["reliable", "reliability", "uptime", "high availability", "backup"])
 
-    # Technical constraints
+    # Non-functional requirements: only qualities the brief points to. No invented thresholds.
+    non_functional_requirements: list[dict[str, Any]] = []
+
+    def add_nfr(title: str, category: str, description: str, stated: bool) -> None:
+        non_functional_requirements.append(
+            {
+                "key": f"NFR-{len(non_functional_requirements) + 1}",
+                "title": title,
+                "category": category,
+                "description": description,
+                "priority": "HIGH",
+                "source": "CLIENT_STATED" if stated else "AI_SUGGESTED",
+            }
+        )
+
+    if has_security:
+        add_nfr(
+            "Data Protection",
+            "SECURITY",
+            "User credentials and any payment data must be protected; card data must be handled by the payment "
+            "provider rather than stored by the system.",
+            stated=any(k in low for k in ["secure", "security", "privacy", "encrypt"]),
+        )
+    if has_performance:
+        add_nfr(
+            "Responsiveness",
+            "PERFORMANCE",
+            "Key user flows must feel fast. The client has not given a measurable target yet (see clarification questions).",
+            stated=True,
+        )
+    if has_mobile:
+        add_nfr(
+            "Mobile Support",
+            "COMPATIBILITY",
+            "The product must work on mobile devices. Supported platforms and versions are still to be confirmed.",
+            stated=True,
+        )
+    if has_reliability:
+        add_nfr(
+            "Reliability",
+            "RELIABILITY",
+            "The system must stay available and recover gracefully from failures.",
+            stated=True,
+        )
+
+    # Technical constraints: only what the developer/client wrote in the constraints field.
     tech_constraints = []
-    if constraints:
-        for c in [x.strip() for x in constraints.split(",") if x.strip()]:
-            c_low = c.lower()
-            cat = (
-                "FRONTEND"
-                if any(k in c_low for k in ["react", "vue", "ios", "android", "mobile"])
-                else (
-                    "BACKEND"
-                    if any(k in c_low for k in ["node", "express", "python", "fastapi", "django"])
-                    else (
-                        "DATABASE"
-                        if any(k in c_low for k in ["postgres", "sql", "mongo", "redis"])
-                        else ("PAYMENT" if any(k in c_low for k in ["stripe", "razorpay", "paypal"]) else "GENERAL")
-                    )
-                )
-            )
-            tech_constraints.append({"constraint": c, "category": cat})
-    else:
-        tech_constraints = [
-            {"constraint": "Cross-platform mobile client framework", "category": "FRONTEND"},
-            {"constraint": "Scalable RESTful API backend with relational database", "category": "BACKEND"},
-            {"constraint": "PCI-DSS compliant payment integration", "category": "SECURITY"},
-        ]
+    for c in [x.strip() for x in constraints.split(",") if x.strip()]:
+        c_low = c.lower()
+        if any(k in c_low for k in ["react", "vue", "ios", "android", "mobile", "next", "flutter"]):
+            cat = "FRONTEND"
+        elif any(k in c_low for k in ["node", "express", "python", "fastapi", "django"]):
+            cat = "BACKEND"
+        elif any(k in c_low for k in ["postgres", "sql", "mongo", "redis"]):
+            cat = "DATABASE"
+        elif any(k in c_low for k in ["stripe", "razorpay", "paypal"]):
+            cat = "PAYMENT"
+        else:
+            cat = "GENERAL"
+        tech_constraints.append({"constraint": c, "category": cat, "source": "CLIENT_STATED"})
 
-    # Assumptions
-    assumptions = [
-        {
-            "description": "Third-party payment gateway credentials (sandbox and webhook signing keys) will be provided prior to checkout integration.",
-            "reason": "Required for transactional verification and automated testing.",
-            "confidence": "HIGH",
-        },
-        {
-            "description": "A transactional email service provider (e.g. SendGrid, AWS SES) will be configured for dispatching order confirmation receipts.",
-            "reason": "Essential for automated confirmation workflows.",
-            "confidence": "HIGH",
-        },
-        {
-            "description": "Product catalog images will be hosted on a cloud CDN object store (e.g., AWS S3 or Cloudinary) with public URLs.",
-            "reason": "Prevents database bloat and ensures high catalog browsing performance.",
-            "confidence": "MEDIUM",
-        },
-    ]
+    # Assumptions: only those needed by capabilities the brief mentions.
+    assumptions = []
+    if has_payment:
+        assumptions.append(
+            {
+                "description": "The client will provide payment gateway accounts and API credentials (test and live).",
+                "reason": "Payment integration cannot be built or tested without them.",
+                "confidence": "HIGH",
+            }
+        )
+    if has_notification:
+        assumptions.append(
+            {
+                "description": "An email/notification delivery service will be available for automated messages.",
+                "reason": "The brief asks for notifications or confirmations.",
+                "confidence": "MEDIUM",
+            }
+        )
 
-    # Clarification questions
-    clarification_questions = [
-        {
-            "question_key": "Q-1",
-            "question": "What is the policy window and conditions for customer order cancellation eligibility (e.g. within 30 minutes, or prior to dispatch)?",
-            "reason": "Defines exact business logic and state machine constraints for order cancellation and automated refunds.",
-            "context_topic": "Order Cancellation Policy",
-        },
-        {
-            "question_key": "Q-2",
-            "question": "Which transactional email provider (SendGrid, AWS SES, or Resend) should be configured for purchase receipts and dispatch alerts?",
-            "reason": "Ensures environment secrets and API keys are set up before notification development.",
-            "context_topic": "Email Delivery Service",
-        },
-        {
-            "question_key": "Q-3",
-            "question": "Are there specific regional tax calculation rules or flat shipping tiers required during the checkout calculation flow?",
-            "reason": "Clarifies total pricing calculations in the cart and checkout process.",
-            "context_topic": "Taxation & Shipping Calculation",
-        },
-    ]
+    # Clarification questions: targeted at gaps in *this* brief.
+    clarification_questions: list[dict[str, Any]] = []
 
-    # Risks & Mitigations
-    risks = [
-        {
-            "description": "Payment gateway webhook delivery delays or network partitions could delay order confirmation receipts if not handled asynchronously.",
-            "risk_type": "INTEGRATION",
-            "severity": "MEDIUM",
-            "mitigation": "Implement an idempotent webhook listener with background job queue retries and reconciliation polling.",
-        },
-        {
-            "description": "Inventory race condition when multiple customers attempt to purchase the final unit of stock simultaneously.",
-            "risk_type": "TECHNICAL",
-            "severity": "HIGH",
-            "mitigation": "Use database row-level locking or atomic decrement transactions when reserving inventory during checkout.",
-        },
-    ]
+    def ask(question: str, reason: str, topic: str) -> None:
+        clarification_questions.append(
+            {
+                "question_key": f"Q-{len(clarification_questions) + 1}",
+                "question": question,
+                "reason": reason,
+                "context_topic": topic,
+            }
+        )
 
-    # Overview
-    in_scope_items = [req["title"] for req in functional_requirements]
-    out_of_scope_items = [
-        "Third-party courier physical logistics hardware integration",
-        "Multi-currency exchange rate conversions outside designated payment accounts",
-        "Custom barcode or RFID scanner hardware integrations",
-    ]
+    if not functional_requirements:
+        ask(
+            "What should the system do? Please describe the main features or user tasks it must support.",
+            "The brief does not describe concrete functionality, so no requirements could be identified.",
+            "Scope",
+        )
+    has_date = bool(
+        re.search(
+            r"\b(\d{1,2}[/-]\d{1,2}|\d{4}-\d{2}|week|month|january|february|march|april|may|june|july|"
+            r"august|september|october|november|december|christmas|q[1-4])\b",
+            low,
+        )
+    )
+    if not has_date or "maybe" in low or "?" in brief:
+        ask(
+            "What is the firm target launch date, and is it fixed or flexible?",
+            "No firm deadline is given in the brief.",
+            "Timeline",
+        )
+    if has_payment and not any(k in low for k in ["stripe", "razorpay", "paypal", "braintree"]):
+        ask("Which payment provider should be used?", "Payments are required but no provider is named.", "Payments")
+    if has_performance:
+        ask(
+            "What does 'fast' mean for you in measurable terms (e.g. page load time, number of concurrent users)?",
+            "Performance is requested without a measurable target.",
+            "Performance",
+        )
+    if has_mobile:
+        ask(
+            "Should this be a native mobile app, a mobile-friendly website, or both? Which platforms?",
+            "Mobile use is mentioned without specifying the platform.",
+            "Platforms",
+        )
+    if has_order:
+        ask(
+            "Can customers cancel or change orders, and until when?",
+            "Order handling is mentioned but the cancellation policy is not.",
+            "Orders",
+        )
+    if has_notification:
+        ask(
+            "Which events should trigger notifications, and through which channels (email, SMS, push)?",
+            "Notifications are requested without specifying triggers or channels.",
+            "Notifications",
+        )
+
+    # Risks: only for capabilities that carry a known delivery risk.
+    risks = []
+    if has_payment:
+        risks.append(
+            {
+                "description": "Payment confirmations can arrive late or twice (webhooks), causing wrong order states.",
+                "risk_type": "INTEGRATION",
+                "severity": "MEDIUM",
+                "mitigation": "Process payment webhooks idempotently and reconcile pending payments.",
+            }
+        )
+    if has_admin and (has_cart or has_order):
+        risks.append(
+            {
+                "description": "Two customers may buy the last item in stock at the same time.",
+                "risk_type": "TECHNICAL",
+                "severity": "MEDIUM",
+                "mitigation": "Reserve stock atomically during checkout.",
+            }
+        )
 
     overview = {
-        "project_objective": title or f"Deliver production-ready {project_name} application",
-        "business_problem": "Fulfill client specifications with end-to-end functionality, high reliability, and clear requirements traceability.",
-        "intended_outcome": desired_outcome or "Fully tested and validated cross-platform software deliverable.",
-        "in_scope": in_scope_items,
-        "out_of_scope": out_of_scope_items,
+        "project_objective": title or project_name,
+        "business_problem": "",
+        "intended_outcome": desired_outcome,
+        "in_scope": [req["title"] for req in functional_requirements],
+        "out_of_scope": [],
     }
 
     return {
@@ -531,6 +581,22 @@ def analyze_brief_dynamically(
     }
 
 
+SOURCES = {"CLIENT_STATED", "AI_SUGGESTED"}
+
+NO_FUNCTIONALITY_QUESTION = {
+    "question_key": "Q-1",
+    "question": "What should the system do? Please describe the main features or user tasks it must support.",
+    "reason": "The brief does not describe concrete functionality, so no requirements could be identified.",
+    "context_topic": "Scope",
+}
+
+
+def _source(item: dict[str, Any]) -> str:
+    """Unlabelled items are treated as suggestions: we never assume the client asked for something."""
+    value = str(item.get("source", "")).upper().strip()
+    return value if value in SOURCES else "AI_SUGGESTED"
+
+
 def validate_and_sanitize_requirements_data(
     parsed: dict[str, Any],
     brief: str = "",
@@ -539,28 +605,17 @@ def validate_and_sanitize_requirements_data(
     desired_outcome: str = "",
     constraints: str = "",
 ) -> dict[str, Any]:
-    """Strictly validate and sanitize AI-generated requirements against business analyst standards.
+    """Clean and validate AI-generated requirements without adding any content of our own.
 
-    1. Removes any leaked prompt metadata or instructions from titles and descriptions.
-    2. Detects and replaces generic placeholder titles.
-    3. Replaces generic/untestable acceptance criteria with specific Given-When-Then scenarios.
-    4. Enforces sequential and well-formed keys (FR-1.., NFR-1.., Q-1..).
-    5. Validates dependency integrity (no self-dependencies, only valid earlier prerequisite keys).
-    6. Ensures measurable criteria for Non-Functional Requirements.
+    - Removes leaked prompt metadata from text.
+    - Drops empty/placeholder items instead of replacing them with templates.
+    - Enforces sequential keys (FR-1.., NFR-1.., Q-1..) and valid, earlier-only dependencies.
+    - Labels every requirement and constraint with its source (CLIENT_STATED / AI_SUGGESTED).
+    - If nothing concrete was found, asks the client a clarification question rather than inventing scope.
     """
     if not isinstance(parsed, dict):
-        return analyze_brief_dynamically(brief, title, project_name, desired_outcome, constraints)
+        raise ValueError("Requirements analysis output must be a JSON object")
 
-    # Reference fallback in case we need capability replacements
-    fallback_data = analyze_brief_dynamically(brief, title, project_name, desired_outcome, constraints)
-    fallback_frs = fallback_data["functional_requirements"]
-
-    # Ensure functional_requirements is present and non-empty
-    raw_frs = parsed.get("functional_requirements")
-    if not isinstance(raw_frs, list) or len(raw_frs) == 0:
-        raw_frs = fallback_frs
-
-    sanitized_frs: list[dict[str, Any]] = []
     generic_titles = {
         "core feature implementation",
         "api validation and data persistence",
@@ -571,170 +626,130 @@ def validate_and_sanitize_requirements_data(
         "requirement 2",
         "core functionality",
     }
+    generic_criteria = (
+        "when input is supplied, expected result is returned",
+        "given valid payload, when submitted, record is stored",
+        "expected outcome occurs",
+    )
 
-    for i, fr in enumerate(raw_frs, start=1):
+    def as_list(value: Any) -> list[Any]:
+        return value if isinstance(value, list) else []
+
+    # Functional requirements
+    kept_frs = []
+    for fr in as_list(parsed.get("functional_requirements")):
         if not isinstance(fr, dict):
             continue
-        key = f"FR-{i}"
-        raw_title = clean_metadata_leakage(str(fr.get("title", ""))).strip()
-        raw_desc = clean_metadata_leakage(str(fr.get("description", ""))).strip()
+        fr_title = clean_metadata_leakage(str(fr.get("title", ""))).strip()
+        fr_desc = clean_metadata_leakage(str(fr.get("description", ""))).strip()
+        if not fr_title or fr_title.lower() in generic_titles:
+            continue  # A placeholder carries no information; dropping it is more honest than filling it in.
+        kept_frs.append((fr, fr_title, fr_desc or fr_title))
 
-        # If title is generic or empty, use fallback requirement title if available
-        if not raw_title or raw_title.lower() in generic_titles:
-            fallback_match = fallback_frs[i - 1] if (i - 1) < len(fallback_frs) else fallback_frs[0]
-            raw_title = fallback_match["title"]
-            if not raw_desc or len(raw_desc) < 20 or raw_desc.lower().startswith("persist records"):
-                raw_desc = fallback_match["description"]
-
-        # If description is too short or copies prompt labels
-        if not raw_desc or len(raw_desc) < 15:
-            fallback_match = fallback_frs[i - 1] if (i - 1) < len(fallback_frs) else fallback_frs[0]
-            raw_desc = fallback_match["description"]
-
-        # Validate acceptance criteria
-        raw_criteria = fr.get("acceptance_criteria")
-        clean_criteria: list[str] = []
-        if isinstance(raw_criteria, list):
-            for crit in raw_criteria:
-                c_str = clean_metadata_leakage(str(crit)).strip()
-                c_low = c_str.lower()
-                # Check for generic criteria
-                if (
-                    "when input is supplied, expected result is returned" in c_low
-                    or "given valid payload, when submitted, record is stored" in c_low
-                    or "expected outcome occurs" in c_low
-                    or not c_str
-                ):
-                    continue
-                clean_criteria.append(c_str)
-
-        if not clean_criteria:
-            fallback_match = fallback_frs[i - 1] if (i - 1) < len(fallback_frs) else fallback_frs[0]
-            clean_criteria = list(fallback_match["acceptance_criteria"])
-
-        standardized_criteria = []
-        for crit in clean_criteria:
-            c_norm = re.sub(r",\s*when\s+", ", When ", crit, flags=re.IGNORECASE)
+    sanitized_frs: list[dict[str, Any]] = []
+    for i, (fr, fr_title, fr_desc) in enumerate(kept_frs, start=1):
+        criteria = []
+        for crit in as_list(fr.get("acceptance_criteria")):
+            c_str = clean_metadata_leakage(str(crit)).strip()
+            if not c_str or any(g in c_str.lower() for g in generic_criteria):
+                continue
+            c_norm = re.sub(r",\s*when\s+", ", When ", c_str, flags=re.IGNORECASE)
             c_norm = re.sub(r",\s*then\s+", ", Then ", c_norm, flags=re.IGNORECASE)
-            if not c_norm.startswith("Given ") and not c_norm.startswith("given "):
+            if c_norm.lower().startswith("given "):
+                c_norm = "Given " + c_norm[6:]
+            else:
                 c_norm = f"Given {c_norm}"
-            elif c_norm.startswith("given "):
-                c_norm = f"Given {c_norm[6:]}"
-            standardized_criteria.append(c_norm)
-        clean_criteria = standardized_criteria
+            criteria.append(c_norm)
 
-        # Validate dependencies
-        raw_deps = fr.get("dependencies")
-        valid_deps: list[str] = []
-        if isinstance(raw_deps, list):
-            for dep in raw_deps:
-                dep_str = str(dep).strip().upper()
-                # Must be FR-X format and earlier than current key
-                match = re.match(r"^FR-(\d+)$", dep_str)
-                if match:
-                    dep_idx = int(match.group(1))
-                    if 1 <= dep_idx < i:
-                        valid_deps.append(dep_str)
+        deps = []
+        for dep in as_list(fr.get("dependencies")):
+            match = re.match(r"^FR-(\d+)$", str(dep).strip().upper())
+            if match and 1 <= int(match.group(1)) < i:
+                deps.append(f"FR-{int(match.group(1))}")
 
-        # Fallback dependencies if missing
-        if not valid_deps and i - 1 < len(fallback_frs):
-            fallback_deps = fallback_frs[i - 1].get("dependencies", [])
-            valid_deps = [d for d in fallback_deps if int(d.split("-")[1]) < i]
-
-        priority = str(fr.get("priority", "HIGH")).upper()
-        if priority not in ("LOW", "MEDIUM", "HIGH", "URGENT", "CRITICAL"):
-            priority = "MEDIUM"
-
+        priority = str(fr.get("priority", "MEDIUM")).upper()
         sanitized_frs.append(
             {
-                "key": key,
-                "title": raw_title,
-                "description": raw_desc,
-                "priority": priority,
-                "acceptance_criteria": clean_criteria,
-                "dependencies": valid_deps,
-                "open_questions": fr.get("open_questions") or [],
+                "key": f"FR-{i}",
+                "title": fr_title,
+                "description": fr_desc,
+                "priority": priority if priority in ("LOW", "MEDIUM", "HIGH", "URGENT", "CRITICAL") else "MEDIUM",
+                "acceptance_criteria": criteria,
+                "dependencies": deps,
+                "open_questions": as_list(fr.get("open_questions")),
+                "source": _source(fr),
             }
         )
 
-    # Validate Non-functional requirements
-    raw_nfrs = parsed.get("non_functional_requirements")
+    # Non-functional requirements
     sanitized_nfrs: list[dict[str, Any]] = []
-    fallback_nfrs = fallback_data["non_functional_requirements"]
-
-    if isinstance(raw_nfrs, list) and len(raw_nfrs) > 0:
-        for j, nfr in enumerate(raw_nfrs, start=1):
-            if not isinstance(nfr, dict):
-                continue
-            key = f"NFR-{j}"
-            n_title = clean_metadata_leakage(str(nfr.get("title", ""))).strip()
-            n_desc = clean_metadata_leakage(str(nfr.get("description", ""))).strip()
-            n_cat = str(nfr.get("category", "SECURITY")).upper()
-            n_prio = str(nfr.get("priority", "HIGH")).upper()
-            if not n_desc or len(n_desc) < 15:
-                f_nfr = fallback_nfrs[j - 1] if (j - 1) < len(fallback_nfrs) else fallback_nfrs[0]
-                n_desc = f_nfr["description"]
-                if not n_title:
-                    n_title = f_nfr["title"]
-            sanitized_nfrs.append(
-                {
-                    "key": key,
-                    "title": n_title or f"Non-Functional {j}",
-                    "category": n_cat,
-                    "description": n_desc,
-                    "priority": n_prio if n_prio in ("LOW", "MEDIUM", "HIGH", "URGENT", "CRITICAL") else "MEDIUM",
-                }
-            )
-    else:
-        sanitized_nfrs = fallback_nfrs
+    for nfr in as_list(parsed.get("non_functional_requirements")):
+        if not isinstance(nfr, dict):
+            continue
+        n_title = clean_metadata_leakage(str(nfr.get("title", ""))).strip()
+        n_desc = clean_metadata_leakage(str(nfr.get("description", ""))).strip()
+        if not n_title and not n_desc:
+            continue
+        n_prio = str(nfr.get("priority", "MEDIUM")).upper()
+        sanitized_nfrs.append(
+            {
+                "key": f"NFR-{len(sanitized_nfrs) + 1}",
+                "title": n_title or n_desc[:60],
+                "category": str(nfr.get("category", "GENERAL")).upper(),
+                "description": n_desc or n_title,
+                "priority": n_prio if n_prio in ("LOW", "MEDIUM", "HIGH", "URGENT", "CRITICAL") else "MEDIUM",
+                "source": _source(nfr),
+            }
+        )
 
     # Clarification questions
-    raw_questions = parsed.get("clarification_questions")
     sanitized_questions: list[dict[str, Any]] = []
-    fallback_questions = fallback_data["clarification_questions"]
+    for q in as_list(parsed.get("clarification_questions")):
+        if not isinstance(q, dict):
+            continue
+        q_text = clean_metadata_leakage(str(q.get("question", ""))).strip()
+        if q_text:
+            sanitized_questions.append(
+                {
+                    "question_key": f"Q-{len(sanitized_questions) + 1}",
+                    "question": q_text,
+                    "reason": clean_metadata_leakage(str(q.get("reason", ""))).strip() or None,
+                    "context_topic": clean_metadata_leakage(str(q.get("context_topic", ""))).strip() or None,
+                }
+            )
+    if not sanitized_frs and not sanitized_questions:
+        sanitized_questions = [dict(NO_FUNCTIONALITY_QUESTION)]
 
-    if isinstance(raw_questions, list) and len(raw_questions) > 0:
-        for k, q in enumerate(raw_questions, start=1):
-            if not isinstance(q, dict):
-                continue
-            q_text = clean_metadata_leakage(str(q.get("question", ""))).strip()
-            if q_text:
-                sanitized_questions.append(
-                    {
-                        "question_key": f"Q-{k}",
-                        "question": q_text,
-                        "reason": clean_metadata_leakage(str(q.get("reason", ""))).strip()
-                        or "Clarify technical specification.",
-                        "context_topic": clean_metadata_leakage(str(q.get("context_topic", ""))).strip()
-                        or "Requirements",
-                    }
-                )
-    if not sanitized_questions:
-        sanitized_questions = fallback_questions
+    technical_constraints = []
+    for tc in as_list(parsed.get("technical_constraints")):
+        if isinstance(tc, dict) and str(tc.get("constraint", "")).strip():
+            technical_constraints.append(
+                {
+                    "constraint": clean_metadata_leakage(str(tc["constraint"])).strip(),
+                    "category": str(tc.get("category", "GENERAL")).upper(),
+                    "source": _source(tc),
+                }
+            )
 
-    # Overview
-    overview = parsed.get("overview")
-    if not isinstance(overview, dict) or not overview.get("project_objective"):
-        overview = fallback_data["overview"]
-    else:
-        overview["project_objective"] = (
-            clean_metadata_leakage(str(overview.get("project_objective", ""))).strip() or title
-        )
-        overview["business_problem"] = clean_metadata_leakage(str(overview.get("business_problem", ""))).strip()
-        overview["intended_outcome"] = (
-            clean_metadata_leakage(str(overview.get("intended_outcome", ""))).strip() or desired_outcome
-        )
-        if not overview.get("in_scope"):
-            overview["in_scope"] = [f["title"] for f in sanitized_frs]
-        if not overview.get("out_of_scope"):
-            overview["out_of_scope"] = fallback_data["overview"]["out_of_scope"]
+    raw_overview = parsed.get("overview")
+    source_overview: dict[str, Any] = raw_overview if isinstance(raw_overview, dict) else {}
+    overview = {
+        "project_objective": clean_metadata_leakage(str(source_overview.get("project_objective", ""))).strip() or title,
+        "business_problem": clean_metadata_leakage(str(source_overview.get("business_problem", ""))).strip(),
+        "intended_outcome": clean_metadata_leakage(str(source_overview.get("intended_outcome", ""))).strip()
+        or desired_outcome,
+        "in_scope": as_list(source_overview.get("in_scope")) or [f["title"] for f in sanitized_frs],
+        "out_of_scope": as_list(source_overview.get("out_of_scope")),
+    }
 
     return {
         "overview": overview,
         "functional_requirements": sanitized_frs,
         "non_functional_requirements": sanitized_nfrs,
-        "technical_constraints": parsed.get("technical_constraints") or fallback_data["technical_constraints"],
-        "assumptions": parsed.get("assumptions") or fallback_data["assumptions"],
+        "technical_constraints": technical_constraints,
+        "assumptions": [a for a in as_list(parsed.get("assumptions")) if isinstance(a, dict) and a.get("description")],
         "clarification_questions": sanitized_questions,
-        "risks_and_dependencies": parsed.get("risks_and_dependencies") or fallback_data["risks_and_dependencies"],
+        "risks_and_dependencies": [
+            r for r in as_list(parsed.get("risks_and_dependencies")) if isinstance(r, dict) and r.get("description")
+        ],
     }

@@ -81,6 +81,16 @@ class ClientService:
         return [ClientResponse.model_validate(c) for c in clients]
 
     # Convenience aliases for agent tools
+    async def list_clients(
+        self, user: Any, skip: int = 0, limit: int = 20, **filters: Any
+    ) -> tuple[list[ClientResponse], int]:
+        """Adapter for agent tools: user object + offset/limit; ignores filters this service doesn't support."""
+        user_id = str(user.id if hasattr(user, "id") else user)
+        known = {k: v for k, v in filters.items() if k in ("search", "status") and v not in (None, "")}
+        page_size = max(1, min(int(limit), 100))
+        result = await self.list(user_id, page=skip // page_size + 1, page_size=page_size, **known)
+        return result.items, result.total
+
     async def create_client(self, user: Any, data: ClientCreate) -> ClientResponse:
         user_id = str(user.id if hasattr(user, "id") else user)
         return await self.create(user_id, data)

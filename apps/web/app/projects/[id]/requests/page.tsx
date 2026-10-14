@@ -15,7 +15,9 @@ import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 
+import { useFeedback } from "@/components/ui/Feedback";
 export default function ProjectClientRequestsPage() {
+  const { toast } = useFeedback();
   const { id: projectId } = useParams<{ id: string }>();
   const [project, setProject] = useState<Project | null>(null);
   const [requests, setRequests] = useState<ClientRequest[]>([]);
@@ -72,7 +74,10 @@ export default function ProjectClientRequestsPage() {
       setShowForm(false);
       fetchData();
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : "Failed to create request");
+      toast(
+        err instanceof Error ? err.message : "Failed to create request",
+        "error"
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -87,7 +92,10 @@ export default function ProjectClientRequestsPage() {
       );
       fetchData();
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : "Failed to analyze impact");
+      toast(
+        err instanceof Error ? err.message : "Failed to analyze impact",
+        "error"
+      );
     } finally {
       setAnalyzingReqId(null);
     }
@@ -99,7 +107,10 @@ export default function ProjectClientRequestsPage() {
       setActiveImpact(null);
       fetchData();
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : "Failed to approve request");
+      toast(
+        err instanceof Error ? err.message : "Failed to approve request",
+        "error"
+      );
     }
   };
 

@@ -5,6 +5,8 @@ import uuid
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from app.core.errors import internal_error_response
+
 logger = logging.getLogger(__name__)
 
 
@@ -24,7 +26,12 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
             },
         )
 
-        response = await call_next(request)
+        try:
+            response = await call_next(request)
+        except Exception as exc:
+            # Handle it here, inside CORSMiddleware, so the browser can read the 500 response.
+            # Starlette would otherwise answer from its outermost error middleware, without CORS headers.
+            response = internal_error_response(request, exc)
 
         duration = time.time() - start_time
         response.headers["X-Request-ID"] = request_id

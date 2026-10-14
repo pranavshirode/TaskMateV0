@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import JSON
@@ -45,7 +45,7 @@ class RequirementsAnalysis(Base):
         String(36), ForeignKey("repositories.id", ondelete="SET NULL"), nullable=True
     )
     status: Mapped[AnalysisStatus] = mapped_column(
-        SAEnum(AnalysisStatus), default=AnalysisStatus.DRAFT, nullable=False, index=True
+        SAEnum(AnalysisStatus, native_enum=False, length=50), default=AnalysisStatus.DRAFT, nullable=False, index=True
     )
     overview_data: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     technical_constraints: Mapped[list[Any] | None] = mapped_column(JSON, nullable=True)
@@ -91,17 +91,24 @@ class Requirement(Base):
     )
     key: Mapped[str] = mapped_column(String(50), nullable=False, index=True)  # e.g. "FR-1", "NFR-1"
     category: Mapped[RequirementCategory] = mapped_column(
-        SAEnum(RequirementCategory), default=RequirementCategory.FUNCTIONAL, nullable=False
+        SAEnum(RequirementCategory, native_enum=False, length=50),
+        default=RequirementCategory.FUNCTIONAL,
+        nullable=False,
     )
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
     priority: Mapped[str] = mapped_column(String(20), default="MEDIUM", nullable=False)
     status: Mapped[RequirementStatus] = mapped_column(
-        SAEnum(RequirementStatus), default=RequirementStatus.PROPOSED, nullable=False, index=True
+        SAEnum(RequirementStatus, native_enum=False, length=50),
+        default=RequirementStatus.PROPOSED,
+        nullable=False,
+        index=True,
     )
     acceptance_criteria: Mapped[list[Any] | None] = mapped_column(JSON, nullable=True)
     dependencies: Mapped[list[Any] | None] = mapped_column(JSON, nullable=True)
     open_questions: Mapped[list[Any] | None] = mapped_column(JSON, nullable=True)
+    # CLIENT_STATED (explicit in the brief) or AI_SUGGESTED (recommendation). NULL for rows created before 007.
+    source: Mapped[str | None] = mapped_column(String(30), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
     )
@@ -134,7 +141,10 @@ class ClarificationQuestion(Base):
     context_topic: Mapped[str | None] = mapped_column(String(255), nullable=True)
     answer: Mapped[str | None] = mapped_column(Text, nullable=True)
     status: Mapped[ClarificationStatus] = mapped_column(
-        SAEnum(ClarificationStatus), default=ClarificationStatus.UNRESOLVED, nullable=False, index=True
+        SAEnum(ClarificationStatus, native_enum=False, length=50),
+        default=ClarificationStatus.UNRESOLVED,
+        nullable=False,
+        index=True,
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
@@ -216,6 +226,7 @@ class RequirementTaskLink(Base):
     """Bidirectional traceability link between a requirement and a persisted task."""
 
     __tablename__ = "requirement_task_links"
+    __table_args__ = (UniqueConstraint("requirement_id", "task_id", name="uq_requirement_task_link"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     requirement_id: Mapped[str] = mapped_column(
@@ -247,7 +258,10 @@ class ProjectContextNote(Base):
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     category: Mapped[ContextCategory] = mapped_column(
-        SAEnum(ContextCategory), default=ContextCategory.DECISION, nullable=False, index=True
+        SAEnum(ContextCategory, native_enum=False, length=50),
+        default=ContextCategory.DECISION,
+        nullable=False,
+        index=True,
     )
     source: Mapped[str] = mapped_column(String(100), default="MANUAL", nullable=False)
     is_confirmed: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
@@ -279,10 +293,16 @@ class ClientRequest(Base):
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     request_type: Mapped[ClientRequestType] = mapped_column(
-        SAEnum(ClientRequestType), default=ClientRequestType.NEW_FEATURE, nullable=False, index=True
+        SAEnum(ClientRequestType, native_enum=False, length=50),
+        default=ClientRequestType.NEW_FEATURE,
+        nullable=False,
+        index=True,
     )
     status: Mapped[ClientRequestStatus] = mapped_column(
-        SAEnum(ClientRequestStatus), default=ClientRequestStatus.SUBMITTED, nullable=False, index=True
+        SAEnum(ClientRequestStatus, native_enum=False, length=50),
+        default=ClientRequestStatus.SUBMITTED,
+        nullable=False,
+        index=True,
     )
     impact_summary: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     analysis_id: Mapped[str | None] = mapped_column(
@@ -311,7 +331,9 @@ class AutomationExecution(Base):
     project_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("projects.id", ondelete="CASCADE"), nullable=True, index=True
     )
-    automation_type: Mapped[AutomationType] = mapped_column(SAEnum(AutomationType), nullable=False, index=True)
+    automation_type: Mapped[AutomationType] = mapped_column(
+        SAEnum(AutomationType, native_enum=False, length=100), nullable=False, index=True
+    )
     status: Mapped[str] = mapped_column(
         String(50), default="SUCCESS", nullable=False, index=True
     )  # SUCCESS, FAILED, PENDING

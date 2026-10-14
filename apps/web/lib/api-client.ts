@@ -161,12 +161,30 @@ export interface AgentRunRequest {
   conversation_id?: string;
 }
 
+export interface AgentPendingAction {
+  step_id: string;
+  tool_name: string;
+  arguments: Record<string, unknown>;
+  /** Human-readable description, e.g. 'Create task "Fix login" · priority HIGH' */
+  summary: string;
+}
+
 export interface AgentRunResponse {
   result?: string;
   message?: string;
   conversation_id?: string;
-  steps?: Record<string, unknown>[];
+  execution_id?: string;
+  status?: string;
+  pending_action?: AgentPendingAction | null;
   error?: string;
+}
+
+export interface AgentDecisionResponse {
+  conversation_id: string | null;
+  execution_id: string;
+  status: string;
+  message: string;
+  result?: Record<string, unknown> | null;
 }
 
 export interface AnalysisQuestion {
@@ -190,6 +208,8 @@ export interface Requirement {
   acceptance_criteria?: string[];
   dependencies?: string[];
   open_questions?: string[];
+  /** CLIENT_STATED: explicit in the brief. AI_SUGGESTED: a recommendation to confirm with the client. */
+  source?: "CLIENT_STATED" | "AI_SUGGESTED" | null;
 }
 
 export interface RequirementAssumption {
@@ -674,6 +694,16 @@ export class ApiClient {
     } catch (e) {
       return { data: null, error: e as Error };
     }
+  }
+
+  /** Run (approve) or cancel (reject) the action an agent execution is waiting on. */
+  decideAgentAction(
+    executionId: string,
+    decision: "approve" | "reject"
+  ): Promise<AgentDecisionResponse> {
+    return this.fetchAPI(`/agent/executions/${executionId}/${decision}`, {
+      method: "POST",
+    }) as Promise<AgentDecisionResponse>;
   }
 
   async sendMessage(data: {

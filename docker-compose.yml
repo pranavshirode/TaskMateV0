@@ -32,6 +32,8 @@ services:
       - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-taskmate}:${POSTGRES_PASSWORD:-taskmate_dev_password}@postgres:5432/${POSTGRES_DB:-taskmate}
       - CORS_ORIGINS=${CORS_ORIGINS:-["http://localhost:3000"]}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - SQL_ECHO=${SQL_ECHO:-false}
+      - SECRET_KEY=${SECRET_KEY:?Set SECRET_KEY in .env (openssl rand -hex 32)}
       - BACKEND_HOST=0.0.0.0
       - BACKEND_PORT=8000
       - AI_PROVIDER=${AI_PROVIDER:-openai}

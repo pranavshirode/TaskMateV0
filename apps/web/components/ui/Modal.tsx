@@ -1,10 +1,12 @@
 import React, { useEffect } from "react";
+import Icon from "./Icon";
 
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   title: string;
   children: React.ReactNode;
+  size?: "md" | "lg";
 }
 
 export default function Modal({
@@ -12,45 +14,48 @@ export default function Modal({
   onClose,
   title,
   children,
+  size = "md",
 }: ModalProps) {
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "unset";
-    }
+    if (!isOpen) return;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
     return () => {
       document.body.style.overflow = "unset";
+      window.removeEventListener("keydown", onKey);
     };
-  }, [isOpen]);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-[var(--sidebar-bg)] border border-[var(--sidebar-border)] rounded-xl w-full max-w-lg shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-        <div className="px-6 py-4 border-b border-[var(--sidebar-border)] flex items-center justify-between">
-          <h3 className="text-lg font-semibold">{title}</h3>
+    <div
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4 pt-[10vh] backdrop-blur-sm"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        className={`animate-pop w-full ${size === "lg" ? "max-w-2xl" : "max-w-lg"} overflow-hidden rounded-xl border border-[var(--sidebar-border)] bg-[var(--sidebar-bg)]`}
+        style={{ boxShadow: "var(--shadow-lg)" }}
+      >
+        <div className="flex items-center justify-between border-b border-[var(--sidebar-border)] px-5 py-3.5">
+          <h3 className="text-base font-semibold">{title}</h3>
           <button
             onClick={onClose}
-            className="text-[var(--text-muted)] hover:text-[var(--foreground)] transition-colors"
+            aria-label="Close"
+            className="rounded-md p-1 text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--foreground)]"
           >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
+            <Icon name="x" size={18} />
           </button>
         </div>
-        <div className="p-6">{children}</div>
+        <div className="p-5">{children}</div>
       </div>
     </div>
   );

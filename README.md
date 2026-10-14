@@ -31,7 +31,15 @@ Frontend (Next.js)  →  Backend API (FastAPI)  →  PostgreSQL
 
 ## Quick Start
 
-### Docker (Recommended)
+### One command (local, no Docker)
+
+```bash
+./hitme.sh        # or: make hitme
+```
+
+Installs what's missing, migrates the database, seeds the demo user (`alex@taskmate.dev` / `password123`), and starts the API and web app. It picks free ports automatically, and `Ctrl+C` stops both. See [DEMO.md](./DEMO.md) for the demo guide.
+
+### Docker
 
 ```bash
 # Start all services
@@ -41,7 +49,7 @@ docker compose up --build
 docker compose exec api alembic upgrade head
 
 # Seed demo data
-docker compose exec api python -m scripts.seed
+docker compose exec api python scripts/seed_db.py
 ```
 
 - Frontend: http://localhost:3000

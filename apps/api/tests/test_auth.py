@@ -52,3 +52,15 @@ class TestAuthEndpoints:
     async def test_get_me_unauthenticated(self, client):
         res = await client.get("/api/v1/auth/me")
         assert res.status_code == 401
+
+
+async def test_register_duplicate_email_is_case_insensitive(client):
+    payload = {"name": "A", "email": "Case.Test@Example.com", "password": "password123"}
+    assert (await client.post("/api/v1/auth/register", json=payload)).status_code == 201
+
+    dup = await client.post("/api/v1/auth/register", json={**payload, "email": "case.test@example.com"})
+    assert dup.status_code == 409
+    assert dup.json()["error"]["code"] == "EMAIL_TAKEN"
+
+    login = await client.post("/api/v1/auth/login", json={"email": "CASE.TEST@example.com", "password": "password123"})
+    assert login.status_code == 200

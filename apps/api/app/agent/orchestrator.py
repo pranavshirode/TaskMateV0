@@ -6,16 +6,19 @@ multi-step reasoning, native tool calling, and permission checks.
 
 import json
 import logging
+import time
 import uuid
+from datetime import datetime, timezone
 from typing import Any
 
 from app.agent.permissions import ToolPermissionService
 from app.agent.prompts import AGENT_SYSTEM_PROMPT
-from app.agent.tools.base import ToolContext
+from app.agent.tools.base import ToolContext, ToolResult
 from app.agent.tools.registry import ToolRegistry
 from app.ai.context.builder import ContextBuilder
 from app.ai.providers.base import AIMessage, AIProvider, MessageRole
 from app.core.config import Settings
+from app.core.errors import ConflictError, NotFoundError
 from app.models.user import User
 from app.services.agent_execution import AgentExecutionService
 from app.services.conversation import ConversationService
@@ -54,14 +57,12 @@ class AgentOrchestrator:
     ) -> dict[str, Any]:
         """Execute the agent workflow for a user request."""
         # 1. Setup conversation and execution
-        if conversation_id:
-            conversation = await self.conversation_service.get_conversation(conversation_id, user.id)
-            if not conversation:
-                conversation = await self.conversation_service.create_conversation(user.id, prompt[:50])
-        else:
-            conversation = await self.conversation_service.create_conversation(user.id, prompt[:50])
+        # Falls back to a new conversation if the id is unknown or belongs to another user.
+        conversation = await self.conversation_service.get_or_create_conversation(user, conversation_id)
+        if not conversation.title:
+            await self.conversation_service.update_title(conversation, prompt[:50])
 
-        await self.conversation_service.add_message(conversation.id, role="user", content=prompt)
+        await self.conversation_service.add_user_message(conversation.id, prompt)
 
         execution = await self.execution_service.create_execution(
             user=user,
@@ -72,8 +73,8 @@ class AgentOrchestrator:
         execution = await self.execution_service.start_execution(execution)
 
         # 2. Build context
-        workspace_context = await self.context_builder.build_context(user)
-        system_content = f"{AGENT_SYSTEM_PROMPT}\n\nWorkspace Context:\n{workspace_context.formatted_text}"
+        workspace_context = await self.context_builder.build(str(user.id))
+        system_content = f"{AGENT_SYSTEM_PROMPT}\n\nWorkspace Context:\n{workspace_context.to_prompt_text()}"
 
         messages = [AIMessage(role=MessageRole.SYSTEM, content=system_content)]
 
@@ -83,89 +84,75 @@ class AgentOrchestrator:
         messages.append(AIMessage(role=MessageRole.USER, content=prompt))
 
         # 3. Main Agent Loop
-        steps_taken = 0
-        final_content = ""
         tools = self.tool_registry.get_tool_definitions()
+        final_content = ""
+        tool_calls_made = 0
+        input_tokens = output_tokens = 0
+        started = time.monotonic()
+        # Set when the loop stops early; None means the model produced a final answer.
+        stop_reason: str | None = None
+        pending_action: dict[str, Any] | None = None
+
+        def tool_message(tc: Any, payload: dict[str, Any]) -> AIMessage:
+            return AIMessage(role=MessageRole.TOOL, content=json.dumps(payload), tool_call_id=tc.id, name=tc.name)
 
         try:
-            while steps_taken < self.settings.AGENT_MAX_STEPS:
-                steps_taken += 1
+            for _ in range(self.settings.AGENT_MAX_STEPS):
+                if time.monotonic() - started > self.settings.AGENT_MAX_EXECUTION_TIME:
+                    stop_reason = "time"
+                    break
 
-                # Call AI
-                response = await self.ai_provider.generate(
-                    messages=messages,
-                    tools=tools,
-                )
+                response = await self.ai_provider.generate(messages=messages, tools=tools)
+                input_tokens += response.input_tokens
+                output_tokens += response.output_tokens
 
-                # Add assistant message to history
                 messages.append(
-                    AIMessage(
-                        role=MessageRole.ASSISTANT,
-                        content=response.content,
-                        tool_calls=response.tool_calls,
-                    )
+                    AIMessage(role=MessageRole.ASSISTANT, content=response.content, tool_calls=response.tool_calls)
                 )
 
                 if not response.tool_calls:
-                    # AI is done, returned text
                     final_content = response.content
                     break
 
-                # Process Tool Calls
                 for tc in response.tool_calls:
-                    tool_name = tc.name
-                    tool_input = tc.arguments
+                    if tool_calls_made >= self.settings.AGENT_MAX_TOOL_CALLS:
+                        stop_reason = "tool_calls"
+                        break
+                    tool_calls_made += 1
 
-                    # Record step
                     step = await self.execution_service.record_step(
                         execution=execution,
-                        tool_name=tool_name,
-                        tool_input=tool_input,
+                        step_number=tool_calls_made,
+                        tool_name=tc.name,
+                        tool_input=tc.arguments,
                     )
 
-                    # Check permission
-                    perm_result = await self.permission_service.check_tool_permission(user, tool_name, tool_input)
-
+                    perm_result = await self.permission_service.check_tool_permission(user, tc.name, tc.arguments)
                     if not perm_result.allowed:
                         error_msg = f"Permission denied: {perm_result.reason}"
-                        await self.execution_service.fail_step(step, error_msg, latency_ms=0)
-                        messages.append(
-                            AIMessage(
-                                role=MessageRole.TOOL,
-                                content=json.dumps({"error": error_msg}),
-                                tool_call_id=tc.id,
-                                name=tool_name,
-                            )
-                        )
+                        await self.execution_service.fail_step(step, error_msg)
+                        messages.append(tool_message(tc, {"error": error_msg}))
                         continue
 
                     if perm_result.requires_approval:
+                        # The step keeps the exact tool input; POST /agent/executions/{id}/approve runs it.
                         await self.execution_service.update_execution(execution, status="WAITING_FOR_APPROVAL")
-                        msg = "This action requires your approval to proceed."
-                        messages.append(
-                            AIMessage(
-                                role=MessageRole.TOOL,
-                                content=json.dumps({"status": "WAITING_FOR_APPROVAL", "message": msg}),
-                                tool_call_id=tc.id,
-                                name=tool_name,
-                            )
-                        )
-                        final_content = f"I need your approval to run `{tool_name}`."
+                        await self.execution_service.update_step(step, status="PENDING")
+                        stop_reason = "approval"
+                        pending_action = {
+                            "step_id": str(step.id),
+                            "tool_name": tc.name,
+                            "arguments": tc.arguments,
+                            "summary": describe_action(tc.name, tc.arguments),
+                        }
+                        final_content = f"I need your approval to {pending_action['summary'][0].lower()}{pending_action['summary'][1:]}."
                         break
 
-                    # Execute Tool
-                    tool = self.tool_registry.get(tool_name)
+                    tool = self.tool_registry.get(tc.name)
                     if not tool:
-                        error_msg = f"Tool '{tool_name}' not found."
-                        await self.execution_service.fail_step(step, error_msg, latency_ms=0)
-                        messages.append(
-                            AIMessage(
-                                role=MessageRole.TOOL,
-                                content=json.dumps({"error": error_msg}),
-                                tool_call_id=tc.id,
-                                name=tool_name,
-                            )
-                        )
+                        error_msg = f"Tool '{tc.name}' not found."
+                        await self.execution_service.fail_step(step, error_msg)
+                        messages.append(tool_message(tc, {"error": error_msg}))
                         continue
 
                     context = ToolContext(
@@ -174,55 +161,59 @@ class AgentOrchestrator:
                         conversation_id=conversation.id,
                         extra=self.extra_services,
                     )
-
-                    # For actual execution, track latency (mocked here as 0)
-                    result = await tool.execute(tool_input, context)
+                    tool_started = time.monotonic()
+                    try:
+                        result = await tool.execute(tc.arguments, context)
+                    except Exception as exc:  # A failing tool fails its step, not the whole run.
+                        logger.exception("Tool %s raised", tc.name)
+                        latency = int((time.monotonic() - tool_started) * 1000)
+                        await self.execution_service.fail_step(step, f"Tool error: {exc}", latency_ms=latency)
+                        messages.append(tool_message(tc, {"error": "The tool failed unexpectedly."}))
+                        continue
+                    latency = int((time.monotonic() - tool_started) * 1000)
 
                     if result.success:
-                        summary = "Success"
-                        await self.execution_service.complete_step(step, summary, latency_ms=100)
-                        messages.append(
-                            AIMessage(
-                                role=MessageRole.TOOL,
-                                content=json.dumps(result.data or {"status": "success"}),
-                                tool_call_id=tc.id,
-                                name=tool_name,
-                            )
-                        )
+                        await self.execution_service.complete_step(step, "Success", latency_ms=latency)
+                        messages.append(tool_message(tc, result.data or {"status": "success"}))
                     else:
-                        summary = f"Failed: {result.error.get('message') if result.error else 'Unknown error'}"
-                        await self.execution_service.fail_step(step, summary, latency_ms=100)
-                        messages.append(
-                            AIMessage(
-                                role=MessageRole.TOOL,
-                                content=json.dumps({"error": result.error}),
-                                tool_call_id=tc.id,
-                                name=tool_name,
-                            )
-                        )
+                        message = result.error.get("message") if result.error else "Unknown error"
+                        await self.execution_service.fail_step(step, f"Failed: {message}", latency_ms=latency)
+                        messages.append(tool_message(tc, {"error": result.error}))
 
-                if execution.status == "WAITING_FOR_APPROVAL":
+                if stop_reason:
                     break
+            else:
+                # The step budget ran out while the model was still calling tools.
+                stop_reason = "steps"
 
-            if steps_taken >= self.settings.AGENT_MAX_STEPS:
-                await self.execution_service.timeout_execution(execution)
-                final_content = "I reached my maximum step limit before completing the task."
-
-            if execution.status not in ("WAITING_FOR_APPROVAL", "TIMEOUT", "FAILED"):
-                await self.execution_service.complete_execution(
+            token_usage = {
+                "input_tokens": input_tokens,
+                "output_tokens": output_tokens,
+                "total_tokens": input_tokens + output_tokens,
+            }
+            if stop_reason in ("steps", "tool_calls", "time"):
+                limit = {"steps": "step", "tool_calls": "tool-call", "time": "time"}[stop_reason]
+                await self.execution_service.update_execution(
                     execution,
-                    input_tokens=0,  # Need actual usage tracking
-                    output_tokens=0,
-                    total_tokens=0,
+                    status="TIMEOUT",
+                    error=f"Agent {limit} limit reached",
+                    completed_at=datetime.now(timezone.utc),
+                    **token_usage,
                 )
+                final_content = f"I reached my {limit} limit before completing the task."
+            elif stop_reason == "approval":
+                await self.execution_service.update_execution(execution, **token_usage)
+            else:
+                await self.execution_service.complete_execution(execution, **token_usage)
 
-            await self.conversation_service.add_message(conversation.id, role="assistant", content=final_content)
+            await self.conversation_service.add_assistant_message(conversation.id, final_content)
 
             return {
                 "conversation_id": str(conversation.id),
                 "execution_id": str(execution.id),
                 "status": execution.status,
                 "message": final_content,
+                "pending_action": pending_action,
             }
 
         except Exception as e:
@@ -234,3 +225,93 @@ class AgentOrchestrator:
                 "status": "FAILED",
                 "message": "An internal error occurred during agent execution.",
             }
+
+    async def resolve_pending(self, user: User, execution_id: str, approve: bool) -> dict[str, Any]:
+        """Approve (run) or reject the single action an execution is waiting on.
+
+        The status change is atomic, so an action can never run twice (double click, retries, replays).
+        """
+        target = "RUNNING" if approve else "CANCELLED"
+        if not await self.execution_service.transition_status(execution_id, user, "WAITING_FOR_APPROVAL", target):
+            if await self.execution_service.get_execution(execution_id, user) is None:
+                raise NotFoundError("Agent execution not found")
+            raise ConflictError("This action has already been approved, rejected or expired.", code="NOT_PENDING")
+
+        execution = await self.execution_service.get_execution(execution_id, user)
+        assert execution is not None
+        step = next((s for s in reversed(execution.steps) if s.status == "PENDING"), None)
+        if step is None:  # Should not happen; fail closed rather than guess what to run.
+            await self.execution_service.fail_execution(execution, "No pending step found")
+            raise ConflictError("There is no pending action on this execution.", code="NOT_PENDING")
+
+        summary = describe_action(step.tool_name, step.tool_input or {})
+        result_data: dict[str, Any] | None = None
+
+        if not approve:
+            await self.execution_service.update_step(step, status="SKIPPED", result_summary="Rejected by user")
+            await self.execution_service.update_execution(execution, completed_at=datetime.now(timezone.utc))
+            message = f"Okay, I did not {summary[0].lower()}{summary[1:]}."
+        else:
+            # Re-check authorisation at execution time; approval never bypasses access rules.
+            perm = await self.permission_service.check_tool_permission(user, step.tool_name, step.tool_input or {})
+            tool = self.tool_registry.get(step.tool_name)
+            if not perm.allowed or tool is None:
+                reason = perm.reason if not perm.allowed else "tool is no longer available"
+                await self.execution_service.fail_step(step, f"Permission denied: {reason}")
+                await self.execution_service.fail_execution(execution, f"Permission denied: {reason}")
+                message = f"I couldn't {summary[0].lower()}{summary[1:]}: {reason}."
+            else:
+                context = ToolContext(
+                    user=user,
+                    execution_id=execution.id,
+                    conversation_id=execution.conversation_id,
+                    extra=self.extra_services,
+                )
+                started = time.monotonic()
+                try:
+                    result = await tool.execute(step.tool_input or {}, context)
+                except Exception as exc:
+                    logger.exception("Approved tool %s raised", step.tool_name)
+                    result = ToolResult.fail("INTERNAL_ERROR", str(exc))
+                latency = int((time.monotonic() - started) * 1000)
+                if result.success:
+                    result_data = result.data
+                    await self.execution_service.complete_step(step, "Success", latency_ms=latency)
+                    await self.execution_service.complete_execution(execution)
+                    message = f"Done: {summary[0].lower()}{summary[1:]}."
+                else:
+                    error = result.error.get("message") if result.error else "Unknown error"
+                    await self.execution_service.fail_step(step, f"Failed: {error}", latency_ms=latency)
+                    await self.execution_service.fail_execution(execution, error)
+                    message = f"I tried to {summary[0].lower()}{summary[1:]}, but it failed: {error}"
+
+        if execution.conversation_id:
+            await self.conversation_service.add_assistant_message(execution.conversation_id, message)
+
+        return {
+            "conversation_id": execution.conversation_id,
+            "execution_id": str(execution.id),
+            "status": execution.status,
+            "message": message,
+            "result": result_data,
+        }
+
+
+TOOL_ACTIONS = {
+    "task.create": "Create task",
+    "task.update": "Update task",
+    "task.change_status": "Change task status",
+    "task.change_priority": "Change task priority",
+}
+
+
+def describe_action(tool_name: str, arguments: dict[str, Any]) -> str:
+    """Short human-readable description of a tool call, shown on the approval card."""
+    label = TOOL_ACTIONS.get(tool_name, f"Run {tool_name}")
+    details = []
+    if arguments.get("title"):
+        details.append(f'"{arguments["title"]}"')
+    for key in ("status", "priority", "due_date"):
+        if arguments.get(key):
+            details.append(f"{key.replace('_', ' ')} {arguments[key]}")
+    return f"{label} {' · '.join(details)}".strip()

@@ -214,28 +214,37 @@ class AIOrchestrator:
             raw_status=entities.status,
         )
 
-        # 8. Check for Ambiguity
-        if resolved.ambiguous_matches:
-            ambig_str = ", ".join(resolved.ambiguous_matches)
-            clarify_text = f"I found multiple matches ({ambig_str}). Which one did you mean?"
-            bot_msg = ConversationMessage(
-                id=str(uuid.uuid4()),
-                conversation_id=conv.id,
-                role="assistant",
-                content=clarify_text,
-                intent="CLARIFY",
-                confidence=confidence,
-                tokens_used=ai_resp.total_tokens,
+        async def clarify(question: str) -> AIChatResponse:
+            """Ask the user instead of guessing or inventing a value."""
+            self.db.add(
+                ConversationMessage(
+                    id=str(uuid.uuid4()),
+                    conversation_id=conv.id,
+                    role="assistant",
+                    content=question,
+                    intent="CLARIFY",
+                    confidence=confidence,
+                    tokens_used=ai_resp.total_tokens,
+                )
             )
-            self.db.add(bot_msg)
             await self.db.commit()
             return AIChatResponse(
-                message=clarify_text,
+                message=question,
                 conversation_id=conv.id,
                 intent="CLARIFY",
                 confidence=confidence,
                 actions=[],
+                requires_clarification=True,
             )
+
+        # 8. Check for Ambiguity
+        if resolved.ambiguous_matches:
+            ambig_str = ", ".join(resolved.ambiguous_matches)
+            return await clarify(f"I found multiple matches ({ambig_str}). Which one did you mean?")
+
+        # A task needs a real title; never create one named after the request or a placeholder.
+        if intent_val in (IntentType.CREATE_TASK.value, "CREATE_TASK") and not (entities.task_title or "").strip():
+            return await clarify("What should the task be called?")
 
         # 9. Execute Actions via Domain Services
         actions: list[AIActionResult] = []
@@ -243,7 +252,7 @@ class AIOrchestrator:
 
         try:
             if intent_val == IntentType.CREATE_TASK.value or intent_val == "CREATE_TASK":
-                title = entities.task_title or message
+                title = (entities.task_title or "").strip()
                 # Priority
                 priority = resolved.priority or TaskPriority.MEDIUM
                 # Status

@@ -2,6 +2,10 @@ from functools import lru_cache
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# Public, committed value: acceptable only for local development and tests.
+DEV_SECRET_KEY = "taskmate-dev-secret-key-change-in-production"
+INSECURE_ENVIRONMENTS = {"development", "testing"}
+
 
 class Settings(BaseSettings):
     APP_ENV: str = "development"
@@ -12,7 +16,9 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "sqlite+aiosqlite:///:memory:"
     CORS_ORIGINS: list[str] = ["http://localhost:3000"]
     LOG_LEVEL: str = "INFO"
-    SECRET_KEY: str = "taskmate-dev-secret-key-change-in-production"
+    # Logs every SQL statement *with parameters* (i.e. client data). Opt-in only.
+    SQL_ECHO: bool = False
+    SECRET_KEY: str = DEV_SECRET_KEY
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
 
@@ -44,6 +50,15 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore",
     )
+
+
+def validate_settings(settings: Settings) -> None:
+    """Refuse to run outside development/testing with insecure defaults."""
+    if settings.APP_ENV not in INSECURE_ENVIRONMENTS and settings.SECRET_KEY == DEV_SECRET_KEY:
+        raise RuntimeError(
+            f"SECRET_KEY is the public development default but APP_ENV={settings.APP_ENV!r}. "
+            "Set SECRET_KEY to a random value (e.g. `openssl rand -hex 32`)."
+        )
 
 
 @lru_cache

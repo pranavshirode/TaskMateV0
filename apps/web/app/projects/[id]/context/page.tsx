@@ -13,7 +13,9 @@ import ErrorState from "@/components/ui/ErrorState";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 
+import { useFeedback } from "@/components/ui/Feedback";
 export default function ProjectContextPage() {
+  const { toast, confirm } = useFeedback();
   const { id: projectId } = useParams<{ id: string }>();
   const [project, setProject] = useState<Project | null>(null);
   const [notes, setNotes] = useState<ProjectContextNote[]>([]);
@@ -68,19 +70,26 @@ export default function ProjectContextPage() {
       setShowForm(false);
       fetchData();
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : "Failed to create note");
+      toast(
+        err instanceof Error ? err.message : "Failed to create note",
+        "error"
+      );
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDeleteNote = async (noteId: string) => {
-    if (!confirm("Delete this project context note?")) return;
+    if (!(await confirm({ title: "Delete this project context note?" })))
+      return;
     try {
       await apiClient.deleteProjectContextNote(noteId);
       fetchData();
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : "Failed to delete note");
+      toast(
+        err instanceof Error ? err.message : "Failed to delete note",
+        "error"
+      );
     }
   };
 

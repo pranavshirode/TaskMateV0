@@ -32,6 +32,8 @@ class AIChatResponse(BaseModel):
     confidence: float | None = None
     actions: list[AIActionResult] = Field(default_factory=list)
     context_summary: dict | None = None  # e.g. {"tasks": 3, "projects": 2}
+    # True when the assistant is asking the user a question instead of acting.
+    requires_clarification: bool = False
 
 
 class ConversationResponse(BaseModel):

@@ -8,6 +8,9 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 # Set env vars for testing before importing app
 os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///:memory:"
 os.environ["APP_ENV"] = "testing"
+# Pin AI settings so a developer's local .env (which pydantic-settings also reads) cannot change test behaviour.
+os.environ["AI_PROVIDER"] = "mock"
+os.environ["AI_API_KEY"] = ""
 
 from app.core.security import create_access_token, get_password_hash
 from app.db.base import Base

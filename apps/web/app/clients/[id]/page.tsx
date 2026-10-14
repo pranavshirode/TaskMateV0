@@ -9,7 +9,9 @@ import ErrorState from "@/components/ui/ErrorState";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 
+import { useFeedback } from "@/components/ui/Feedback";
 export default function ClientDetailPage() {
+  const { toast, confirm } = useFeedback();
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [client, setClient] = useState<Client | null>(null);
@@ -39,12 +41,15 @@ export default function ClientDetailPage() {
   }, [id]);
 
   const handleArchive = async () => {
-    if (!confirm("Archive this client?")) return;
+    if (!(await confirm({ title: "Archive this client?" }))) return;
     try {
       await apiClient.archiveClient(id);
       router.push("/clients");
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : "Failed to archive client");
+      toast(
+        err instanceof Error ? err.message : "Failed to archive client",
+        "error"
+      );
     }
   };
 

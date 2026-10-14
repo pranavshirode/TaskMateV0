@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.agent.tools.base import ToolPermission
 from app.agent.tools.registry import ToolRegistry
 from app.core.config import Settings
+from app.core.errors import NotFoundError
 from app.models.project import Project
 from app.models.repository import Repository
 from app.models.user import User
@@ -62,19 +63,26 @@ class ToolPermissionService:
         # Check Project tools (if referencing a specific project)
         if tool.name in ("project.get", "project.update"):
             project_id_str = tool_input.get("project_id")
-            if project_id_str and not await self._can_access_project(user, uuid.UUID(project_id_str)):
+            if project_id_str and not await self._can_access_project(user, project_id_str):
                 return PermissionResult(allowed=False, reason="Project not found or access denied")
 
         if tool.name == "task.create":
             project_id_str = tool_input.get("project_id")
-            if project_id_str and not await self._can_access_project(user, uuid.UUID(project_id_str)):
+            if project_id_str and not await self._can_access_project(user, project_id_str):
                 return PermissionResult(allowed=False, reason="Project not found or access denied")
 
         return PermissionResult(allowed=True, requires_approval=requires_approval)
 
-    async def _can_access_project(self, user: User, project_id: uuid.UUID) -> bool:
-        project = await self.project_service.get_project(project_id, user)
-        return project is not None
+    async def _can_access_project(self, user: User, project_id: str) -> bool:
+        try:
+            uuid.UUID(str(project_id))
+        except ValueError:
+            return False  # Malformed ids from the model are a denial, not a crash.
+        try:
+            await self.project_service.get_project(user, project_id)
+        except NotFoundError:
+            return False
+        return True
 
     async def can_access_repository(self, user: User, repository_id: uuid.UUID) -> bool:
         """Check if user has access to a specific repository."""
