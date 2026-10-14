@@ -144,7 +144,10 @@ class OpenAIProvider(BaseAIProvider):
             if not isinstance(arguments, dict):
                 arguments = {}
             name = tool_names.get(tc.function.name, tc.function.name)
-            tool_calls.append(ToolCallRequest(id=tc.id, name=name, arguments=arguments))
+            extra_content = getattr(tc, "extra_content", None)
+            if extra_content is None and hasattr(tc, "model_extra") and tc.model_extra:
+                extra_content = tc.model_extra.get("extra_content")
+            tool_calls.append(ToolCallRequest(id=tc.id, name=name, arguments=arguments, extra_content=extra_content))
 
         return AIResponse(
             content=content,
@@ -186,14 +189,17 @@ def _to_openai_message(message: AIMessage) -> dict[str, Any]:
     payload: dict[str, Any] = {"role": role, "content": message.content}
     if role == "assistant" and message.tool_calls:
         payload["content"] = message.content or None
-        payload["tool_calls"] = [
-            {
+        tool_calls_payload = []
+        for tc in message.tool_calls:
+            tc_dict: dict[str, Any] = {
                 "id": tc.id,
                 "type": "function",
                 "function": {"name": _encode_tool_name(tc.name), "arguments": json.dumps(tc.arguments)},
             }
-            for tc in message.tool_calls
-        ]
+            if getattr(tc, "extra_content", None):
+                tc_dict["extra_content"] = tc.extra_content
+            tool_calls_payload.append(tc_dict)
+        payload["tool_calls"] = tool_calls_payload
     if role == "tool":
         payload["tool_call_id"] = message.tool_call_id
     return payload

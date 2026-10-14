@@ -21,6 +21,15 @@ class MockAIProvider(BaseAIProvider):
     async def health_check(self) -> bool:
         return True
 
+    def get_model_info(self) -> ModelInfo:
+        return ModelInfo(
+            provider="mock",
+            model="mock-model",
+            max_tokens=2048,
+            supports_json_mode=True,
+            supports_tool_calling=True,
+        )
+
     async def _agent_turn(self, messages: list[AIMessage]) -> AIResponse:
         """Offline stand-in for an LLM with tool calling: supports creating and finding tasks.
 

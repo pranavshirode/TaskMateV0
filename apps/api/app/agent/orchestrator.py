@@ -67,11 +67,18 @@ class AgentOrchestrator:
 
         await self.conversation_service.add_user_message(conversation.id, prompt)
 
+        provider_model = getattr(self.settings, "AI_MODEL", "gemini-2.5-flash")
+        if hasattr(self.ai_provider, "get_model_info"):
+            try:
+                provider_model = self.ai_provider.get_model_info().model
+            except Exception:
+                pass
+
         execution = await self.execution_service.create_execution(
             user=user,
             conversation_id=conversation.id,
             objective=prompt,
-            model=self.ai_provider.get_model_info().model,
+            model=provider_model,
         )
         execution = await self.execution_service.start_execution(execution)
 

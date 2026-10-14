@@ -9,7 +9,7 @@ from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.ai.errors import AIError
+from app.ai.errors import AIError, AIRateLimitError
 from app.ai.extractors.requirements_analyzer import (
     validate_and_sanitize_requirements_data,
 )
@@ -168,7 +168,15 @@ Analyze this client brief and return the complete requirements specification in 
                 messages,
                 response_format={"type": "json_object"},
                 temperature=0.2,
+                max_tokens=8192,
             )
+        except AIRateLimitError as e:
+            logger.warning("Requirements analysis rate-limited: %s", e)
+            raise AppError(
+                429,
+                "AI_RATE_LIMITED",
+                "The AI service is temporarily rate-limited. Please wait 60 seconds and try again.",
+            ) from e
         except AIError as e:
             logger.warning("Requirements analysis provider error: %s", e)
             raise AppError(503, "AI_UNAVAILABLE", "The AI service is unavailable right now. Please try again.") from e
