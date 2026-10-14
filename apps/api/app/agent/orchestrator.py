@@ -19,6 +19,7 @@ from app.ai.context.builder import ContextBuilder
 from app.ai.providers.base import AIMessage, AIProvider, MessageRole
 from app.core.config import Settings
 from app.core.errors import ConflictError, NotFoundError
+from app.integrations.mcp import load_mcp_tools
 from app.models.user import User
 from app.services.agent_execution import AgentExecutionService
 from app.services.conversation import ConversationService
@@ -48,6 +49,8 @@ class AgentOrchestrator:
         self.conversation_service = conversation_service
         self.settings = settings
         self.extra_services = extra_services
+        self._mcp_loaded_for: str | None = None
+        self._mcp_note = ""
 
     async def run_agent(
         self,
@@ -72,9 +75,13 @@ class AgentOrchestrator:
         )
         execution = await self.execution_service.start_execution(execution)
 
-        # 2. Build context
+        # 2. Build context (+ the user's connected external tools via MCP)
         workspace_context = await self.context_builder.build(str(user.id))
-        system_content = f"{AGENT_SYSTEM_PROMPT}\n\nWorkspace Context:\n{workspace_context.to_prompt_text()}"
+        integrations_note = await self.attach_mcp_tools(user)
+        system_content = (
+            f"{AGENT_SYSTEM_PROMPT}\n\nWorkspace Context:\n{workspace_context.to_prompt_text()}"
+            f"\n\nExternal integrations:\n{integrations_note}"
+        )
 
         messages = [AIMessage(role=MessageRole.SYSTEM, content=system_content)]
 
@@ -226,6 +233,30 @@ class AgentOrchestrator:
                 "message": "An internal error occurred during agent execution.",
             }
 
+    async def attach_mcp_tools(self, user: User) -> str:
+        """Register this user's MCP tools for this request; returns a short status note for the prompt."""
+        if self._mcp_loaded_for == str(user.id):
+            return self._mcp_note
+        tools, statuses = await load_mcp_tools(user, self.extra_services)
+        if any(t.name.startswith("mcp.github.") for t in tools):
+            self.tool_registry.unregister_prefix("github.")  # superseded by the richer MCP GitHub tools
+        self.tool_registry.unregister_prefix("mcp.")
+        for tool in tools:
+            self.tool_registry.register(tool)
+
+        lines = []
+        for st in statuses:
+            if not st.configured:
+                continue
+            if not st.connected:
+                lines.append(f"- {st.label}: not connected (the user can connect it in Settings > Integrations).")
+            elif st.error:
+                lines.append(f"- {st.label}: connected as {st.account or 'unknown'}, but unavailable: {st.error}.")
+            else:
+                lines.append(f"- {st.label}: connected as {st.account}; {st.tool_count} tools (mcp.{st.key}.*).")
+        self._mcp_loaded_for, self._mcp_note = str(user.id), "\n".join(lines) or "- none configured"
+        return self._mcp_note
+
     async def resolve_pending(self, user: User, execution_id: str, approve: bool) -> dict[str, Any]:
         """Approve (run) or reject the single action an execution is waiting on.
 
@@ -246,6 +277,8 @@ class AgentOrchestrator:
 
         summary = describe_action(step.tool_name, step.tool_input or {})
         result_data: dict[str, Any] | None = None
+        if approve and step.tool_name.startswith("mcp."):
+            await self.attach_mcp_tools(user)  # fresh credentials; the token may have rotated since the request
 
         if not approve:
             await self.execution_service.update_step(step, status="SKIPPED", result_summary="Rejected by user")
@@ -305,8 +338,20 @@ TOOL_ACTIONS = {
 }
 
 
+MCP_SERVER_LABELS = {"github": "GitHub", "google": "Google"}
+
+
 def describe_action(tool_name: str, arguments: dict[str, Any]) -> str:
     """Short human-readable description of a tool call, shown on the approval card."""
+    if tool_name.startswith("mcp."):
+        _, server, remote = tool_name.split(".", 2)
+        shown = [
+            f"{k}={str(v)[:40]}"
+            for k, v in arguments.items()
+            if isinstance(v, (str, int, float, bool)) and k != "user_google_email"
+        ][:3]
+        label = f"{MCP_SERVER_LABELS.get(server, server)}: {remote.replace('_', ' ')}"
+        return f"{label} ({', '.join(shown)})" if shown else label
     label = TOOL_ACTIONS.get(tool_name, f"Run {tool_name}")
     details = []
     if arguments.get("title"):

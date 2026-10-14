@@ -32,6 +32,7 @@ Everything in the table below was executed, not just read.
 | AI chat | "Create a high priority task to … due tomorrow" creates a real task | Asks *"What should the task be called?"* instead of inventing a title. Ambiguous references ("the login bug" when there are two) get a question |
 | **AI agent + approval** | Agent mode: "Create a task to …" → **Needs your approval** card → Approve → task is created **exactly once** (a second approval returns 409). Reject = nothing written | Execution trace at `GET /api/v1/agent/executions/{id}` |
 | Project memory, client requests, daily summary | Available on the project page | |
+| **GitHub & Google via MCP** | In Settings → Integrations each user connects their own GitHub (token) and Google account. The agent then uses GitHub issues/PRs/repos and Gmail, Drive, Docs, Sheets, Slides, Calendar through MCP servers. Read-only tools run directly; anything that sends, creates or edits shows the approval card first | Tested end to end against a real MCP server over HTTP (approval, run-once, per-user accounts, untrusted content, server outages). Not yet run with real GitHub/Google accounts (needs your credentials, §5) |
 | Security | Per-user data isolation (checked with two users on every resource), refuses the default `SECRET_KEY` in production, no client data in logs by default | |
 
 ### Known limitations (say these honestly if asked)
@@ -42,6 +43,7 @@ Everything in the table below was executed, not just read.
 - **Docker:** the images were not built during verification, because there was no Docker access on the test machine. Run `make up` once yourself before the demo.
 - **Offline mode:** with `AI_PROVIDER=mock`, chat understands a limited set of phrasings (create, complete, change status or priority, find, today, overdue). The agent can only create and find tasks. The requirements analysis is keyword-based. **Use a real API key for the demo if you can.**
 - **The fine-tuned model is not in the repo yet.** That is your workstream (§3–4).
+- **MCP needs real accounts and a real AI model.** The offline mock AI can't choose MCP tools. Add an AI key and connect GitHub/Google (§5) before demoing them.
 
 ---
 
@@ -341,3 +343,91 @@ RULES
 2. Follow §3.3 steps 2–7.
 3. Run the API and send *"Mark the login task as done"*. The reply metadata should say **fine-tuned model**.
 4. Record every metric exactly as Colab printed it. If fine-tuning does not beat the baseline, say so: that is still a valid, honest result.
+
+
+---
+
+## 5. GitHub and Google through MCP (setup)
+
+TaskMate's agent can use external tools through **MCP (Model Context Protocol)** servers:
+
+| Service | MCP server | What the agent can do |
+|---|---|---|
+| GitHub | GitHub's official hosted server (`https://api.githubcopilot.com/mcp/`), limited to the `repos`, `issues` and `pull_requests` toolsets | Search repos and code, read files, list/read/create issues and pull requests, comment |
+| Google | [`workspace-mcp`](https://github.com/taylorwilsdon/google_workspace_mcp) (MIT licence) running locally next to TaskMate; `hitme.sh` starts it | Search/read Gmail and **send** email; search/read Drive files; read/create/edit Docs, Sheets and Slides; read Calendar and create/change events |
+
+### How it stays safe
+
+- **Per-user accounts.** Each TaskMate user connects their own accounts, and tokens are stored encrypted. Every MCP request carries that user's own token. The Google account argument is filled in by TaskMate and hidden from the AI, so the agent can't act on someone else's mailbox.
+- **Approval.** Only tools the server marks read-only run directly. Sending email, creating issues, and editing docs or events always show the **Needs your approval** card, even if `AGENT_REQUIRE_APPROVAL_FOR_WRITES=false`. An approved action runs once, never twice.
+- **Untrusted content.** Results from MCP are labelled "external, untrusted" and capped in size. The agent is told never to follow instructions found inside emails, issues or documents.
+- **Failures.** A down or misconfigured MCP server never breaks the agent: those tools are simply unavailable, and Settings → Integrations shows why.
+
+### Step 1: an AI model with tool calling (required)
+
+The offline mock can't use MCP. In `apps/api/.env` set **one** of these:
+
+```env
+# OpenAI
+AI_PROVIDER=openai
+AI_API_KEY=sk-...
+AI_MODEL=gpt-4o-mini
+```
+
+```env
+# Google Gemini (free tier key from https://aistudio.google.com) via its OpenAI-compatible endpoint
+AI_PROVIDER=openai
+AI_API_KEY=<your Gemini API key>
+AI_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai/
+AI_MODEL=<a current Flash model from AI Studio, e.g. gemini-3.8-flash>
+```
+
+Gemini's compatibility layer documents tool calling, which is what MCP uses. It does not explicitly document OpenAI's JSON mode, which TaskMate's chat and requirements analysis use. Test those once; if they fail, use OpenAI.
+
+### Step 2: GitHub (about 3 minutes)
+
+1. Go to https://github.com/settings/personal-access-tokens/new and create a **fine-grained token**:
+   - **Repository access:** the repos you want to demo.
+   - **Permissions:** Contents, Issues and Pull requests set to **Read and write**. Metadata stays Read.
+2. In TaskMate, go to **Settings → Integrations → GitHub** and paste the token. It's checked against GitHub and stored encrypted.
+3. *(Optional)* "Sign in with GitHub" instead of pasting: create a GitHub OAuth App with the callback `http://localhost:3000/settings/integrations/github/callback`, and set `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`.
+
+### Step 3: Google (about 15 minutes, works with a personal @gmail.com)
+
+1. Go to https://console.cloud.google.com, create a project, e.g. "TaskMate".
+2. **APIs & Services → Library**: enable the **Gmail API, Google Drive API, Google Docs API, Google Sheets API, Google Slides API, Google Calendar API**.
+3. **Google Auth Platform → Branding / Audience**:
+   - user type **External**, publishing status **Testing**;
+   - under **Test users**, add the @gmail.com address you'll demo with.
+4. **Google Auth Platform → Clients → Create client**:
+   - type **Web application**;
+   - **Authorized redirect URI:** `http://localhost:3000/settings/integrations/google/callback`. If your web app runs on another port, use that port.
+5. Put the credentials in `apps/api/.env`:
+   ```env
+   GOOGLE_OAUTH_CLIENT_ID=....apps.googleusercontent.com
+   GOOGLE_OAUTH_CLIENT_SECRET=...
+   ```
+6. Run `./hitme.sh`. It installs and starts the Google MCP server (`[mcp]` lines in the log).
+7. In TaskMate, go to **Settings → Integrations → Connect Google**. Google will say the app isn't verified, which is normal for a Testing-mode app. Choose *Continue*, then allow the permissions.
+8. **Agent tools (MCP)** on the same page should now show *Google Workspace: Ready*.
+
+> In **Testing** mode, Google refresh tokens expire after **7 days**. If the agent says *"Google access expired or was revoked"*, click Disconnect → Connect Google again. Reconnect the day before your demo.
+
+### Step 4: try it (Agent mode in the AI Assistant)
+
+- *"List the open issues in my repo `<owner>/<repo>`"*: read-only, runs directly.
+- *"Create a GitHub issue in `<owner>/<repo>` titled 'Fix login timeout'"*: the approval card appears. Approve, then check GitHub.
+- *"Find emails from my client about the invoice"*: read-only.
+- *"Email `<your other address>` a short project status update"*: the approval card shows the recipient and subject. Approve, and the email arrives.
+- *"What meetings do I have tomorrow?"*: reads Calendar.
+
+### Configuration reference (`apps/api/.env`)
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `TOKEN_ENCRYPTION_KEY` | added by `hitme.sh` | Encrypts stored GitHub/Google tokens. Changing it disconnects all accounts |
+| `MCP_GITHUB_URL` | `https://api.githubcopilot.com/mcp/` | Empty disables GitHub MCP |
+| `MCP_GITHUB_TOOLSETS` | `repos,issues,pull_requests` | Which GitHub toolsets the agent sees |
+| `MCP_GOOGLE_URL` | set by `hitme.sh` | URL of the local `workspace-mcp` server |
+| `MCP_MAX_TOOLS_PER_SERVER` | `40` | Keeps the AI's tool list focused |
+| `MCP_TIMEOUT` | `20` | Seconds per MCP request |

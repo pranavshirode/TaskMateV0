@@ -17,11 +17,8 @@ function CallbackContent() {
       return;
     }
 
-    // In a real app, we'd exchange the code for an access token on the backend.
-    // For local development without a real OAuth app, we're accepting the token directly.
-    // Here we'll just simulate it or use the code as token if running locally.
-
-    apiClient.connectGitHub({ access_token: code }).then(({ error }) => {
+    // The backend exchanges the one-time code for an access token (it holds the client secret).
+    apiClient.connectGitHub({ code }).then(({ error }) => {
       if (error) {
         setStatus(`Failed to connect: ${error.message}`);
       } else {

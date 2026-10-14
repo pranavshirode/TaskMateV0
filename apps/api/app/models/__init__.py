@@ -19,6 +19,7 @@ from app.models.enums import (  # noqa: F401
     TaskStatus,
 )
 from app.models.github_integration import GitHubIntegration  # noqa: F401
+from app.models.google_integration import GoogleIntegration  # noqa: F401
 from app.models.project import Project  # noqa: F401
 from app.models.repository import Repository  # noqa: F401
 from app.models.requirements import (  # noqa: F401

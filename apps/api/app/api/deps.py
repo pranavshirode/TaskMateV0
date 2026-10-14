@@ -41,9 +41,11 @@ async def get_current_user(
 from app.repositories.agent_execution import AgentExecutionRepository
 from app.repositories.conversation import ConversationRepository
 from app.repositories.github_integration import GitHubIntegrationRepository
+from app.repositories.google_integration import GoogleIntegrationRepository
 from app.services.agent_execution import AgentExecutionService
 from app.services.conversation import ConversationService
 from app.services.github_integration import GitHubIntegrationService
+from app.services.google_integration import GoogleIntegrationService
 
 
 async def get_github_integration_service(
@@ -84,6 +86,7 @@ async def get_agent_orchestrator(
     settings = get_settings()
     tool_registry = create_default_registry()
     github_service = GitHubIntegrationService(GitHubIntegrationRepository(db))
+    google_service = GoogleIntegrationService(GoogleIntegrationRepository(db))
     project_service = ProjectService(db)
     permission_service = ToolPermissionService(tool_registry, project_service, github_service, db, settings)
     ai_provider = get_ai_provider()
@@ -104,6 +107,7 @@ async def get_agent_orchestrator(
         project_service=project_service,
         client_service=client_service,
         github_service=github_service,
+        google_service=google_service,
     )
 
 
@@ -138,3 +142,7 @@ async def get_workflow_automation_service(
     db: AsyncSession = Depends(get_db),
 ) -> WorkflowAutomationService:
     return WorkflowAutomationService(db)
+
+
+async def get_google_integration_service(db: AsyncSession = Depends(get_db)) -> GoogleIntegrationService:
+    return GoogleIntegrationService(GoogleIntegrationRepository(db))

@@ -34,8 +34,22 @@ async def init_db():
         from app.db.base import Base
 
         async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
+            # Zero-config convenience for brand-new SQLite files only. Once Alembic manages the schema,
+            # creating tables here would race the migrations (a new model + a reloading dev server would
+            # create its table, and the next `alembic upgrade` would then fail with "table already exists").
+            if await conn.run_sync(_is_migration_managed):
+                logger.info("Schema managed by Alembic migrations; skipping create_all")
+            else:
+                await conn.run_sync(Base.metadata.create_all)
     logger.info("Database initialized")
+
+
+def _is_migration_managed(sync_conn) -> bool:
+    from sqlalchemy import inspect, text
+
+    if not inspect(sync_conn).has_table("alembic_version"):
+        return False
+    return sync_conn.execute(text("SELECT COUNT(*) FROM alembic_version")).scalar() > 0
 
 
 async def close_db():

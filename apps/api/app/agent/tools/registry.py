@@ -29,6 +29,11 @@ class ToolRegistry:
         self._tools[tool.name] = tool
         logger.info("Registered tool: %s (%s)", tool.name, tool.permission.value)
 
+    def unregister_prefix(self, prefix: str) -> None:
+        """Remove every tool whose name starts with `prefix`."""
+        for name in [n for n in self._tools if n.startswith(prefix)]:
+            del self._tools[name]
+
     def get(self, tool_name: str) -> AgentTool | None:
         """Get a tool by name. Returns None if not found."""
         return self._tools.get(tool_name)

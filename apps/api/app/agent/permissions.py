@@ -54,6 +54,11 @@ class ToolPermissionService:
         elif tool.permission == ToolPermission.DESTRUCTIVE:
             requires_approval = True  # Destructive actions always require approval
 
+        # External MCP actions (send email, create issue, edit a doc...) always need the user's approval,
+        # even if AGENT_REQUIRE_APPROVAL_FOR_WRITES is turned off. Only server-declared read-only tools run directly.
+        if tool.name.startswith("mcp.") and tool.permission != ToolPermission.READ:
+            requires_approval = True
+
         # Check GitHub tools
         if tool.name.startswith("github."):
             integration = await self.github_service.get_integration(user)

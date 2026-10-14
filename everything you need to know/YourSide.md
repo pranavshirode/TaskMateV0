@@ -22,6 +22,7 @@ This file lists the things **only you** (the human team) can do: decisions, acco
 | 2 | **Add the SRS PDF to the repo**, e.g. `docs/SRS.pdf` plus a short `docs/SRS-requirements.md` list of numbered requirements. | Requirement-by-requirement coverage can't be checked without it. | [ ] |
 | 3 | **Start labelling data for the model now**, in parallel with the bug fixes (plan in the audit, §4). Agree on the label definitions as a team before labelling. Aim for 800–1,500 labelled requirement sentences, split by brief. | Labelling is human time, not code. It's the slowest part. | [ ] |
 | 4 | **Get a runtime LLM API key** (OpenAI, or another provider supported by `AI_PROVIDER`). Set a monthly spend limit on the provider dashboard. | Every AI test so far used the `mock` provider. The real provider path has **never been verified**. | [ ] |
+| 4b | **For GitHub/Google via MCP:** create a GitHub fine-grained token, and a Google Cloud OAuth client for your @gmail.com (exact steps: `/DEMO.md` §5). Paste the token in TaskMate Settings, and put the Google client ID/secret in `apps/api/.env`. Never commit them. | Real accounts can't be created for you; until then MCP is tested only against a local test server. | [ ] |
 | 5 | **Decide where model weights will live** (Hugging Face Hub private repo, Google Drive, or Git LFS). Don't commit large `.safetensors`/`.bin` files to normal Git. | The app has to load a specific, versioned artifact. | [ ] |
 
 ---

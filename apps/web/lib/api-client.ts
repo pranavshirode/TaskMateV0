@@ -153,6 +153,26 @@ export interface GitHubStatus {
   connected: boolean;
   username?: string;
   scopes?: string[];
+  /** "Sign in with GitHub" is configured on the server; otherwise paste a token. */
+  oauth_available?: boolean;
+}
+
+export interface GoogleStatus {
+  /** The server has Google OAuth credentials. */
+  configured: boolean;
+  connected: boolean;
+  email?: string | null;
+}
+
+export interface MCPServerStatus {
+  key: string;
+  label: string;
+  configured: boolean;
+  connected: boolean;
+  account?: string | null;
+  error?: string | null;
+  tool_count: number;
+  tools: { name: string; permission: "READ" | "WRITE" | "DESTRUCTIVE" }[];
 }
 
 export interface AgentRunRequest {
@@ -680,6 +700,32 @@ export class ApiClient {
     } catch (e) {
       return { data: null, error: e as Error };
     }
+  }
+
+  // ─── Google (per-user OAuth) & MCP ──────────────────────────────────────────
+  getGoogleStatus(): Promise<GoogleStatus> {
+    return this.fetchAPI("/integrations/google") as Promise<GoogleStatus>;
+  }
+
+  getGoogleAuthorizeUrl(): Promise<{ url: string }> {
+    return this.fetchAPI("/integrations/google/authorize") as Promise<{
+      url: string;
+    }>;
+  }
+
+  connectGoogle(code: string, state: string): Promise<GoogleStatus> {
+    return this.fetchAPI("/integrations/google/connect", {
+      method: "POST",
+      body: JSON.stringify({ code, state }),
+    }) as Promise<GoogleStatus>;
+  }
+
+  disconnectGoogle(): Promise<unknown> {
+    return this.fetchAPI("/integrations/google", { method: "DELETE" });
+  }
+
+  getMCPStatus(): Promise<MCPServerStatus[]> {
+    return this.fetchAPI("/integrations/mcp") as Promise<MCPServerStatus[]>;
   }
 
   async runAgent(

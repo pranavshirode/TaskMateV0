@@ -100,10 +100,19 @@ SECRET_KEY=$SECRET
 AI_PROVIDER=mock
 AI_MODEL=gpt-4o-mini
 AGENT_REQUIRE_APPROVAL_FOR_WRITES=true
+# Google Workspace (Gmail, Drive, Docs, Sheets, Slides, Calendar) for the agent, via MCP.
+# Create a "Web application" OAuth client (see DEMO.md) and fill these in; hitme.sh then starts the MCP server.
+#   GOOGLE_OAUTH_CLIENT_ID=...apps.googleusercontent.com
+#   GOOGLE_OAUTH_CLIENT_SECRET=...
 EOF
   info "Created apps/api/.env (SQLite, offline AI, random SECRET_KEY)"
 else
   info "Using existing apps/api/.env"
+fi
+if ! grep -qE "^(TOKEN_ENCRYPTION_KEY|GITHUB_ENCRYPTION_KEY)=." "$API/.env"; then
+  FERNET="$("$PY" -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())')"
+  printf '\n# Added by hitme.sh: encrypts stored GitHub/Google tokens. Keep it; changing it disconnects accounts.\nTOKEN_ENCRYPTION_KEY=%s\n' "$FERNET" >> "$API/.env"
+  info "Added TOKEN_ENCRYPTION_KEY to apps/api/.env (needed to connect GitHub/Google)"
 fi
 AI_MODE="$(cd "$API" && "$PY" -c 'from app.core.config import get_settings as g; s=g(); print(s.AI_PROVIDER.lower() + ("" if s.AI_API_KEY else ":nokey"))')"
 case "$AI_MODE" in
@@ -111,6 +120,23 @@ case "$AI_MODE" in
   *:nokey) warn "AI_PROVIDER is set but AI_API_KEY is empty, so the app will fall back to offline mock answers." ;;
   *) info "AI provider: ${AI_MODE}" ;;
 esac
+
+# ---------------------------------------------------------------- Google Workspace MCP server
+MCP_VENV="$API/.venv-mcp"
+GOOGLE_READY="$(cd "$API" && "$PY" -c 'from app.core.config import get_settings as g; s=g(); print("yes" if s.GOOGLE_OAUTH_CLIENT_ID and s.GOOGLE_OAUTH_CLIENT_SECRET else "no")')"
+if [[ "$GOOGLE_READY" == "yes" ]]; then
+  step "Google Workspace MCP server"
+  if [[ ! -x "$MCP_VENV/bin/workspace-mcp" ]]; then
+    info "Installing workspace-mcp into apps/api/.venv-mcp (first run takes a few minutes)..."
+    python3 -m venv "$MCP_VENV"
+    "$MCP_VENV/bin/python" -m pip install --quiet --upgrade pip
+    "$MCP_VENV/bin/python" -m pip install --quiet "workspace-mcp>=2.1,<3"
+  else
+    info "workspace-mcp installed"
+  fi
+else
+  info "Google Workspace tools: off (set GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET in apps/api/.env to enable)"
+fi
 
 # ---------------------------------------------------------------- database
 step "Database: migrations"
@@ -209,6 +235,22 @@ cleanup() {
   info "Stopped."
 }
 trap cleanup INT TERM EXIT
+
+if [[ "$GOOGLE_READY" == "yes" && -x "$MCP_VENV/bin/workspace-mcp" ]]; then
+  MCP_PORT="$(free_port 8002)" || die "No free port found for the Google MCP server."
+  # Per-user mode: TaskMate sends each user's own Google access token; the server stores nothing.
+  (
+    cd "$API"
+    eval "$("$PY" -c 'import shlex; from app.core.config import get_settings as g; s=g(); print(f"export GOOGLE_OAUTH_CLIENT_ID={shlex.quote(s.GOOGLE_OAUTH_CLIENT_ID)} GOOGLE_OAUTH_CLIENT_SECRET={shlex.quote(s.GOOGLE_OAUTH_CLIENT_SECRET)}")')"
+    export MCP_ENABLE_OAUTH21=true EXTERNAL_OAUTH21_PROVIDER=true WORKSPACE_MCP_STATELESS_MODE=true
+    export WORKSPACE_MCP_PORT="$MCP_PORT" WORKSPACE_MCP_HOST=127.0.0.1 OAUTHLIB_INSECURE_TRANSPORT=1  # local only
+    exec "$MCP_VENV/bin/workspace-mcp" --transport streamable-http --tool-tier core \
+      --tools gmail drive docs sheets calendar slides 2>&1 | sed -u 's/^/[mcp] /'
+  ) &
+  PIDS+=("$!")
+  export MCP_GOOGLE_URL="http://127.0.0.1:$MCP_PORT/mcp"
+  info "Google Workspace MCP server on port $MCP_PORT"
+fi
 
 (cd "$API" && exec "$VENV/bin/uvicorn" app.main:app --reload --host 127.0.0.1 --port "$API_PORT" 2>&1 | sed -u 's/^/[api] /') &
 PIDS+=("$!")
