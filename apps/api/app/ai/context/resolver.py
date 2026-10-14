@@ -1,359 +1,198 @@
-"""Entity resolution — maps AI-extracted names to real database records.
+"""Entity Resolution: Matches natural language entity references to real DB records."""
 
-The LLM produces human-readable names (e.g., "Acme Website").
-This module resolves them to actual database IDs.
+from __future__ import annotations
 
-Resolution rules:
-- Exact match (case-insensitive) → use it
-- Single fuzzy match → use it
-- Multiple matches → return ambiguous (caller must ask user)
-- No match → return not_found
+import difflib
+import re
+from datetime import date, timedelta
+from typing import Any
 
-The resolver NEVER invents IDs or silently picks from ambiguous results.
-"""
-
-import logging
-import uuid
-from dataclasses import dataclass, field
-from datetime import date, datetime, timedelta, timezone
-from enum import Enum
-from typing import Any, Optional
-
-from app.models.user import User
-from app.services.client import ClientService
-from app.services.project import ProjectService
-from app.services.task import TaskService
-
-logger = logging.getLogger(__name__)
+from app.ai.context.builder import AIContext
+from app.models.enums import TaskPriority, TaskStatus
 
 
-class ResolutionStatus(str, Enum):
-    """Result status of entity resolution."""
-    MATCHED = "matched"  # Exactly one match found
-    AMBIGUOUS = "ambiguous"  # Multiple matches found
-    NOT_FOUND = "not_found"  # No matches found
-
-
-@dataclass
-class ResolutionResult:
-    """Result of resolving an entity name to a database record."""
-    status: ResolutionStatus
-    entity_id: Optional[uuid.UUID] = None  # Set when status is MATCHED
-    entity_name: Optional[str] = None  # The resolved entity's actual name
-    candidates: list[dict[str, Any]] = field(default_factory=list)  # Set when AMBIGUOUS
-    original_query: str = ""  # The original name from the AI
-
-
-# Valid values for validation
-VALID_PRIORITIES = {"LOW", "MEDIUM", "HIGH", "URGENT"}
-VALID_STATUSES = {"TODO", "IN_PROGRESS", "REVIEW", "COMPLETED"}
-
-# Common aliases for priorities
-PRIORITY_ALIASES: dict[str, str] = {
-    "low": "LOW",
-    "medium": "MEDIUM",
-    "med": "MEDIUM",
-    "normal": "MEDIUM",
-    "high": "HIGH",
-    "important": "HIGH",
-    "urgent": "URGENT",
-    "critical": "URGENT",
-    "asap": "URGENT",
-}
-
-# Common aliases for statuses
-STATUS_ALIASES: dict[str, str] = {
-    "todo": "TODO",
-    "to do": "TODO",
-    "to-do": "TODO",
-    "not started": "TODO",
-    "in progress": "IN_PROGRESS",
-    "in-progress": "IN_PROGRESS",
-    "wip": "IN_PROGRESS",
-    "working": "IN_PROGRESS",
-    "started": "IN_PROGRESS",
-    "review": "REVIEW",
-    "in review": "REVIEW",
-    "under review": "REVIEW",
-    "completed": "COMPLETED",
-    "done": "COMPLETED",
-    "finished": "COMPLETED",
-    "complete": "COMPLETED",
-}
+class ResolvedEntities:
+    def __init__(
+        self,
+        project_id: str | None = None,
+        project_name: str | None = None,
+        client_id: str | None = None,
+        client_name: str | None = None,
+        task_id: str | None = None,
+        task_title: str | None = None,
+        due_date: date | None = None,
+        status: TaskStatus | None = None,
+        priority: TaskPriority | None = None,
+        ambiguous_matches: list[str] | None = None,
+    ):
+        self.project_id = project_id
+        self.project_name = project_name
+        self.client_id = client_id
+        self.client_name = client_name
+        self.task_id = task_id
+        self.task_title = task_title
+        self.due_date = due_date
+        self.status = status
+        self.priority = priority
+        self.ambiguous_matches = ambiguous_matches or []
 
 
 class EntityResolver:
-    """Resolves AI-extracted entity names to database records.
-
-    Uses existing services (never direct DB access) to search
-    for matching entities within the authenticated user's scope.
-    """
-
-    def __init__(
-        self,
-        task_service: TaskService,
-        project_service: ProjectService,
-        client_service: ClientService,
-    ):
-        self.task_service = task_service
-        self.project_service = project_service
-        self.client_service = client_service
-
-    async def resolve_project(
-        self, name: str, user: User
-    ) -> ResolutionResult:
-        """Resolve a project name to a project ID."""
-        projects, _ = await self.project_service.list_projects(
-            user, skip=0, limit=100
-        )
-
-        # Exact match (case-insensitive)
-        exact = [p for p in projects if p.name.lower() == name.lower()]
-        if len(exact) == 1:
-            return ResolutionResult(
-                status=ResolutionStatus.MATCHED,
-                entity_id=exact[0].id,
-                entity_name=exact[0].name,
-                original_query=name,
-            )
-        if len(exact) > 1:
-            return ResolutionResult(
-                status=ResolutionStatus.AMBIGUOUS,
-                candidates=[{"id": str(p.id), "name": p.name, "status": p.status} for p in exact],
-                original_query=name,
-            )
-
-        # Fuzzy match (contains, case-insensitive)
-        fuzzy = [p for p in projects if name.lower() in p.name.lower() or p.name.lower() in name.lower()]
-        if len(fuzzy) == 1:
-            return ResolutionResult(
-                status=ResolutionStatus.MATCHED,
-                entity_id=fuzzy[0].id,
-                entity_name=fuzzy[0].name,
-                original_query=name,
-            )
-        if len(fuzzy) > 1:
-            return ResolutionResult(
-                status=ResolutionStatus.AMBIGUOUS,
-                candidates=[{"id": str(p.id), "name": p.name, "status": p.status} for p in fuzzy],
-                original_query=name,
-            )
-
-        return ResolutionResult(
-            status=ResolutionStatus.NOT_FOUND,
-            original_query=name,
-        )
-
-    async def resolve_task(
-        self, name: str, user: User
-    ) -> ResolutionResult:
-        """Resolve a task name/title to a task ID."""
-        # Search for tasks matching the name
-        tasks, _ = await self.task_service.list_tasks(
-            user, skip=0, limit=100, search=name
-        )
-
-        if not tasks:
-            # Try broader search with individual words
-            words = name.split()
-            if len(words) > 1:
-                for word in words:
-                    if len(word) > 2:  # Skip very short words
-                        tasks, _ = await self.task_service.list_tasks(
-                            user, skip=0, limit=100, search=word
-                        )
-                        if tasks:
-                            break
-
-        if not tasks:
-            return ResolutionResult(
-                status=ResolutionStatus.NOT_FOUND,
-                original_query=name,
-            )
-
-        # Exact title match
-        exact = [t for t in tasks if t.title.lower() == name.lower()]
-        if len(exact) == 1:
-            return ResolutionResult(
-                status=ResolutionStatus.MATCHED,
-                entity_id=exact[0].id,
-                entity_name=exact[0].title,
-                original_query=name,
-            )
-
-        # Single result from search
-        if len(tasks) == 1:
-            return ResolutionResult(
-                status=ResolutionStatus.MATCHED,
-                entity_id=tasks[0].id,
-                entity_name=tasks[0].title,
-                original_query=name,
-            )
-
-        # Multiple results — ambiguous
-        return ResolutionResult(
-            status=ResolutionStatus.AMBIGUOUS,
-            candidates=[
-                {"id": str(t.id), "title": t.title, "status": t.status, "priority": t.priority}
-                for t in tasks[:5]  # Limit candidates
-            ],
-            original_query=name,
-        )
-
-    async def resolve_client(
-        self, name: str, user: User
-    ) -> ResolutionResult:
-        """Resolve a client name to a client ID."""
-        clients, _ = await self.client_service.list_clients(
-            user, skip=0, limit=100
-        )
-
-        # Exact match (case-insensitive) by name or company_name
-        exact = [
-            c for c in clients
-            if c.name.lower() == name.lower()
-            or (c.company_name and c.company_name.lower() == name.lower())
-        ]
-        if len(exact) == 1:
-            return ResolutionResult(
-                status=ResolutionStatus.MATCHED,
-                entity_id=exact[0].id,
-                entity_name=exact[0].name,
-                original_query=name,
-            )
-        if len(exact) > 1:
-            return ResolutionResult(
-                status=ResolutionStatus.AMBIGUOUS,
-                candidates=[{"id": str(c.id), "name": c.name, "company": c.company_name} for c in exact],
-                original_query=name,
-            )
-
-        # Fuzzy match
-        fuzzy = [
-            c for c in clients
-            if name.lower() in c.name.lower()
-            or c.name.lower() in name.lower()
-            or (c.company_name and (
-                name.lower() in c.company_name.lower()
-                or c.company_name.lower() in name.lower()
-            ))
-        ]
-        if len(fuzzy) == 1:
-            return ResolutionResult(
-                status=ResolutionStatus.MATCHED,
-                entity_id=fuzzy[0].id,
-                entity_name=fuzzy[0].name,
-                original_query=name,
-            )
-        if len(fuzzy) > 1:
-            return ResolutionResult(
-                status=ResolutionStatus.AMBIGUOUS,
-                candidates=[{"id": str(c.id), "name": c.name, "company": c.company_name} for c in fuzzy],
-                original_query=name,
-            )
-
-        return ResolutionResult(
-            status=ResolutionStatus.NOT_FOUND,
-            original_query=name,
-        )
+    """Resolves extracted entity strings against user workspace context."""
 
     @staticmethod
-    def resolve_priority(value: str) -> Optional[str]:
-        """Resolve a priority string to a valid priority value.
-
-        Handles aliases like 'urgent', 'critical', 'important'.
-        Returns None if the value is not recognized.
-        """
-        normalized = value.strip().upper()
-        if normalized in VALID_PRIORITIES:
-            return normalized
-
-        alias = PRIORITY_ALIASES.get(value.strip().lower())
-        if alias:
-            return alias
-
-        return None
-
-    @staticmethod
-    def resolve_status(value: str) -> Optional[str]:
-        """Resolve a status string to a valid status value.
-
-        Handles aliases like 'wip', 'done', 'in progress'.
-        Returns None if the value is not recognized.
-        """
-        normalized = value.strip().upper().replace(" ", "_")
-        if normalized in VALID_STATUSES:
-            return normalized
-
-        alias = STATUS_ALIASES.get(value.strip().lower())
-        if alias:
-            return alias
-
-        return None
-
-    @staticmethod
-    def resolve_date(expression: str) -> Optional[date]:
-        """Resolve a date expression to an actual date.
-
-        Supports:
-        - ISO format: '2026-10-10'
-        - Relative: 'today', 'tomorrow', 'yesterday'
-        - Day names: 'Monday', 'Friday' (next occurrence)
-        - Relative weeks: 'next week', 'end of week'
-        """
-        if not expression:
+    def resolve_date(raw_date: str | None, current_date: date) -> date | None:
+        if not raw_date:
             return None
 
-        expression = expression.strip().lower()
-        today = datetime.now(timezone.utc).date()
+        raw = raw_date.strip().lower()
 
-        # ISO format
-        try:
-            return date.fromisoformat(expression)
-        except ValueError:
-            pass
+        if raw in ["today", "by today", "end of today"]:
+            return current_date
+        if raw in ["tomorrow", "by tomorrow", "end of tomorrow"]:
+            return current_date + timedelta(days=1)
+        if raw in ["in 2 days", "after 2 days", "day after tomorrow"]:
+            return current_date + timedelta(days=2)
+        if raw in ["next week", "in a week", "1 week"]:
+            return current_date + timedelta(days=7)
 
-        # Relative dates
-        relative_map = {
-            "today": today,
-            "tomorrow": today + timedelta(days=1),
-            "yesterday": today - timedelta(days=1),
-            "day after tomorrow": today + timedelta(days=2),
-        }
-        if expression in relative_map:
-            return relative_map[expression]
-
-        # "next week" = next Monday
-        if expression in ("next week", "next monday"):
-            days_ahead = 7 - today.weekday()  # Monday = 0
-            return today + timedelta(days=days_ahead)
-
-        # "end of week" = Friday
-        if expression in ("end of week", "end of the week", "eow"):
-            days_ahead = 4 - today.weekday()  # Friday = 4
-            if days_ahead <= 0:
-                days_ahead += 7
-            return today + timedelta(days=days_ahead)
-
-        # Day names (next occurrence)
-        day_names = {
-            "monday": 0, "tuesday": 1, "wednesday": 2,
-            "thursday": 3, "friday": 4, "saturday": 5, "sunday": 6,
-        }
-        for day_name, day_num in day_names.items():
-            if expression == day_name or expression == f"next {day_name}":
-                days_ahead = day_num - today.weekday()
-                if days_ahead <= 0:
-                    days_ahead += 7
-                return today + timedelta(days=days_ahead)
-
-        # "in X days"
-        if expression.startswith("in ") and expression.endswith(" days"):
+        # Try parsing ISO YYYY-MM-DD
+        iso_match = re.search(r"\b(\d{4})-(\d{1,2})-(\d{1,2})\b", raw)
+        if iso_match:
             try:
-                num_days = int(expression.replace("in ", "").replace(" days", ""))
-                return today + timedelta(days=num_days)
+                return date(
+                    int(iso_match.group(1)),
+                    int(iso_match.group(2)),
+                    int(iso_match.group(3)),
+                )
             except ValueError:
                 pass
 
-        logger.warning("Could not resolve date expression: %s", expression)
         return None
+
+    @staticmethod
+    def resolve_priority(raw_priority: str | None) -> TaskPriority:
+        if not raw_priority:
+            return TaskPriority.MEDIUM
+
+        raw = raw_priority.strip().upper()
+        if "URGENT" in raw or "CRITICAL" in raw:
+            return TaskPriority.URGENT
+        if "HIGH" in raw:
+            return TaskPriority.HIGH
+        if "LOW" in raw:
+            return TaskPriority.LOW
+        return TaskPriority.MEDIUM
+
+    @staticmethod
+    def resolve_status(raw_status: str | None) -> TaskStatus:
+        if not raw_status:
+            return TaskStatus.TODO
+
+        raw = raw_status.strip().upper().replace(" ", "_")
+        if "COMPLETE" in raw or "DONE" in raw:
+            return TaskStatus.COMPLETED
+        if "PROGRESS" in raw or "DOING" in raw:
+            return TaskStatus.IN_PROGRESS
+        if "BLOCK" in raw:
+            return TaskStatus.BLOCKED
+        if "REVIEW" in raw:
+            return TaskStatus.REVIEW
+        if "BACKLOG" in raw:
+            return TaskStatus.BACKLOG
+        return TaskStatus.TODO
+
+    @staticmethod
+    def match_item(
+        query: str, items: list[dict[str, Any]], key: str = "name"
+    ) -> tuple[dict[str, Any] | None, list[str]]:
+        """Match query against items with exact, case-insensitive, substring, and fuzzy matching."""
+        if not query or not items:
+            return None, []
+
+        q = query.strip().lower()
+
+        # 1. Exact match
+        for item in items:
+            name = item.get(key, "").strip().lower()
+            if name == q:
+                return item, []
+
+        # 2. Substring match
+        substring_matches = [
+            item for item in items if q in item.get(key, "").strip().lower() or item.get(key, "").strip().lower() in q
+        ]
+        if len(substring_matches) == 1:
+            return substring_matches[0], []
+        elif len(substring_matches) > 1:
+            # Check if one is a much better match
+            exact_start = [item for item in substring_matches if item.get(key, "").strip().lower().startswith(q)]
+            if len(exact_start) == 1:
+                return exact_start[0], []
+            return None, [item.get(key, "") for item in substring_matches]
+
+        # 3. Fuzzy matching
+        names = [item.get(key, "") for item in items]
+        close_matches = difflib.get_close_matches(query, names, n=3, cutoff=0.6)
+        if len(close_matches) == 1:
+            for item in items:
+                if item.get(key, "") == close_matches[0]:
+                    return item, []
+        elif len(close_matches) > 1:
+            return None, close_matches
+
+        return None, []
+
+    @classmethod
+    def resolve(
+        cls,
+        context: AIContext,
+        project_ref: str | None = None,
+        client_ref: str | None = None,
+        task_ref: str | None = None,
+        raw_date: str | None = None,
+        raw_priority: str | None = None,
+        raw_status: str | None = None,
+    ) -> ResolvedEntities:
+        ambiguities: list[str] = []
+
+        # Project
+        matched_proj = None
+        if project_ref:
+            matched_proj, proj_ambig = cls.match_item(project_ref, context.projects, "name")
+            if proj_ambig:
+                ambiguities.extend([f"Project: {p}" for p in proj_ambig])
+
+        # Client
+        matched_client = None
+        if client_ref:
+            matched_client, client_ambig = cls.match_item(client_ref, context.clients, "name")
+            if client_ambig:
+                ambiguities.extend([f"Client: {c}" for c in client_ambig])
+
+        # Task
+        matched_task = None
+        if task_ref:
+            # Clean task_ref: remove words like "the", "task"
+            clean_task = re.sub(r"^(the\s+)?(task\s+)?", "", task_ref.strip(), flags=re.IGNORECASE).strip()
+            matched_task, task_ambig = cls.match_item(clean_task, context.recent_tasks, "title")
+            if task_ambig:
+                ambiguities.extend([f"Task: {t}" for t in task_ambig])
+
+        # Date, Priority, Status
+        due_date = cls.resolve_date(raw_date, context.current_date)
+        priority = cls.resolve_priority(raw_priority) if raw_priority else None
+        status = cls.resolve_status(raw_status) if raw_status else None
+
+        return ResolvedEntities(
+            project_id=matched_proj["id"] if matched_proj else None,
+            project_name=matched_proj["name"] if matched_proj else None,
+            client_id=matched_client["id"] if matched_client else None,
+            client_name=matched_client["name"] if matched_client else None,
+            task_id=matched_task["id"] if matched_task else None,
+            task_title=matched_task["title"] if matched_task else None,
+            due_date=due_date,
+            status=status,
+            priority=priority,
+            ambiguous_matches=ambiguities,
+        )

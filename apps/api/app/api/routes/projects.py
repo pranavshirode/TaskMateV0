@@ -1,72 +1,83 @@
-import uuid
-from typing import Any, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query, status
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.api.deps import get_current_user
+from app.db.session import get_db
+from app.models.enums import ProjectStatus
 from app.models.user import User
-from app.schemas.project import Project, ProjectCreate, ProjectUpdate, ProjectListResponse
+from app.schemas.common import PaginatedResponse
+from app.schemas.project import (
+    ProjectCreate,
+    ProjectDetailResponse,
+    ProjectResponse,
+    ProjectUpdate,
+)
 from app.services.project import ProjectService
-from app.api.dependencies import get_current_user, get_project_service
 
 router = APIRouter()
 
-@router.get("/", response_model=ProjectListResponse)
+
+@router.get("/", response_model=PaginatedResponse[ProjectResponse])
 async def list_projects(
-    skip: int = Query(0, ge=0),
-    limit: int = Query(20, ge=1, le=100),
-    client_id: Optional[uuid.UUID] = None,
-    status: Optional[str] = None,
-    search: Optional[str] = None,
+    search: str | None = None,
+    status: ProjectStatus | None = None,
+    client_id: str | None = None,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    sort_by: str = Query("created_at"),
+    sort_order: str = Query("desc"),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    project_service: ProjectService = Depends(get_project_service),
-) -> Any:
-    items, total = await project_service.list_projects(
-        current_user, skip=skip, limit=limit, client_id=client_id, status=status, search=search
+):
+    service = ProjectService(db)
+    return await service.list(
+        user_id=current_user.id,
+        search=search,
+        status=status,
+        client_id=client_id,
+        page=page,
+        page_size=page_size,
+        sort_by=sort_by,
+        sort_order=sort_order,
     )
-    return {"items": items, "page": skip // limit + 1, "page_size": limit, "total": total}
 
-@router.post("/", response_model=Project)
+
+@router.post("/", response_model=ProjectResponse, status_code=status.HTTP_201_CREATED)
 async def create_project(
-    project_in: ProjectCreate,
+    data: ProjectCreate,
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    project_service: ProjectService = Depends(get_project_service),
-) -> Any:
-    try:
-        return await project_service.create_project(current_user, project_in)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+):
+    service = ProjectService(db)
+    return await service.create(current_user.id, data)
 
-@router.get("/{project_id}", response_model=Project)
+
+@router.get("/{project_id}", response_model=ProjectDetailResponse)
 async def get_project(
-    project_id: uuid.UUID,
+    project_id: str,
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    project_service: ProjectService = Depends(get_project_service),
-) -> Any:
-    project = await project_service.get_project(project_id, current_user)
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-    return project
+):
+    service = ProjectService(db)
+    return await service.get(current_user.id, project_id)
 
-@router.patch("/{project_id}", response_model=Project)
+
+@router.patch("/{project_id}", response_model=ProjectResponse)
 async def update_project(
-    project_id: uuid.UUID,
-    project_in: ProjectUpdate,
+    project_id: str,
+    data: ProjectUpdate,
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    project_service: ProjectService = Depends(get_project_service),
-) -> Any:
-    try:
-        project = await project_service.update_project(project_id, current_user, project_in)
-        if not project:
-            raise HTTPException(status_code=404, detail="Project not found")
-        return project
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+):
+    service = ProjectService(db)
+    return await service.update(current_user.id, project_id, data)
 
-@router.delete("/{project_id}", response_model=Project)
+
+@router.delete("/{project_id}", response_model=ProjectResponse)
 async def archive_project(
-    project_id: uuid.UUID,
+    project_id: str,
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    project_service: ProjectService = Depends(get_project_service),
-) -> Any:
-    project = await project_service.archive_project(project_id, current_user)
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-    return project
+):
+    service = ProjectService(db)
+    return await service.archive(current_user.id, project_id)

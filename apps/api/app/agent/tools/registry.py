@@ -5,7 +5,6 @@ The agent can only use tools from this registry.
 """
 
 import logging
-from typing import Optional
 
 from app.agent.tools.base import AgentTool, ToolPermission
 from app.ai.providers.base import ToolDefinition
@@ -30,7 +29,7 @@ class ToolRegistry:
         self._tools[tool.name] = tool
         logger.info("Registered tool: %s (%s)", tool.name, tool.permission.value)
 
-    def get(self, tool_name: str) -> Optional[AgentTool]:
+    def get(self, tool_name: str) -> AgentTool | None:
         """Get a tool by name. Returns None if not found."""
         return self._tools.get(tool_name)
 
@@ -40,12 +39,9 @@ class ToolRegistry:
 
     def list_by_permission(self, *permissions: ToolPermission) -> list[AgentTool]:
         """List tools filtered by permission level."""
-        return [
-            tool for tool in self._tools.values()
-            if tool.permission in permissions
-        ]
+        return [tool for tool in self._tools.values() if tool.permission in permissions]
 
-    def get_tool_definitions(self, tool_names: Optional[list[str]] = None) -> list[ToolDefinition]:
+    def get_tool_definitions(self, tool_names: list[str] | None = None) -> list[ToolDefinition]:
         """Get ToolDefinition objects for the AI provider.
 
         Args:
@@ -85,10 +81,10 @@ def create_default_registry() -> ToolRegistry:
     """
     registry = ToolRegistry()
 
-    from app.agent.tools.task_tools import get_task_tools
-    from app.agent.tools.project_tools import get_project_tools
     from app.agent.tools.client_tools import get_client_tools
     from app.agent.tools.github_tools import get_github_tools
+    from app.agent.tools.project_tools import get_project_tools
+    from app.agent.tools.task_tools import get_task_tools
 
     for tool in get_task_tools():
         registry.register(tool)

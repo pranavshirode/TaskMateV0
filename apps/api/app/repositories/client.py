@@ -1,54 +1,60 @@
-import uuid
-from typing import Optional, List
-from sqlalchemy import select, asc, desc
+from sqlalchemy import asc, desc, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.models.client import Client
-from app.schemas.client import ClientCreate, ClientUpdate
+from app.models.enums import ClientStatus
+from app.repositories.base import BaseRepository
 
-class ClientRepository:
+
+class ClientRepository(BaseRepository[Client]):
     def __init__(self, session: AsyncSession):
-        self.session = session
+        super().__init__(Client, session)
 
-    async def get(self, client_id: uuid.UUID, user_id: uuid.UUID) -> Optional[Client]:
-        stmt = select(Client).where(Client.id == client_id, Client.user_id == user_id)
-        result = await self.session.execute(stmt)
-        return result.scalar_one_or_none()
+    async def create(self, data: dict) -> Client:
+        client = Client(**data)
+        self.session.add(client)
+        await self.session.commit()
+        await self.session.refresh(client)
+        return client
 
-    async def list(self, user_id: uuid.UUID, skip: int = 0, limit: int = 20, search: Optional[str] = None) -> List[Client]:
-        stmt = select(Client).where(Client.user_id == user_id)
+    async def update(self, client: Client, data: dict) -> Client:
+        for key, value in data.items():
+            setattr(client, key, value)
+        await self.session.commit()
+        await self.session.refresh(client)
+        return client
+
+    async def list_by_user(
+        self,
+        user_id: str,
+        search: str | None = None,
+        status: ClientStatus | None = None,
+        page: int = 1,
+        page_size: int = 20,
+        sort_by: str = "created_at",
+        sort_order: str = "desc",
+    ) -> tuple[list[Client], int]:
+        query = select(self.model).where(self.model.user_id == user_id)
+
         if search:
-            stmt = stmt.where(Client.name.ilike(f"%{search}%"))
-        stmt = stmt.order_by(desc(Client.created_at)).offset(skip).limit(limit)
-        result = await self.session.execute(stmt)
-        return list(result.scalars().all())
+            query = query.where(
+                or_(
+                    self.model.name.ilike(f"%{search}%"),
+                    self.model.company_name.ilike(f"%{search}%"),
+                )
+            )
 
-    async def count(self, user_id: uuid.UUID, search: Optional[str] = None) -> int:
-        from sqlalchemy import func
-        stmt = select(func.count(Client.id)).where(Client.user_id == user_id)
-        if search:
-            stmt = stmt.where(Client.name.ilike(f"%{search}%"))
-        result = await self.session.execute(stmt)
-        return result.scalar_one()
+        if status:
+            query = query.where(self.model.status == status)
 
-    async def create(self, user_id: uuid.UUID, obj_in: ClientCreate) -> Client:
-        db_obj = Client(**obj_in.model_dump(), user_id=user_id)
-        self.session.add(db_obj)
-        await self.session.commit()
-        await self.session.refresh(db_obj)
-        return db_obj
+        # Sorting — whitelist allowed fields
+        sort_column = getattr(self.model, sort_by, self.model.created_at)
+        if sort_by not in ["created_at", "updated_at", "name"]:
+            sort_column = self.model.created_at
 
-    async def update(self, db_obj: Client, obj_in: ClientUpdate) -> Client:
-        update_data = obj_in.model_dump(exclude_unset=True)
-        for field, value in update_data.items():
-            setattr(db_obj, field, value)
-        await self.session.commit()
-        await self.session.refresh(db_obj)
-        return db_obj
+        if sort_order.lower() == "desc":
+            query = query.order_by(desc(sort_column))
+        else:
+            query = query.order_by(asc(sort_column))
 
-    async def archive(self, db_obj: Client) -> Client:
-        from datetime import datetime, timezone
-        db_obj.status = "ARCHIVED"
-        db_obj.archived_at = datetime.now(timezone.utc)
-        await self.session.commit()
-        await self.session.refresh(db_obj)
-        return db_obj
+        return await self.paginate(query, page, page_size)

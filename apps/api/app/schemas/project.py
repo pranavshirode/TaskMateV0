@@ -1,41 +1,43 @@
-import uuid
-from pydantic import BaseModel
-from datetime import datetime, date
-from typing import Optional
+from datetime import date, datetime
 
-class ProjectBase(BaseModel):
-    name: str
-    description: Optional[str] = None
-    start_date: Optional[date] = None
-    deadline: Optional[date] = None
+from pydantic import BaseModel, ConfigDict, Field
 
-class ProjectCreate(ProjectBase):
-    client_id: Optional[uuid.UUID] = None
+from app.models.enums import ProjectStatus
+
+
+class ProjectCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=255)
+    client_id: str | None = None
+    description: str | None = None
+    status: ProjectStatus = ProjectStatus.PLANNING
+    start_date: date | None = None
+    deadline: date | None = None
+
 
 class ProjectUpdate(BaseModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
-    client_id: Optional[uuid.UUID] = None
-    status: Optional[str] = None
-    start_date: Optional[date] = None
-    deadline: Optional[date] = None
+    name: str | None = Field(None, min_length=1, max_length=255)
+    client_id: str | None = None
+    description: str | None = None
+    status: ProjectStatus | None = None
+    start_date: date | None = None
+    deadline: date | None = None
 
-class ProjectInDBBase(ProjectBase):
-    id: uuid.UUID
-    user_id: uuid.UUID
-    client_id: Optional[uuid.UUID] = None
-    status: str
+
+class ProjectResponse(BaseModel):
+    id: str
+    user_id: str
+    client_id: str | None
+    name: str
+    description: str | None
+    status: ProjectStatus
+    start_date: date | None
+    deadline: date | None
     created_at: datetime
     updated_at: datetime
-    archived_at: Optional[datetime] = None
+    archived_at: datetime | None
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
-class Project(ProjectInDBBase):
-    pass
 
-class ProjectListResponse(BaseModel):
-    items: list[Project]
-    page: int
-    page_size: int
-    total: int
+class ProjectDetailResponse(ProjectResponse):
+    task_summary: dict[str, int]

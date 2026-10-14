@@ -1,67 +1,56 @@
 import uuid
-from datetime import datetime, timezone, date
-from typing import Optional, List
-from sqlalchemy import String, DateTime, Date, Integer, ForeignKey, Table, Column
+from datetime import date, datetime, timezone
+
+from sqlalchemy import Date, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from app.db.base import Base
+from app.models.enums import TaskPriority, TaskStatus
+from app.models.task_label import task_label_associations
 
-task_label_associations = Table(
-    "task_label_associations",
-    Base.metadata,
-    Column("task_id", ForeignKey("tasks.id", ondelete="CASCADE"), primary_key=True),
-    Column("label_id", ForeignKey("task_labels.id", ondelete="CASCADE"), primary_key=True),
-)
-
-class TaskLabel(Base):
-    __tablename__ = "task_labels"
-
-    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
-    name: Mapped[str] = mapped_column(String(100), unique=True, index=True, nullable=False)
-    color: Mapped[Optional[str]] = mapped_column(String(50))
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-
-    tasks = relationship("Task", secondary=task_label_associations, back_populates="labels")
 
 class Task(Base):
     __tablename__ = "tasks"
 
-    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
-    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
-    project_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("projects.id"), index=True)
-    client_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("clients.id"), index=True)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    project_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("projects.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    client_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("clients.id", ondelete="SET NULL"), nullable=True, index=True
+    )
 
-    title: Mapped[str] = mapped_column(String(255), nullable=False)
-    description: Mapped[Optional[str]] = mapped_column(String)
-    status: Mapped[str] = mapped_column(String(50), default="TODO", index=True)
-    priority: Mapped[str] = mapped_column(String(50), default="MEDIUM", index=True)
+    title: Mapped[str] = mapped_column(String(500), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    due_date: Mapped[Optional[date]] = mapped_column(Date, index=True)
-    estimated_minutes: Mapped[Optional[int]] = mapped_column(Integer)
-    actual_minutes: Mapped[Optional[int]] = mapped_column(Integer)
+    status: Mapped[TaskStatus] = mapped_column(
+        SAEnum(TaskStatus), default=TaskStatus.BACKLOG, nullable=False, index=True
+    )
+    priority: Mapped[TaskPriority] = mapped_column(
+        SAEnum(TaskPriority), default=TaskPriority.MEDIUM, nullable=False, index=True
+    )
 
-    source: Mapped[Optional[str]] = mapped_column(String(100))
-    external_reference: Mapped[Optional[str]] = mapped_column(String(255))
+    due_date: Mapped[date | None] = mapped_column(Date, nullable=True, index=True)
+    estimated_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    actual_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    source: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    external_reference: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
-    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
-    archived_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc)
+    )
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
-    user = relationship("User", back_populates="tasks")
-    project = relationship("Project", back_populates="tasks")
-    client = relationship("Client", back_populates="tasks")
-    labels = relationship("TaskLabel", secondary=task_label_associations, back_populates="tasks")
-    events = relationship("TaskEvent", back_populates="task", cascade="all, delete-orphan")
-
-class TaskEvent(Base):
-    __tablename__ = "task_events"
-
-    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
-    task_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tasks.id", ondelete="CASCADE"), nullable=False, index=True)
-    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
-    event_type: Mapped[str] = mapped_column(String(100), nullable=False)
-    old_value: Mapped[Optional[str]] = mapped_column(String)
-    new_value: Mapped[Optional[str]] = mapped_column(String)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-
-    task = relationship("Task", back_populates="events")
+    # Relationships
+    user: Mapped["User"] = relationship("User", back_populates="tasks")
+    project: Mapped["Project"] = relationship("Project", back_populates="tasks")
+    client: Mapped["Client"] = relationship("Client")
+    labels: Mapped[list["TaskLabel"]] = relationship("TaskLabel", secondary=task_label_associations, lazy="select")
+    events: Mapped[list["TaskEvent"]] = relationship("TaskEvent", back_populates="task", lazy="select")

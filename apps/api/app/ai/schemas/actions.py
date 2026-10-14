@@ -1,121 +1,76 @@
-"""Action schemas for AI-driven operations.
+"""Action schemas for validated, resolved AI actions ready for execution."""
 
-Actions represent validated, executable operations that the
-AI orchestrator will perform via existing business services.
-"""
+from __future__ import annotations
 
-import uuid
+import enum
 from datetime import date
-from typing import Any, Optional
 
 from pydantic import BaseModel, Field
 
-from app.ai.schemas.intent import IntentType
+
+class ActionType(str, enum.Enum):
+    CREATE_TASK = "CREATE_TASK"
+    UPDATE_TASK = "UPDATE_TASK"
+    CHANGE_TASK_STATUS = "CHANGE_TASK_STATUS"
+    CHANGE_TASK_PRIORITY = "CHANGE_TASK_PRIORITY"
+    SEARCH_TASKS = "SEARCH_TASKS"
+    GET_TODAY_DASHBOARD = "GET_TODAY_DASHBOARD"
+    GET_OVERDUE_TASKS = "GET_OVERDUE_TASKS"
+    GET_PROJECT_INFO = "GET_PROJECT_INFO"
+    GET_CLIENT_INFO = "GET_CLIENT_INFO"
+    RESPOND = "RESPOND"  # Just answer with text, no mutation
+    CLARIFY = "CLARIFY"  # Ask user for clarification
 
 
-class ActionBase(BaseModel):
-    """Base class for all AI actions."""
-    action_type: IntentType = Field(description="The type of action to execute")
+class CreateTaskAction(BaseModel):
+    title: str
+    description: str | None = None
+    project_id: str | None = None
+    client_id: str | None = None
+    priority: str = "MEDIUM"
+    status: str = "TODO"
+    due_date: date | None = None
+    labels: list[str] = Field(default_factory=list)
+    estimated_minutes: int | None = None
 
 
-class CreateTaskAction(ActionBase):
-    """Parameters for creating a new task."""
-    action_type: IntentType = IntentType.CREATE_TASK
-    title: str = Field(description="Task title")
-    description: Optional[str] = None
-    project_id: Optional[uuid.UUID] = None
-    client_id: Optional[uuid.UUID] = None
-    priority: str = Field(default="MEDIUM")
-    due_date: Optional[date] = None
-    estimated_minutes: Optional[int] = None
-    source: str = Field(default="ai_assistant")
+class UpdateTaskAction(BaseModel):
+    task_id: str
+    title: str | None = None
+    description: str | None = None
+    priority: str | None = None
+    status: str | None = None
+    due_date: date | None = None
 
 
-class UpdateTaskAction(ActionBase):
-    """Parameters for updating an existing task."""
-    action_type: IntentType = IntentType.UPDATE_TASK
-    task_id: uuid.UUID
-    title: Optional[str] = None
-    description: Optional[str] = None
-    project_id: Optional[uuid.UUID] = None
-    client_id: Optional[uuid.UUID] = None
-    priority: Optional[str] = None
-    due_date: Optional[date] = None
-    estimated_minutes: Optional[int] = None
+class ChangeTaskStatusAction(BaseModel):
+    task_id: str
+    status: str
 
 
-class CompleteTaskAction(ActionBase):
-    """Parameters for completing a task."""
-    action_type: IntentType = IntentType.COMPLETE_TASK
-    task_id: uuid.UUID
+class ChangeTaskPriorityAction(BaseModel):
+    task_id: str
+    priority: str
 
 
-class ChangeTaskStatusAction(ActionBase):
-    """Parameters for changing task status."""
-    action_type: IntentType = IntentType.CHANGE_TASK_STATUS
-    task_id: uuid.UUID
-    new_status: str = Field(description="New status: TODO, IN_PROGRESS, REVIEW, COMPLETED")
+class SearchTasksAction(BaseModel):
+    search: str | None = None
+    status: str | None = None
+    priority: str | None = None
+    project_id: str | None = None
+    client_id: str | None = None
 
 
-class ChangeTaskPriorityAction(ActionBase):
-    """Parameters for changing task priority."""
-    action_type: IntentType = IntentType.CHANGE_TASK_PRIORITY
-    task_id: uuid.UUID
-    new_priority: str = Field(description="New priority: LOW, MEDIUM, HIGH, URGENT")
+class GetProjectInfoAction(BaseModel):
+    project_id: str
 
 
-class SearchTasksAction(ActionBase):
-    """Parameters for searching tasks."""
-    action_type: IntentType = IntentType.SEARCH_TASKS
-    search_query: Optional[str] = None
-    project_id: Optional[uuid.UUID] = None
-    client_id: Optional[uuid.UUID] = None
-    status: Optional[str] = None
-    priority: Optional[str] = None
-    label: Optional[str] = None
+class GetClientInfoAction(BaseModel):
+    client_id: str
 
 
-class GetTodayTasksAction(ActionBase):
-    """Parameters for getting today's tasks."""
-    action_type: IntentType = IntentType.GET_TODAY_TASKS
+class ResolvedAction(BaseModel):
+    """An action that has been validated and resolved against the database."""
 
-
-class GetOverdueTasksAction(ActionBase):
-    """Parameters for getting overdue tasks."""
-    action_type: IntentType = IntentType.GET_OVERDUE_TASKS
-
-
-class GetProjectInfoAction(ActionBase):
-    """Parameters for getting project information."""
-    action_type: IntentType = IntentType.GET_PROJECT_INFO
-    project_id: Optional[uuid.UUID] = None
-    project_name: Optional[str] = None
-
-
-class GetClientInfoAction(ActionBase):
-    """Parameters for getting client information."""
-    action_type: IntentType = IntentType.GET_CLIENT_INFO
-    client_id: Optional[uuid.UUID] = None
-    client_name: Optional[str] = None
-
-
-class GeneralQuestionAction(ActionBase):
-    """Parameters for answering a general question."""
-    action_type: IntentType = IntentType.GENERAL_QUESTION
-    question: str = Field(description="The user's question")
-
-
-# Type alias for any action
-ActionType = (
-    CreateTaskAction
-    | UpdateTaskAction
-    | CompleteTaskAction
-    | ChangeTaskStatusAction
-    | ChangeTaskPriorityAction
-    | SearchTasksAction
-    | GetTodayTasksAction
-    | GetOverdueTasksAction
-    | GetProjectInfoAction
-    | GetClientInfoAction
-    | GeneralQuestionAction
-)
+    type: ActionType
+    parameters: dict = Field(default_factory=dict)

@@ -1,14 +1,11 @@
 """Service layer for GitHub integration."""
 
-import uuid
-from typing import Optional
-
-from app.core.config import settings
-from app.core.encryption import encrypt_token, decrypt_token
-from app.models.user import User
-from app.models.github_integration import GitHubIntegration
-from app.repositories.github_integration import GitHubIntegrationRepository
+from app.core.config import get_settings
+from app.core.encryption import decrypt_token, encrypt_token
 from app.integrations.github.client import GitHubClient
+from app.models.github_integration import GitHubIntegration
+from app.models.user import User
+from app.repositories.github_integration import GitHubIntegrationRepository
 
 
 class GitHubIntegrationService:
@@ -17,12 +14,13 @@ class GitHubIntegrationService:
     def __init__(self, repository: GitHubIntegrationRepository):
         self.repository = repository
 
-    async def get_integration(self, user: User) -> Optional[GitHubIntegration]:
+    async def get_integration(self, user: User) -> GitHubIntegration | None:
         """Get the user's GitHub integration status without secrets."""
         return await self.repository.get_by_user_id(user.id)
 
-    async def connect(self, user: User, access_token: str, scopes: Optional[str] = None) -> GitHubIntegration:
+    async def connect(self, user: User, access_token: str, scopes: str | None = None) -> GitHubIntegration:
         """Connect or update a GitHub integration using an access token."""
+        settings = get_settings()
         # 1. Instantiate client to test token and get user info
         client = GitHubClient(access_token)
         github_user = await client.get_authenticated_user()
@@ -46,8 +44,9 @@ class GitHubIntegrationService:
         """Disconnect the user's GitHub integration."""
         return await self.repository.delete_by_user_id(user.id)
 
-    async def get_decrypted_token(self, user: User) -> Optional[str]:
+    async def get_decrypted_token(self, user: User) -> str | None:
         """Get the decrypted access token for the user."""
+        settings = get_settings()
         integration = await self.repository.get_by_user_id(user.id)
         if not integration:
             return None
@@ -59,13 +58,12 @@ class GitHubIntegrationService:
 
     async def create_client(self, user: User) -> GitHubClient:
         """Create a GitHub API client for the user.
-        
+
         Raises:
             ValueError: If the user hasn't connected GitHub or if decryption fails.
         """
         token = await self.get_decrypted_token(user)
         if not token:
             raise ValueError("GitHub account is not connected")
-        
-        return GitHubClient(token)
 
+        return GitHubClient(token)

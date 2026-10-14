@@ -4,8 +4,8 @@ These tools wrap ProjectService methods, allowing the agent
 to read and list projects via natural language.
 """
 
-import uuid
 import logging
+import uuid
 from typing import Any
 
 from app.agent.tools.base import AgentTool, ToolContext, ToolPermission, ToolResult
@@ -69,9 +69,7 @@ class ProjectListTool(AgentTool):
 
     @property
     def description(self) -> str:
-        return (
-            "List and search projects with optional filters: search query, status, client_id."
-        )
+        return "List and search projects with optional filters: search query, status, client_id."
 
     @property
     def input_schema(self) -> dict[str, Any]:
@@ -113,11 +111,13 @@ class ProjectListTool(AgentTool):
                 limit=limit,
                 **input_data,
             )
-            return ToolResult.ok({
-                "projects": [p.model_dump(mode="json") for p in items],
-                "total": total,
-                "returned": len(items),
-            })
+            return ToolResult.ok(
+                {
+                    "projects": [p.model_dump(mode="json") for p in items],
+                    "total": total,
+                    "returned": len(items),
+                }
+            )
         except Exception as e:
             logger.exception("project.list failed")
             return ToolResult.fail("INTERNAL_ERROR", f"Failed to list projects: {e}")
@@ -126,4 +126,3 @@ class ProjectListTool(AgentTool):
 def get_project_tools() -> list[AgentTool]:
     """Return all project tools for registry registration."""
     return [ProjectGetTool(), ProjectListTool()]
-

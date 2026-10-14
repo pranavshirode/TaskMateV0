@@ -83,10 +83,12 @@ class GitHubRepositoryListTool(AgentTool):
         try:
             client = await github_service.create_client(context.user)
             repos = await client.list_repositories()
-            return ToolResult.ok({
-                "repositories": [repo.model_dump(mode="json") for repo in repos],
-                "count": len(repos),
-            })
+            return ToolResult.ok(
+                {
+                    "repositories": [repo.model_dump(mode="json") for repo in repos],
+                    "count": len(repos),
+                }
+            )
         except Exception as e:
             logger.exception("github.repository.list failed")
             return ToolResult.fail("EXTERNAL_ERROR", f"Failed to list repositories: {e}")
@@ -126,9 +128,7 @@ class GitHubIssueGetTool(AgentTool):
 
         try:
             client = await github_service.create_client(context.user)
-            issue = await client.get_issue(
-                input_data["owner"], input_data["repo"], input_data["issue_number"]
-            )
+            issue = await client.get_issue(input_data["owner"], input_data["repo"], input_data["issue_number"])
             return ToolResult.ok(issue.model_dump(mode="json"))
         except Exception as e:
             logger.exception("github.issue.get failed")
@@ -175,10 +175,12 @@ class GitHubIssueListTool(AgentTool):
             client = await github_service.create_client(context.user)
             state = input_data.get("state", "open")
             issues = await client.list_issues(input_data["owner"], input_data["repo"], state)
-            return ToolResult.ok({
-                "issues": [issue.model_dump(mode="json") for issue in issues],
-                "count": len(issues),
-            })
+            return ToolResult.ok(
+                {
+                    "issues": [issue.model_dump(mode="json") for issue in issues],
+                    "count": len(issues),
+                }
+            )
         except Exception as e:
             logger.exception("github.issue.list failed")
             return ToolResult.fail("EXTERNAL_ERROR", f"Failed to list issues: {e}")
@@ -218,9 +220,7 @@ class GitHubPullRequestGetTool(AgentTool):
 
         try:
             client = await github_service.create_client(context.user)
-            pr = await client.get_pull_request(
-                input_data["owner"], input_data["repo"], input_data["pr_number"]
-            )
+            pr = await client.get_pull_request(input_data["owner"], input_data["repo"], input_data["pr_number"])
             return ToolResult.ok(pr.model_dump(mode="json"))
         except Exception as e:
             logger.exception("github.pull_request.get failed")
@@ -267,10 +267,12 @@ class GitHubPullRequestListTool(AgentTool):
             client = await github_service.create_client(context.user)
             state = input_data.get("state", "open")
             prs = await client.list_pull_requests(input_data["owner"], input_data["repo"], state)
-            return ToolResult.ok({
-                "pull_requests": [pr.model_dump(mode="json") for pr in prs],
-                "count": len(prs),
-            })
+            return ToolResult.ok(
+                {
+                    "pull_requests": [pr.model_dump(mode="json") for pr in prs],
+                    "count": len(prs),
+                }
+            )
         except Exception as e:
             logger.exception("github.pull_request.list failed")
             return ToolResult.fail("EXTERNAL_ERROR", f"Failed to list PRs: {e}")
@@ -286,4 +288,3 @@ def get_github_tools() -> list[AgentTool]:
         GitHubPullRequestGetTool(),
         GitHubPullRequestListTool(),
     ]
-

@@ -1,17 +1,18 @@
-"""Abstract AI provider interface.
+"""Base AI provider interface.
 
-All AI providers must implement this interface to ensure
-the application is provider-independent.
+All AI providers must implement this interface. The application code
+uses only this abstraction — never provider-specific APIs directly.
 """
 
-from abc import ABC, abstractmethod
+from __future__ import annotations
+
+import abc
+import enum
 from dataclasses import dataclass, field
-from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 
-class MessageRole(str, Enum):
-    """Message roles for AI conversations."""
+class MessageRole(str, enum.Enum):
     SYSTEM = "system"
     USER = "user"
     ASSISTANT = "assistant"
@@ -21,14 +22,16 @@ class MessageRole(str, Enum):
 @dataclass
 class ToolDefinition:
     """Definition of a tool the LLM can call."""
+
     name: str
     description: str
-    parameters: dict[str, Any]  # JSON Schema
+    parameters: dict[str, Any]
 
 
 @dataclass
 class ToolCallRequest:
     """A tool call requested by the LLM."""
+
     id: str
     name: str
     arguments: dict[str, Any]
@@ -36,36 +39,32 @@ class ToolCallRequest:
 
 @dataclass
 class AIMessage:
-    """A single message in an AI conversation."""
-    role: MessageRole
+    """A message in the conversation sent to the AI provider."""
+
+    role: str  # "system", "user", "assistant", "tool"
     content: str
     tool_calls: list[ToolCallRequest] = field(default_factory=list)
-    tool_call_id: Optional[str] = None  # For TOOL role messages
-    name: Optional[str] = None  # Tool name for TOOL role messages
-
-
-@dataclass
-class TokenUsage:
-    """Token usage statistics from an AI request."""
-    input_tokens: int = 0
-    output_tokens: int = 0
-    total_tokens: int = 0
+    tool_call_id: str | None = None
+    name: str | None = None
 
 
 @dataclass
 class AIResponse:
-    """Response from an AI provider."""
+    """Standardised response from any AI provider."""
+
     content: str
-    usage: TokenUsage = field(default_factory=TokenUsage)
     model: str = ""
+    input_tokens: int = 0
+    output_tokens: int = 0
+    total_tokens: int = 0
+    latency_ms: int = 0
     finish_reason: str = ""
     tool_calls: list[ToolCallRequest] = field(default_factory=list)
-    raw_response: Any = None  # Provider-specific, never expose to user
+    raw: dict = field(default_factory=dict)
 
 
 @dataclass
 class ModelInfo:
-    """Information about the current AI model."""
     provider: str
     model: str
     max_tokens: int
@@ -74,56 +73,34 @@ class ModelInfo:
     supports_streaming: bool = False
 
 
-class AIProvider(ABC):
-    """Abstract base class for all AI providers.
+class BaseAIProvider(abc.ABC):
+    """Abstract base class for AI providers.
 
-    Implementations must handle:
+    Supports:
     - Text generation
-    - Structured output (JSON mode)
-    - Tool/function calling
-    - Timeout and retry logic
-    - Error mapping to AIError subclasses
-    - Token usage tracking
-
-    Future capabilities (not yet required):
-    - Streaming responses
-    - Local model inference
+    - Structured JSON output
+    - Tool calling, streaming, local models
     """
 
-    @abstractmethod
+    @abc.abstractmethod
     async def generate(
         self,
         messages: list[AIMessage],
         *,
-        response_format: Optional[dict[str, Any]] = None,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        model: Optional[str] = None,
-        tools: Optional[list[ToolDefinition]] = None,
-        tool_choice: Optional[str] = None,
+        response_format: dict[str, Any] | None = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        model: str | None = None,
+        tools: list[ToolDefinition] | None = None,
+        tool_choice: str | None = None,
     ) -> AIResponse:
-        """Generate a completion from the AI model.
-
-        Args:
-            messages: Conversation messages.
-            response_format: Optional JSON schema for structured output.
-            temperature: Override default temperature.
-            max_tokens: Override default max tokens.
-            model: Override default model.
-            tools: Optional list of tool definitions for tool calling.
-            tool_choice: Optional tool choice strategy ('auto', 'none', or specific tool name).
-
-        Returns:
-            AIResponse with content, usage stats, and optional tool_calls.
-        """
+        """Generate a completion from the AI model."""
         ...
 
-    @abstractmethod
-    def get_model_info(self) -> ModelInfo:
-        """Return information about the current model configuration."""
-        ...
-
-    @abstractmethod
+    @abc.abstractmethod
     async def health_check(self) -> bool:
         """Check if the provider is available and configured."""
         ...
+
+
+AIProvider = BaseAIProvider

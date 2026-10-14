@@ -6,25 +6,25 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     APP_ENV: str = "development"
     APP_NAME: str = "TaskMate API"
-    APP_VERSION: str = "0.1.0"
+    APP_VERSION: str = "1.0.0"
     BACKEND_HOST: str = "0.0.0.0"
     BACKEND_PORT: int = 8000
     DATABASE_URL: str = "sqlite+aiosqlite:///:memory:"
     CORS_ORIGINS: list[str] = ["http://localhost:3000"]
     LOG_LEVEL: str = "INFO"
-    SECRET_KEY: str = "development-only-change-me"
+    SECRET_KEY: str = "taskmate-dev-secret-key-change-in-production"
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7 # 7 days
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
 
-    # AI Provider Configuration
+    # AI Configuration
     AI_PROVIDER: str = "openai"
     AI_MODEL: str = "gpt-4o-mini"
-    AI_API_KEY: str = ""  # Required for AI features
+    AI_API_KEY: str = ""
     AI_BASE_URL: str | None = None
-    AI_TIMEOUT: int = 30  # seconds
-    AI_MAX_RETRIES: int = 3
-    AI_TEMPERATURE: float = 0.1  # Low temperature for structured outputs
-    AI_MAX_TOKENS: int = 2000
+    AI_TIMEOUT: int = 30
+    AI_MAX_RETRIES: int = 2
+    AI_TEMPERATURE: float = 0.1
+    AI_MAX_TOKENS: int = 2048
     AI_RATE_LIMIT_PER_MINUTE: int = 30
 
     # Agent Configuration

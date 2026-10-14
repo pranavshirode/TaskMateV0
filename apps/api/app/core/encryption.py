@@ -5,6 +5,7 @@ Never expose encryption keys or decrypted tokens to the LLM.
 """
 
 import logging
+
 from cryptography.fernet import Fernet, InvalidToken
 
 logger = logging.getLogger(__name__)

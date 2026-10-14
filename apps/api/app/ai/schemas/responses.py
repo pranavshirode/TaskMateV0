@@ -1,114 +1,73 @@
-"""Response schemas for AI operations.
+"""Response schemas for the AI chat API."""
 
-These schemas define what the API returns to the frontend.
-No internal reasoning, raw prompts, or chain-of-thought is exposed.
-"""
+from __future__ import annotations
 
-import uuid
 from datetime import datetime
-from typing import Any, Optional
 
 from pydantic import BaseModel, Field
 
-from app.ai.schemas.intent import IntentType
-
 
 class AIActionResult(BaseModel):
-    """Result of executing an AI-determined action."""
-    action_type: IntentType
+    """Result of an AI-executed action."""
+
+    type: str
     success: bool
-    data: Optional[dict[str, Any]] = None
-    error: Optional[str] = None
-
-
-class ContextSummary(BaseModel):
-    """Summary of context used for the AI response.
-
-    Displayed to the user to build trust. Does not
-    expose raw data sent to the LLM.
-    """
-    task_count: int = 0
-    project_count: int = 0
-    overdue_count: int = 0
-    due_today_count: int = 0
+    message: str
+    data: dict | None = None  # e.g. created task data
 
 
 class AIChatRequest(BaseModel):
-    """Request schema for the AI chat endpoint."""
-    message: str = Field(
-        min_length=1,
-        max_length=2000,
-        description="User's natural language message"
-    )
-    conversation_id: Optional[uuid.UUID] = Field(
-        None,
-        description="Optional conversation ID for history continuity"
-    )
+    """Request body for POST /api/v1/ai/chat."""
+
+    message: str = Field(..., min_length=1, max_length=4000)
+    conversation_id: str | None = None
 
 
 class AIChatResponse(BaseModel):
-    """Response from the AI chat endpoint.
+    """Response body from POST /api/v1/ai/chat."""
 
-    Contains only user-facing information. No internal
-    reasoning, prompts, or chain-of-thought.
-    """
-    message: str = Field(description="AI's natural language response")
-    intent: Optional[IntentType] = Field(None, description="Detected intent")
-    confidence: Optional[float] = Field(None, description="Intent confidence")
-    actions: list[AIActionResult] = Field(
-        default_factory=list,
-        description="Actions performed"
-    )
-    conversation_id: uuid.UUID = Field(description="Conversation ID")
-    context_summary: Optional[ContextSummary] = Field(
-        None,
-        description="Summary of context used"
-    )
-    requires_clarification: bool = Field(
-        default=False,
-        description="Whether the AI needs more information"
-    )
-    suggestions: list[str] = Field(
-        default_factory=list,
-        description="Suggested follow-up actions or clarifications"
-    )
+    message: str
+    conversation_id: str
+    intent: str | None = None
+    confidence: float | None = None
+    actions: list[AIActionResult] = Field(default_factory=list)
+    context_summary: dict | None = None  # e.g. {"tasks": 3, "projects": 2}
+
+
+class ConversationResponse(BaseModel):
+    """A conversation summary."""
+
+    id: str
+    created_at: datetime
+    updated_at: datetime
+    message_count: int = 0
+    last_message: str | None = None
 
 
 class ConversationMessageResponse(BaseModel):
     """A single message in a conversation."""
-    id: uuid.UUID
+
+    id: str
     role: str
     content: str
-    intent: Optional[str] = None
     created_at: datetime
 
-    model_config = {"from_attributes": True}
 
-
-class ConversationResponse(BaseModel):
+class ConversationDetailResponse(BaseModel):
     """A conversation with its messages."""
-    id: uuid.UUID
-    title: Optional[str] = None
+
+    id: str
     created_at: datetime
     updated_at: datetime
-    messages: list[ConversationMessageResponse] = []
-
-    model_config = {"from_attributes": True}
-
-
-class ConversationListResponse(BaseModel):
-    """List of conversations."""
-    items: list[ConversationResponse]
-    total: int
+    messages: list[ConversationMessageResponse] = Field(default_factory=list)
 
 
 class AIUsageResponse(BaseModel):
-    """AI usage statistics for the current user."""
+    """AI usage statistics."""
+
     total_requests: int = 0
     total_input_tokens: int = 0
     total_output_tokens: int = 0
-    total_tokens: int = 0
     requests_today: int = 0
-    most_common_intent: Optional[str] = None
-    average_latency_ms: Optional[float] = None
-    error_rate: Optional[float] = None
+    tokens_today: int = 0
+    by_intent: dict[str, int] = Field(default_factory=dict)

@@ -1,28 +1,39 @@
-from app.db.base import Base
-from app.models.user import User
-from app.models.client import Client
-from app.models.project import Project
-from app.models.repository import Repository
-from app.models.task import Task, TaskLabel, TaskEvent, task_label_associations
-from app.models.conversation import Conversation, ConversationMessage
-from app.models.ai_log import AIRequestLog
-from app.models.agent_execution import AgentExecution, AgentExecutionStep
-from app.models.github_integration import GitHubIntegration
-
-__all__ = [
-    "Base",
-    "User",
-    "Client",
-    "Project",
-    "Repository",
-    "Task",
-    "TaskLabel",
-    "TaskEvent",
-    "task_label_associations",
-    "Conversation",
-    "ConversationMessage",
-    "AIRequestLog",
-    "AgentExecution",
-    "AgentExecutionStep",
-    "GitHubIntegration",
-]
+from app.db.base import Base  # noqa: F401
+from app.models.agent_execution import AgentExecution, AgentExecutionStep  # noqa: F401
+from app.models.ai import AIRequestLog, Conversation, ConversationMessage  # noqa: F401
+from app.models.client import Client  # noqa: F401
+from app.models.enums import (  # noqa: F401
+    AnalysisStatus,
+    AutomationType,
+    ClarificationStatus,
+    ClientRequestStatus,
+    ClientRequestType,
+    ClientStatus,
+    ContextCategory,
+    ProjectStatus,
+    RepositoryProvider,
+    RequirementCategory,
+    RequirementStatus,
+    TaskEventType,
+    TaskPriority,
+    TaskStatus,
+)
+from app.models.github_integration import GitHubIntegration  # noqa: F401
+from app.models.project import Project  # noqa: F401
+from app.models.repository import Repository  # noqa: F401
+from app.models.requirements import (  # noqa: F401
+    AnalysisRevision,
+    AutomationExecution,
+    ClarificationQuestion,
+    ClientRequest,
+    ProjectContextNote,
+    Requirement,
+    RequirementAssumption,
+    RequirementRisk,
+    RequirementsAnalysis,
+    RequirementTaskLink,
+)
+from app.models.task import Task  # noqa: F401
+from app.models.task_event import TaskEvent  # noqa: F401
+from app.models.task_label import TaskLabel, task_label_associations  # noqa: F401
+from app.models.user import User  # noqa: F401

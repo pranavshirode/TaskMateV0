@@ -1,70 +1,84 @@
-import uuid
-from pydantic import BaseModel
-from datetime import datetime, date
-from typing import Optional
+from datetime import date, datetime
 
-class TaskBase(BaseModel):
-    title: str
-    description: Optional[str] = None
-    status: str = "TODO"
-    priority: str = "MEDIUM"
-    due_date: Optional[date] = None
-    estimated_minutes: Optional[int] = None
-    actual_minutes: Optional[int] = None
-    source: Optional[str] = None
-    external_reference: Optional[str] = None
+from pydantic import BaseModel, ConfigDict, Field
 
-class TaskCreate(TaskBase):
-    project_id: Optional[uuid.UUID] = None
-    client_id: Optional[uuid.UUID] = None
+from app.models.enums import TaskPriority, TaskStatus
+from app.schemas.task_label import TaskLabelResponse
+
+
+class TaskCreate(BaseModel):
+    title: str = Field(..., min_length=1, max_length=500)
+    description: str | None = None
+    project_id: str | None = None
+    client_id: str | None = None
+    status: TaskStatus = TaskStatus.TODO
+    priority: TaskPriority = TaskPriority.MEDIUM
+    due_date: date | None = None
+    estimated_minutes: int | None = Field(None, ge=0)
+    labels: list[str] | None = None
+
 
 class TaskUpdate(BaseModel):
-    title: Optional[str] = None
-    description: Optional[str] = None
-    project_id: Optional[uuid.UUID] = None
-    client_id: Optional[uuid.UUID] = None
-    status: Optional[str] = None
-    priority: Optional[str] = None
-    due_date: Optional[date] = None
-    estimated_minutes: Optional[int] = None
-    actual_minutes: Optional[int] = None
+    title: str | None = Field(None, min_length=1, max_length=500)
+    description: str | None = None
+    project_id: str | None = None
+    client_id: str | None = None
+    status: TaskStatus | None = None
+    priority: TaskPriority | None = None
+    due_date: date | None = None
+    estimated_minutes: int | None = Field(None, ge=0)
+    labels: list[str] | None = None
+
 
 class TaskStatusUpdate(BaseModel):
-    status: str
+    status: TaskStatus
+
 
 class TaskPriorityUpdate(BaseModel):
-    priority: str
+    priority: TaskPriority
 
-class TaskInDBBase(TaskBase):
-    id: uuid.UUID
-    user_id: uuid.UUID
-    project_id: Optional[uuid.UUID] = None
-    client_id: Optional[uuid.UUID] = None
+
+class TaskResponse(BaseModel):
+    id: str
+    user_id: str
+    project_id: str | None
+    client_id: str | None
+    title: str
+    description: str | None
+    status: TaskStatus
+    priority: TaskPriority
+    due_date: date | None
+    estimated_minutes: int | None
+    actual_minutes: int | None
+    source: str | None
+    external_reference: str | None
     created_at: datetime
     updated_at: datetime
-    completed_at: Optional[datetime] = None
-    archived_at: Optional[datetime] = None
+    completed_at: datetime | None
+    archived_at: datetime | None
+    labels: list[TaskLabelResponse]
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
-class Task(TaskInDBBase):
-    pass
 
 class TaskListResponse(BaseModel):
-    items: list[Task]
-    page: int
-    page_size: int
-    total: int
-
-class TaskEventBase(BaseModel):
-    event_type: str
-    old_value: Optional[str] = None
-    new_value: Optional[str] = None
-
-class TaskEvent(TaskEventBase):
-    id: uuid.UUID
-    task_id: uuid.UUID
-    user_id: uuid.UUID
+    id: str
+    user_id: str
+    project_id: str | None
+    client_id: str | None
+    title: str
+    description: str | None
+    status: TaskStatus
+    priority: TaskPriority
+    due_date: date | None
+    estimated_minutes: int | None
+    actual_minutes: int | None
+    source: str | None
+    external_reference: str | None
     created_at: datetime
+    updated_at: datetime
+    completed_at: datetime | None
+    archived_at: datetime | None
+    labels: list[TaskLabelResponse]
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)

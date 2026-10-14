@@ -1,13 +1,15 @@
-from pydantic import BaseModel
-from typing import List, Optional
 from datetime import date
-from app.schemas.task import Task
-from app.schemas.project import Project
 
-class DashboardTodayResponse(BaseModel):
+from pydantic import BaseModel
+
+from app.schemas.project import ProjectResponse
+from app.schemas.task import TaskResponse
+
+
+class DashboardResponse(BaseModel):
     date: date
-    due_today: List[Task]
-    overdue: List[Task]
-    high_priority: List[Task]
-    recently_updated: List[Task]
-    active_projects: List[Project]
+    due_today: list[TaskResponse]
+    overdue: list[TaskResponse]
+    high_priority: list[TaskResponse]
+    active_projects: list[ProjectResponse]
+    recently_updated: list[TaskResponse]

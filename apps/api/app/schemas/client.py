@@ -1,41 +1,38 @@
-import uuid
-from pydantic import BaseModel, EmailStr
 from datetime import datetime
-from typing import Optional
 
-class ClientBase(BaseModel):
-    name: str
-    company_name: Optional[str] = None
-    email: Optional[EmailStr] = None
-    phone: Optional[str] = None
-    notes: Optional[str] = None
+from pydantic import BaseModel, ConfigDict, Field
 
-class ClientCreate(ClientBase):
-    pass
+from app.models.enums import ClientStatus
+
+
+class ClientCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=255)
+    company_name: str | None = Field(None, max_length=255)
+    email: str | None = Field(None, max_length=255)
+    phone: str | None = Field(None, max_length=50)
+    notes: str | None = None
+
 
 class ClientUpdate(BaseModel):
-    name: Optional[str] = None
-    company_name: Optional[str] = None
-    email: Optional[EmailStr] = None
-    phone: Optional[str] = None
-    notes: Optional[str] = None
-    status: Optional[str] = None
+    name: str | None = Field(None, min_length=1, max_length=255)
+    company_name: str | None = Field(None, max_length=255)
+    email: str | None = Field(None, max_length=255)
+    phone: str | None = Field(None, max_length=50)
+    notes: str | None = None
+    status: ClientStatus | None = None
 
-class ClientInDBBase(ClientBase):
-    id: uuid.UUID
-    user_id: uuid.UUID
-    status: str
+
+class ClientResponse(BaseModel):
+    id: str
+    user_id: str
+    name: str
+    company_name: str | None
+    email: str | None
+    phone: str | None
+    notes: str | None
+    status: ClientStatus
     created_at: datetime
     updated_at: datetime
-    archived_at: Optional[datetime] = None
+    archived_at: datetime | None
 
-    model_config = {"from_attributes": True}
-
-class Client(ClientInDBBase):
-    pass
-
-class ClientListResponse(BaseModel):
-    items: list[Client]
-    page: int
-    page_size: int
-    total: int
+    model_config = ConfigDict(from_attributes=True)

@@ -1,42 +1,116 @@
-import uuid
-from typing import Optional, Tuple, List
+from __future__ import annotations
+
+from datetime import datetime, timezone
+
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.errors import NotFoundError, ValidationError
+from app.models.enums import ProjectStatus
+from app.repositories.client import ClientRepository
 from app.repositories.project import ProjectRepository
-from app.schemas.project import ProjectCreate, ProjectUpdate, Project
-from app.models.user import User
-from app.services.client import ClientService
+from app.schemas.common import PaginatedResponse
+from app.schemas.project import ProjectCreate, ProjectDetailResponse, ProjectResponse, ProjectUpdate
+
 
 class ProjectService:
-    def __init__(self, repository: ProjectRepository, client_service: ClientService):
-        self.repository = repository
-        self.client_service = client_service
+    def __init__(self, session: AsyncSession):
+        self.session = session
+        self.project_repo = ProjectRepository(session)
+        self.client_repo = ClientRepository(session)
 
-    async def get_project(self, project_id: uuid.UUID, user: User) -> Optional[Project]:
-        return await self.repository.get(project_id=project_id, user_id=user.id)
+    async def _verify_client_ownership(self, user_id: str, client_id: str) -> None:
+        client = await self.client_repo.get_by_id(client_id)
+        if not client or str(client.user_id) != user_id:
+            raise ValidationError("Invalid client_id or client does not belong to user")
 
-    async def list_projects(self, user: User, skip: int = 0, limit: int = 20, client_id: Optional[uuid.UUID] = None, status: Optional[str] = None, search: Optional[str] = None) -> Tuple[List[Project], int]:
-        items = await self.repository.list(user_id=user.id, skip=skip, limit=limit, client_id=client_id, status=status, search=search)
-        total = await self.repository.count(user_id=user.id, client_id=client_id, status=status, search=search)
-        return items, total
+    async def create(self, user_id: str, data: ProjectCreate) -> ProjectResponse:
+        if data.client_id:
+            await self._verify_client_ownership(user_id, str(data.client_id))
 
-    async def create_project(self, user: User, obj_in: ProjectCreate) -> Project:
-        if obj_in.client_id:
-            client = await self.client_service.get_client(obj_in.client_id, user)
-            if not client:
-                raise ValueError("Client not found")
-        return await self.repository.create(user_id=user.id, obj_in=obj_in)
+        project_data = data.model_dump()
+        project_data["user_id"] = user_id
+        project = await self.project_repo.create(project_data)
+        return ProjectResponse.model_validate(project)
 
-    async def update_project(self, project_id: uuid.UUID, user: User, obj_in: ProjectUpdate) -> Optional[Project]:
-        db_obj = await self.get_project(project_id, user)
-        if not db_obj:
-            return None
-        if obj_in.client_id:
-            client = await self.client_service.get_client(obj_in.client_id, user)
-            if not client:
-                raise ValueError("Client not found")
-        return await self.repository.update(db_obj=db_obj, obj_in=obj_in)
+    async def get(self, user_id: str, project_id: str) -> ProjectDetailResponse:
+        project = await self.project_repo.get_by_id(project_id)
+        if not project or str(project.user_id) != user_id:
+            raise NotFoundError("Project not found")
 
-    async def archive_project(self, project_id: uuid.UUID, user: User) -> Optional[Project]:
-        db_obj = await self.get_project(project_id, user)
-        if not db_obj:
-            return None
-        return await self.repository.archive(db_obj=db_obj)
+        task_summary = await self.project_repo.get_task_summary(project_id)
+
+        base = ProjectResponse.model_validate(project)
+        return ProjectDetailResponse(**base.model_dump(), task_summary=task_summary)
+
+    async def update(self, user_id: str, project_id: str, data: ProjectUpdate) -> ProjectResponse:
+        project = await self.project_repo.get_by_id(project_id)
+        if not project or str(project.user_id) != user_id:
+            raise NotFoundError("Project not found")
+
+        update_data = data.model_dump(exclude_unset=True)
+
+        if "client_id" in update_data and update_data["client_id"]:
+            await self._verify_client_ownership(user_id, str(update_data["client_id"]))
+
+        if "status" in update_data:
+            if update_data["status"] == ProjectStatus.ARCHIVED and project.status != ProjectStatus.ARCHIVED:
+                update_data["archived_at"] = datetime.now(timezone.utc)
+            elif update_data["status"] != ProjectStatus.ARCHIVED and project.status == ProjectStatus.ARCHIVED:
+                update_data["archived_at"] = None
+
+        project = await self.project_repo.update(project, update_data)
+        return ProjectResponse.model_validate(project)
+
+    async def archive(self, user_id: str, project_id: str) -> ProjectResponse:
+        project = await self.project_repo.get_by_id(project_id)
+        if not project or str(project.user_id) != user_id:
+            raise NotFoundError("Project not found")
+
+        if project.status != ProjectStatus.ARCHIVED:
+            project = await self.project_repo.update(
+                project, {"status": ProjectStatus.ARCHIVED, "archived_at": datetime.now(timezone.utc)}
+            )
+        return ProjectResponse.model_validate(project)
+
+    async def list(
+        self,
+        user_id: str,
+        search: str | None = None,
+        status: ProjectStatus | None = None,
+        client_id: str | None = None,
+        page: int = 1,
+        page_size: int = 20,
+        sort_by: str = "created_at",
+        sort_order: str = "desc",
+    ) -> PaginatedResponse[ProjectResponse]:
+        projects, total = await self.project_repo.list_by_user(
+            user_id=user_id,
+            search=search,
+            status=status,
+            client_id=client_id,
+            page=page,
+            page_size=page_size,
+            sort_by=sort_by,
+            sort_order=sort_order,
+        )
+        items = [ProjectResponse.model_validate(p) for p in projects]
+        return PaginatedResponse(items=items, total=total, page=page, page_size=page_size)
+
+    async def get_active(self, user_id: str) -> list[ProjectResponse]:
+        projects, _ = await self.project_repo.list_by_user(
+            user_id=user_id, status=ProjectStatus.ACTIVE, page=1, page_size=100
+        )
+        return [
+            ProjectResponse.model_validate(p)
+            for p in projects
+            if p.status == ProjectStatus.ACTIVE and p.archived_at is None
+        ]
+
+    # Convenience aliases for agent tools
+    async def create_project(self, user: Any, data: ProjectCreate) -> ProjectResponse:
+        user_id = str(user.id if hasattr(user, "id") else user)
+        return await self.create(user_id, data)
+
+    async def get_project(self, user: Any, project_id: Any) -> ProjectResponse:
+        user_id = str(user.id if hasattr(user, "id") else user)
+        return await self.get(user_id, str(project_id))

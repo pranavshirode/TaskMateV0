@@ -1,68 +1,73 @@
-import uuid
-from typing import Any, List
-from fastapi import APIRouter, Depends, HTTPException
+from typing import List
+
+from fastapi import APIRouter, Depends, status
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.api.deps import get_current_user
+from app.db.session import get_db
 from app.models.user import User
-from app.schemas.repository import Repository, RepositoryCreate, RepositoryUpdate
+from app.schemas.repository import (
+    RepositoryCreate,
+    RepositoryResponse,
+    RepositoryUpdate,
+)
 from app.services.repository import RepositoryService
-from app.api.dependencies import get_current_user, get_repository_service
 
-router = APIRouter()
+project_router = APIRouter()
+repo_router = APIRouter()
 
-@router.get("/projects/{project_id}/repositories", response_model=List[Repository])
-async def list_repositories(
-    project_id: uuid.UUID,
+
+@project_router.get("/{project_id}/repositories", response_model=List[RepositoryResponse])
+async def list_project_repositories(
+    project_id: str,
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    repository_service: RepositoryService = Depends(get_repository_service),
-) -> Any:
-    try:
-        return await repository_service.list_repositories(project_id, current_user)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+):
+    service = RepositoryService(db)
+    return await service.list_by_project(current_user.id, project_id)
 
-@router.post("/projects/{project_id}/repositories", response_model=Repository)
+
+@project_router.post(
+    "/{project_id}/repositories",
+    response_model=RepositoryResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_repository(
-    project_id: uuid.UUID,
-    repository_in: RepositoryCreate,
+    project_id: str,
+    data: RepositoryCreate,
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    repository_service: RepositoryService = Depends(get_repository_service),
-) -> Any:
-    if str(repository_in.project_id) != str(project_id):
-        raise HTTPException(status_code=400, detail="Project ID mismatch")
-    try:
-        return await repository_service.create_repository(current_user, repository_in)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+):
+    service = RepositoryService(db)
+    return await service.create(current_user.id, project_id, data)
 
-@router.get("/repositories/{repository_id}", response_model=Repository)
+
+@repo_router.get("/{repository_id}", response_model=RepositoryResponse)
 async def get_repository(
-    repository_id: uuid.UUID,
+    repository_id: str,
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    repository_service: RepositoryService = Depends(get_repository_service),
-) -> Any:
-    repository = await repository_service.get_repository(repository_id, current_user)
-    if not repository:
-        raise HTTPException(status_code=404, detail="Repository not found")
-    return repository
+):
+    service = RepositoryService(db)
+    return await service.get(current_user.id, repository_id)
 
-@router.patch("/repositories/{repository_id}", response_model=Repository)
+
+@repo_router.patch("/{repository_id}", response_model=RepositoryResponse)
 async def update_repository(
-    repository_id: uuid.UUID,
-    repository_in: RepositoryUpdate,
+    repository_id: str,
+    data: RepositoryUpdate,
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    repository_service: RepositoryService = Depends(get_repository_service),
-) -> Any:
-    repository = await repository_service.update_repository(repository_id, current_user, repository_in)
-    if not repository:
-        raise HTTPException(status_code=404, detail="Repository not found")
-    return repository
+):
+    service = RepositoryService(db)
+    return await service.update(current_user.id, repository_id, data)
 
-@router.delete("/repositories/{repository_id}", response_model=dict)
+
+@repo_router.delete("/{repository_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_repository(
-    repository_id: uuid.UUID,
+    repository_id: str,
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    repository_service: RepositoryService = Depends(get_repository_service),
-) -> Any:
-    success = await repository_service.delete_repository(repository_id, current_user)
-    if not success:
-        raise HTTPException(status_code=404, detail="Repository not found")
-    return {"message": "Repository deleted"}
+):
+    service = RepositoryService(db)
+    await service.delete(current_user.id, repository_id)

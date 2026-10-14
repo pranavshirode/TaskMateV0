@@ -1,62 +1,76 @@
-import uuid
-from typing import Any, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query, status
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.api.deps import get_current_user
+from app.db.session import get_db
+from app.models.enums import ClientStatus
 from app.models.user import User
-from app.schemas.client import Client, ClientCreate, ClientUpdate, ClientListResponse
+from app.schemas.client import ClientCreate, ClientResponse, ClientUpdate
+from app.schemas.common import PaginatedResponse
 from app.services.client import ClientService
-from app.api.dependencies import get_current_user, get_client_service
 
 router = APIRouter()
 
-@router.get("/", response_model=ClientListResponse)
+
+@router.get("/", response_model=PaginatedResponse[ClientResponse])
 async def list_clients(
-    skip: int = Query(0, ge=0),
-    limit: int = Query(20, ge=1, le=100),
-    search: Optional[str] = None,
+    search: str | None = None,
+    status: ClientStatus | None = None,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    sort_by: str = Query("created_at"),
+    sort_order: str = Query("desc"),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    client_service: ClientService = Depends(get_client_service),
-) -> Any:
-    items, total = await client_service.list_clients(current_user, skip=skip, limit=limit, search=search)
-    return {"items": items, "page": skip // limit + 1, "page_size": limit, "total": total}
+):
+    service = ClientService(db)
+    return await service.list(
+        user_id=current_user.id,
+        search=search,
+        status=status,
+        page=page,
+        page_size=page_size,
+        sort_by=sort_by,
+        sort_order=sort_order,
+    )
 
-@router.post("/", response_model=Client)
+
+@router.post("/", response_model=ClientResponse, status_code=status.HTTP_201_CREATED)
 async def create_client(
-    client_in: ClientCreate,
+    data: ClientCreate,
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    client_service: ClientService = Depends(get_client_service),
-) -> Any:
-    return await client_service.create_client(current_user, client_in)
+):
+    service = ClientService(db)
+    return await service.create(current_user.id, data)
 
-@router.get("/{client_id}", response_model=Client)
+
+@router.get("/{client_id}", response_model=ClientResponse)
 async def get_client(
-    client_id: uuid.UUID,
+    client_id: str,
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    client_service: ClientService = Depends(get_client_service),
-) -> Any:
-    client = await client_service.get_client(client_id, current_user)
-    if not client:
-        raise HTTPException(status_code=404, detail="Client not found")
-    return client
+):
+    service = ClientService(db)
+    return await service.get(current_user.id, client_id)
 
-@router.patch("/{client_id}", response_model=Client)
+
+@router.patch("/{client_id}", response_model=ClientResponse)
 async def update_client(
-    client_id: uuid.UUID,
-    client_in: ClientUpdate,
+    client_id: str,
+    data: ClientUpdate,
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    client_service: ClientService = Depends(get_client_service),
-) -> Any:
-    client = await client_service.update_client(client_id, current_user, client_in)
-    if not client:
-        raise HTTPException(status_code=404, detail="Client not found")
-    return client
+):
+    service = ClientService(db)
+    return await service.update(current_user.id, client_id, data)
 
-@router.delete("/{client_id}", response_model=Client)
+
+@router.delete("/{client_id}", response_model=ClientResponse)
 async def archive_client(
-    client_id: uuid.UUID,
+    client_id: str,
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    client_service: ClientService = Depends(get_client_service),
-) -> Any:
-    client = await client_service.archive_client(client_id, current_user)
-    if not client:
-        raise HTTPException(status_code=404, detail="Client not found")
-    return client
+):
+    service = ClientService(db)
+    return await service.archive(current_user.id, client_id)

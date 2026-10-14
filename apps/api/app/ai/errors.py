@@ -1,67 +1,64 @@
-"""AI-specific error types.
-
-All errors map to user-safe messages. No API keys, prompts,
-or internal reasoning are ever exposed.
-"""
-
-from app.core.errors import AppError
+"""AI-specific error types."""
 
 
-class AIError(AppError):
-    """Base error for all AI operations."""
-    def __init__(self, message: str, code: str = "AI_ERROR", status_code: int = 500):
-        super().__init__(status_code=status_code, code=code, message=message)
+class AIError(Exception):
+    """Base error for AI operations."""
+
+    pass
 
 
 class AIProviderError(AIError):
-    """External AI provider returned an error."""
-    def __init__(self, message: str = "AI service encountered an error. Your data is safe and unchanged."):
-        super().__init__(message=message, code="AI_PROVIDER_ERROR", status_code=502)
+    """Error communicating with the AI provider."""
+
+    pass
 
 
-class AITimeoutError(AIError):
+class AITimeoutError(AIProviderError):
     """AI provider request timed out."""
-    def __init__(self, message: str = "AI request timed out. Please try again."):
-        super().__init__(message=message, code="AI_TIMEOUT", status_code=504)
+
+    pass
 
 
-class AIRateLimitError(AIError):
+class AIRateLimitError(AIProviderError):
     """AI provider rate limit exceeded."""
-    def __init__(self, message: str = "AI rate limit exceeded. Please wait a moment and try again."):
-        super().__init__(message=message, code="AI_RATE_LIMIT", status_code=429)
+
+    pass
 
 
-class AIAuthenticationError(AIError):
+class AIAuthenticationError(AIProviderError):
     """AI provider authentication failed."""
-    def __init__(self, message: str = "AI service configuration error. Please contact support."):
-        super().__init__(message=message, code="AI_AUTH_ERROR", status_code=500)
+
+    pass
 
 
 class AIResponseError(AIError):
     """AI returned an invalid or unparseable response."""
-    def __init__(self, message: str = "AI produced an unexpected response. Please try rephrasing your request."):
-        super().__init__(message=message, code="AI_RESPONSE_ERROR", status_code=500)
+
+    pass
 
 
 class AISchemaValidationError(AIError):
-    """AI output failed schema validation."""
-    def __init__(self, message: str = "AI response did not match expected format. Please try again."):
-        super().__init__(message=message, code="AI_SCHEMA_ERROR", status_code=500)
+    """AI response failed schema validation."""
+
+    pass
 
 
 class AIEntityResolutionError(AIError):
-    """Entity could not be resolved unambiguously."""
-    def __init__(self, message: str, code: str = "AI_ENTITY_ERROR"):
-        super().__init__(message=message, code=code, status_code=400)
+    """Failed to resolve an entity from AI output to a database record."""
+
+    def __init__(self, entity_type: str, entity_value: str, candidates: list | None = None):
+        self.entity_type = entity_type
+        self.entity_value = entity_value
+        self.candidates = candidates or []
+        count = len(self.candidates)
+        if count == 0:
+            msg = f"No {entity_type} found matching '{entity_value}'"
+        else:
+            msg = f"Multiple {entity_type}s found matching '{entity_value}': {count} candidates"
+        super().__init__(msg)
 
 
-class AINotConfiguredError(AIError):
-    """AI provider is not configured (missing API key etc)."""
-    def __init__(self, message: str = "AI features are not configured. Please set AI_API_KEY."):
-        super().__init__(message=message, code="AI_NOT_CONFIGURED", status_code=503)
+class AIUnavailableError(AIError):
+    """AI service is not configured or unavailable."""
 
-
-class AIUserRateLimitError(AIError):
-    """Per-user rate limit for AI endpoint exceeded."""
-    def __init__(self, message: str = "You've reached the AI request limit. Please wait before trying again."):
-        super().__init__(message=message, code="AI_USER_RATE_LIMIT", status_code=429)
+    pass

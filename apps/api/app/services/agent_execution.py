@@ -1,8 +1,10 @@
 """Service layer for agent execution management."""
 
+from __future__ import annotations
+
 import uuid
 from datetime import datetime, timezone
-from typing import Optional, Any
+from typing import Any
 
 from app.models.agent_execution import AgentExecution, AgentExecutionStep
 from app.models.user import User
@@ -16,12 +18,17 @@ class AgentExecutionService:
         self.repository = repository
 
     async def create_execution(
-        self, user: User, conversation_id: Optional[uuid.UUID] = None,
-        objective: Optional[str] = None, model: Optional[str] = None,
+        self,
+        user: User,
+        conversation_id: str | uuid.UUID | None = None,
+        objective: str | None = None,
+        model: str | None = None,
     ) -> AgentExecution:
         return await self.repository.create_execution(
-            user_id=user.id, conversation_id=conversation_id,
-            objective=objective, model=model,
+            user_id=str(user.id),
+            conversation_id=str(conversation_id) if conversation_id else None,
+            objective=objective,
+            model=model,
         )
 
     async def start_execution(self, execution: AgentExecution) -> AgentExecution:
@@ -29,66 +36,59 @@ class AgentExecutionService:
             execution, status="RUNNING", started_at=datetime.now(timezone.utc)
         )
 
-    async def complete_execution(
-        self, execution: AgentExecution, **token_kwargs: Any
-    ) -> AgentExecution:
+    async def complete_execution(self, execution: AgentExecution, **token_kwargs: Any) -> AgentExecution:
         return await self.repository.update_execution(
-            execution, status="COMPLETED",
-            completed_at=datetime.now(timezone.utc), **token_kwargs
+            execution,
+            status="COMPLETED",
+            completed_at=datetime.now(timezone.utc),
+            **token_kwargs,
         )
 
-    async def fail_execution(
-        self, execution: AgentExecution, error: str
-    ) -> AgentExecution:
+    async def fail_execution(self, execution: AgentExecution, error: str) -> AgentExecution:
         return await self.repository.update_execution(
-            execution, status="FAILED", error=error,
-            completed_at=datetime.now(timezone.utc)
+            execution,
+            status="FAILED",
+            error=error,
+            completed_at=datetime.now(timezone.utc),
         )
 
     async def timeout_execution(self, execution: AgentExecution) -> AgentExecution:
         return await self.repository.update_execution(
-            execution, status="TIMEOUT",
+            execution,
+            status="TIMEOUT",
             completed_at=datetime.now(timezone.utc),
-            error="Execution time limit exceeded"
+            error="Execution time limit exceeded",
         )
 
-    async def get_execution(
-        self, execution_id: uuid.UUID, user: User
-    ) -> Optional[AgentExecution]:
-        return await self.repository.get_execution(execution_id, user.id)
+    async def get_execution(self, execution_id: str | uuid.UUID, user: User) -> AgentExecution | None:
+        return await self.repository.get_execution(str(execution_id), str(user.id))
 
-    async def cancel_execution(
-        self, execution_id: uuid.UUID, user: User
-    ) -> Optional[AgentExecution]:
-        return await self.repository.cancel_execution(execution_id, user.id)
+    async def cancel_execution(self, execution: AgentExecution) -> AgentExecution:
+        return await self.repository.update_execution(
+            execution,
+            status="CANCELLED",
+            completed_at=datetime.now(timezone.utc),
+            error="Execution was cancelled",
+        )
 
     async def record_step(
-        self, execution: AgentExecution, tool_name: str,
-        tool_input: Optional[dict] = None,
+        self,
+        execution: AgentExecution,
+        step_number: int,
+        tool_name: str,
+        tool_input: dict[str, Any] | None = None,
+        status: str = "PENDING",
+        result_summary: str | None = None,
+        latency_ms: int = 0,
+        error: str | None = None,
     ) -> AgentExecutionStep:
-        step = await self.repository.add_step(
+        return await self.repository.add_step(
             execution_id=execution.id,
-            step_number=execution.current_step + 1,
+            step_number=step_number,
             tool_name=tool_name,
             tool_input=tool_input,
-        )
-        await self.repository.update_execution(
-            execution,
-            current_step=execution.current_step + 1,
-            tool_call_count=execution.tool_call_count + 1,
-        )
-        return step
-
-    async def complete_step(
-        self, step: AgentExecutionStep, result_summary: str, latency_ms: int
-    ) -> AgentExecutionStep:
-        return await self.repository.update_step(
-            step, status="COMPLETED", result_summary=result_summary, latency_ms=latency_ms
-        )
-
-    async def fail_step(
-        self, step: AgentExecutionStep, error: str, latency_ms: int
-    ) -> AgentExecutionStep:
-        return await self.repository.update_step(
-            step, status="FAILED", error=error, latency_ms=latency_ms
+            status=status,
+            result_summary=result_summary,
+            latency_ms=latency_ms,
+            error=error,
         )

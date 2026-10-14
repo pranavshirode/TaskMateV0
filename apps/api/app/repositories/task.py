@@ -1,119 +1,180 @@
-import uuid
-from typing import Optional, List
-from sqlalchemy import select, asc, desc
+from __future__ import annotations
+
+from datetime import date
+
+from sqlalchemy import asc, case, desc, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.models.task import Task, TaskEvent
-from app.schemas.task import TaskCreate, TaskUpdate
+from sqlalchemy.orm import selectinload
 
-class TaskRepository:
+from app.models.enums import TaskPriority, TaskStatus
+from app.models.task import Task
+from app.models.task_label import TaskLabel
+from app.repositories.base import BaseRepository
+
+
+class TaskRepository(BaseRepository[Task]):
     def __init__(self, session: AsyncSession):
-        self.session = session
+        super().__init__(Task, session)
 
-    async def get(self, task_id: uuid.UUID, user_id: uuid.UUID) -> Optional[Task]:
-        stmt = select(Task).where(Task.id == task_id, Task.user_id == user_id)
-        result = await self.session.execute(stmt)
+    async def get_by_id(self, id: str, load_labels: bool = False) -> Task | None:
+        query = select(self.model).where(self.model.id == id)
+        if load_labels:
+            query = query.options(selectinload(self.model.labels))
+        result = await self.session.execute(query)
         return result.scalar_one_or_none()
 
-    async def list(self, user_id: uuid.UUID, skip: int = 0, limit: int = 20,
-                   project_id: Optional[uuid.UUID] = None, client_id: Optional[uuid.UUID] = None,
-                   status: Optional[str] = None, priority: Optional[str] = None,
-                   search: Optional[str] = None) -> List[Task]:
-        stmt = select(Task).where(Task.user_id == user_id)
-        if project_id:
-            stmt = stmt.where(Task.project_id == project_id)
-        if client_id:
-            stmt = stmt.where(Task.client_id == client_id)
-        if status:
-            stmt = stmt.where(Task.status == status)
-        if priority:
-            stmt = stmt.where(Task.priority == priority)
-        if search:
-            stmt = stmt.where(Task.title.ilike(f"%{search}%"))
-
-        stmt = stmt.order_by(desc(Task.created_at)).offset(skip).limit(limit)
-        result = await self.session.execute(stmt)
-        return list(result.scalars().all())
-
-    async def count(self, user_id: uuid.UUID, project_id: Optional[uuid.UUID] = None,
-                    client_id: Optional[uuid.UUID] = None, status: Optional[str] = None,
-                    priority: Optional[str] = None, search: Optional[str] = None) -> int:
-        from sqlalchemy import func
-        stmt = select(func.count(Task.id)).where(Task.user_id == user_id)
-        if project_id:
-            stmt = stmt.where(Task.project_id == project_id)
-        if client_id:
-            stmt = stmt.where(Task.client_id == client_id)
-        if status:
-            stmt = stmt.where(Task.status == status)
-        if priority:
-            stmt = stmt.where(Task.priority == priority)
-        if search:
-            stmt = stmt.where(Task.title.ilike(f"%{search}%"))
-
-        result = await self.session.execute(stmt)
-        return result.scalar_one()
-
-    async def create(self, user_id: uuid.UUID, obj_in: TaskCreate) -> Task:
-        db_obj = Task(**obj_in.model_dump(), user_id=user_id)
-        self.session.add(db_obj)
+    async def create(self, data: dict | Task, labels: list | None = None) -> Task:
+        if isinstance(data, dict):
+            task = Task(**data)
+        else:
+            task = data
+        if labels:
+            task.labels = labels
+        self.session.add(task)
         await self.session.commit()
-        await self.session.refresh(db_obj)
+        await self.session.refresh(task, ["labels"])
+        return task
 
-        await self._create_event(db_obj, user_id, "TASK_CREATED")
-        return db_obj
-
-    async def update(self, db_obj: Task, user_id: uuid.UUID, obj_in: TaskUpdate) -> Task:
-        update_data = obj_in.model_dump(exclude_unset=True)
-        for field, value in update_data.items():
-            setattr(db_obj, field, value)
+    async def update(self, task: Task, data: dict, labels: list | None = None) -> Task:
+        for key, value in data.items():
+            setattr(task, key, value)
+        if labels is not None:
+            task.labels = labels
         await self.session.commit()
-        await self.session.refresh(db_obj)
+        await self.session.refresh(task, ["labels"])
+        return task
 
-        await self._create_event(db_obj, user_id, "TASK_UPDATED")
-        return db_obj
-
-    async def change_status(self, db_obj: Task, user_id: uuid.UUID, new_status: str) -> Task:
-        old_status = db_obj.status
-        db_obj.status = new_status
-        if new_status == "COMPLETED":
-            from datetime import datetime, timezone
-            db_obj.completed_at = datetime.now(timezone.utc)
-        await self.session.commit()
-        await self.session.refresh(db_obj)
-
-        await self._create_event(db_obj, user_id, "STATUS_CHANGED", old_status, new_status)
-        return db_obj
-
-    async def change_priority(self, db_obj: Task, user_id: uuid.UUID, new_priority: str) -> Task:
-        old_priority = db_obj.priority
-        db_obj.priority = new_priority
-        await self.session.commit()
-        await self.session.refresh(db_obj)
-
-        await self._create_event(db_obj, user_id, "PRIORITY_CHANGED", old_priority, new_priority)
-        return db_obj
-
-    async def archive(self, db_obj: Task, user_id: uuid.UUID) -> Task:
-        from datetime import datetime, timezone
-        db_obj.archived_at = datetime.now(timezone.utc)
-        await self.session.commit()
-        await self.session.refresh(db_obj)
-
-        await self._create_event(db_obj, user_id, "TASK_ARCHIVED")
-        return db_obj
-
-    async def get_events(self, task_id: uuid.UUID, user_id: uuid.UUID) -> List[TaskEvent]:
-        stmt = select(TaskEvent).where(TaskEvent.task_id == task_id, TaskEvent.user_id == user_id).order_by(desc(TaskEvent.created_at))
-        result = await self.session.execute(stmt)
-        return list(result.scalars().all())
-
-    async def _create_event(self, task: Task, user_id: uuid.UUID, event_type: str, old_val: Optional[str] = None, new_val: Optional[str] = None):
-        event = TaskEvent(
-            task_id=task.id,
-            user_id=user_id,
-            event_type=event_type,
-            old_value=old_val,
-            new_value=new_val
+    async def get_by_id_and_user(self, id: str, user_id: str) -> Task | None:
+        result = await self.session.execute(
+            select(self.model)
+            .where(self.model.id == id, self.model.user_id == user_id)
+            .options(selectinload(self.model.labels))
         )
-        self.session.add(event)
-        await self.session.commit()
+        return result.scalar_one_or_none()
+
+    async def list_by_user(
+        self,
+        user_id: str,
+        search: str | None = None,
+        status: TaskStatus | None = None,
+        priority: TaskPriority | None = None,
+        project_id: str | None = None,
+        client_id: str | None = None,
+        due_date: date | None = None,
+        label: str | None = None,
+        archived: bool = False,
+        page: int = 1,
+        page_size: int = 20,
+        sort_by: str = "created_at",
+        sort_order: str = "desc",
+    ) -> tuple[list[Task], int]:
+        query = select(self.model).where(self.model.user_id == user_id)
+
+        if not archived:
+            query = query.where(self.model.archived_at.is_(None))
+
+        if search:
+            query = query.where(
+                or_(
+                    self.model.title.ilike(f"%{search}%"),
+                    self.model.description.ilike(f"%{search}%"),
+                )
+            )
+
+        if status:
+            query = query.where(self.model.status == status)
+
+        if priority:
+            query = query.where(self.model.priority == priority)
+
+        if project_id:
+            query = query.where(self.model.project_id == project_id)
+
+        if client_id:
+            query = query.where(self.model.client_id == client_id)
+
+        if due_date:
+            query = query.where(self.model.due_date == due_date)
+
+        if label:
+            query = query.join(self.model.labels).where(TaskLabel.name == label)
+
+        query = query.options(selectinload(self.model.labels))
+
+        # Sorting
+        if sort_by == "priority":
+            priority_order = case(
+                (self.model.priority == TaskPriority.URGENT, 1),
+                (self.model.priority == TaskPriority.HIGH, 2),
+                (self.model.priority == TaskPriority.MEDIUM, 3),
+                (self.model.priority == TaskPriority.LOW, 4),
+                else_=5,
+            )
+            sort_column = priority_order
+        else:
+            sort_column = getattr(self.model, sort_by, self.model.created_at)
+            if sort_by not in ["created_at", "updated_at", "due_date", "title"]:
+                sort_column = self.model.created_at
+
+        if sort_order.lower() == "desc":
+            query = query.order_by(desc(sort_column))
+        else:
+            query = query.order_by(asc(sort_column))
+
+        return await self.paginate(query, page, page_size)
+
+    async def get_due_today(self, user_id: str) -> list[Task]:
+        query = (
+            select(self.model)
+            .where(
+                self.model.user_id == user_id,
+                self.model.due_date == date.today(),
+                self.model.status != TaskStatus.COMPLETED,
+                self.model.archived_at.is_(None),
+            )
+            .options(selectinload(self.model.labels))
+        )
+        result = await self.session.execute(query)
+        return list(result.scalars().all())
+
+    async def get_overdue(self, user_id: str) -> list[Task]:
+        query = (
+            select(self.model)
+            .where(
+                self.model.user_id == user_id,
+                self.model.due_date < date.today(),
+                self.model.status != TaskStatus.COMPLETED,
+                self.model.archived_at.is_(None),
+            )
+            .options(selectinload(self.model.labels))
+        )
+        result = await self.session.execute(query)
+        return list(result.scalars().all())
+
+    async def get_high_priority(self, user_id: str) -> list[Task]:
+        query = (
+            select(self.model)
+            .where(
+                self.model.user_id == user_id,
+                self.model.priority.in_([TaskPriority.HIGH, TaskPriority.URGENT]),
+                self.model.status != TaskStatus.COMPLETED,
+                self.model.archived_at.is_(None),
+            )
+            .options(selectinload(self.model.labels))
+        )
+        result = await self.session.execute(query)
+        return list(result.scalars().all())
+
+    async def get_recently_updated(self, user_id: str, limit: int = 10) -> list[Task]:
+        query = (
+            select(self.model)
+            .where(
+                self.model.user_id == user_id,
+                self.model.archived_at.is_(None),
+            )
+            .order_by(desc(self.model.updated_at))
+            .limit(limit)
+            .options(selectinload(self.model.labels))
+        )
+        result = await self.session.execute(query)
+        return list(result.scalars().all())

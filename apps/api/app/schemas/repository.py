@@ -1,32 +1,35 @@
-import uuid
-from pydantic import BaseModel, HttpUrl
 from datetime import datetime
-from typing import Optional
 
-class RepositoryBase(BaseModel):
-    name: str
-    provider: str = "GITHUB"
-    url: HttpUrl
+from pydantic import BaseModel, ConfigDict, Field
+
+from app.models.enums import RepositoryProvider
+
+
+class RepositoryCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=255)
+    provider: RepositoryProvider = RepositoryProvider.GITHUB
+    url: str = Field(..., min_length=1, max_length=2000)
     default_branch: str = "main"
-    description: Optional[str] = None
+    description: str | None = None
 
-class RepositoryCreate(RepositoryBase):
-    project_id: uuid.UUID
 
 class RepositoryUpdate(BaseModel):
-    name: Optional[str] = None
-    provider: Optional[str] = None
-    url: Optional[HttpUrl] = None
-    default_branch: Optional[str] = None
-    description: Optional[str] = None
+    name: str | None = Field(None, min_length=1, max_length=255)
+    provider: RepositoryProvider | None = None
+    url: str | None = Field(None, min_length=1, max_length=2000)
+    default_branch: str | None = None
+    description: str | None = None
 
-class RepositoryInDBBase(RepositoryBase):
-    id: uuid.UUID
-    project_id: uuid.UUID
+
+class RepositoryResponse(BaseModel):
+    id: str
+    project_id: str
+    name: str
+    provider: RepositoryProvider
+    url: str
+    default_branch: str
+    description: str | None
     created_at: datetime
     updated_at: datetime
 
-    model_config = {"from_attributes": True}
-
-class Repository(RepositoryInDBBase):
-    pass
+    model_config = ConfigDict(from_attributes=True)

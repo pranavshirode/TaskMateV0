@@ -1,27 +1,27 @@
 """Integrations API routes."""
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from typing import Any, Optional
+from typing import Any
+
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from app.api.dependencies import get_current_user, get_github_integration_service
+from app.api.deps import get_current_user, get_github_integration_service
+from app.core.config import get_settings
 from app.models.user import User
 from app.services.github_integration import GitHubIntegrationService
-from app.core.config import get_settings
-
 
 router = APIRouter()
 
 
 class GitHubStatusResponse(BaseModel):
     connected: bool
-    username: Optional[str] = None
-    avatar_url: Optional[str] = None
+    username: str | None = None
+    avatar_url: str | None = None
 
 
 class GitHubConnectRequest(BaseModel):
     access_token: str
-    scopes: Optional[str] = None
+    scopes: str | None = None
 
 
 @router.get("/github", response_model=GitHubStatusResponse)
@@ -46,7 +46,7 @@ async def get_github_authorize_url() -> Any:
     settings = get_settings()
     if not settings.GITHUB_CLIENT_ID:
         raise HTTPException(status_code=500, detail="GitHub integration is not configured")
-    
+
     url = (
         f"https://github.com/login/oauth/authorize?"
         f"client_id={settings.GITHUB_CLIENT_ID}&"
@@ -67,7 +67,7 @@ async def connect_github(
         await github_service.connect(current_user, request.access_token, request.scopes)
         return {"status": "success"}
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Failed to connect GitHub: {e}")
+        raise HTTPException(status_code=400, detail=f"Failed to connect GitHub: {e}") from e
 
 
 @router.delete("/github")
@@ -78,4 +78,3 @@ async def disconnect_github(
     """Disconnect the current user's GitHub integration."""
     await github_service.disconnect(current_user)
     return {"status": "success"}
-

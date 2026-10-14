@@ -1,62 +1,85 @@
-import uuid
-from typing import Optional, List
-from sqlalchemy import select, asc, desc
+from datetime import date
+
+from sqlalchemy import asc, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models.enums import ProjectStatus, TaskStatus
 from app.models.project import Project
-from app.schemas.project import ProjectCreate, ProjectUpdate
+from app.repositories.base import BaseRepository
 
-class ProjectRepository:
+
+class ProjectRepository(BaseRepository[Project]):
     def __init__(self, session: AsyncSession):
-        self.session = session
+        super().__init__(Project, session)
 
-    async def get(self, project_id: uuid.UUID, user_id: uuid.UUID) -> Optional[Project]:
-        stmt = select(Project).where(Project.id == project_id, Project.user_id == user_id)
-        result = await self.session.execute(stmt)
-        return result.scalar_one_or_none()
+    async def create(self, data: dict) -> Project:
+        project = Project(**data)
+        self.session.add(project)
+        await self.session.commit()
+        await self.session.refresh(project)
+        return project
 
-    async def list(self, user_id: uuid.UUID, skip: int = 0, limit: int = 20, client_id: Optional[uuid.UUID] = None, status: Optional[str] = None, search: Optional[str] = None) -> List[Project]:
-        stmt = select(Project).where(Project.user_id == user_id)
-        if client_id:
-            stmt = stmt.where(Project.client_id == client_id)
-        if status:
-            stmt = stmt.where(Project.status == status)
+    async def update(self, project: Project, data: dict) -> Project:
+        for key, value in data.items():
+            setattr(project, key, value)
+        await self.session.commit()
+        await self.session.refresh(project)
+        return project
+
+    async def list_by_user(
+        self,
+        user_id: str,
+        search: str | None = None,
+        status: ProjectStatus | None = None,
+        client_id: str | None = None,
+        page: int = 1,
+        page_size: int = 20,
+        sort_by: str = "created_at",
+        sort_order: str = "desc",
+    ) -> tuple[list[Project], int]:
+        query = select(self.model).where(self.model.user_id == user_id)
+
         if search:
-            stmt = stmt.where(Project.name.ilike(f"%{search}%"))
-        stmt = stmt.order_by(desc(Project.created_at)).offset(skip).limit(limit)
-        result = await self.session.execute(stmt)
-        return list(result.scalars().all())
+            query = query.where(self.model.name.ilike(f"%{search}%"))
 
-    async def count(self, user_id: uuid.UUID, client_id: Optional[uuid.UUID] = None, status: Optional[str] = None, search: Optional[str] = None) -> int:
-        from sqlalchemy import func
-        stmt = select(func.count(Project.id)).where(Project.user_id == user_id)
-        if client_id:
-            stmt = stmt.where(Project.client_id == client_id)
         if status:
-            stmt = stmt.where(Project.status == status)
-        if search:
-            stmt = stmt.where(Project.name.ilike(f"%{search}%"))
-        result = await self.session.execute(stmt)
-        return result.scalar_one()
+            query = query.where(self.model.status == status)
 
-    async def create(self, user_id: uuid.UUID, obj_in: ProjectCreate) -> Project:
-        db_obj = Project(**obj_in.model_dump(), user_id=user_id)
-        self.session.add(db_obj)
-        await self.session.commit()
-        await self.session.refresh(db_obj)
-        return db_obj
+        if client_id:
+            query = query.where(self.model.client_id == client_id)
 
-    async def update(self, db_obj: Project, obj_in: ProjectUpdate) -> Project:
-        update_data = obj_in.model_dump(exclude_unset=True)
-        for field, value in update_data.items():
-            setattr(db_obj, field, value)
-        await self.session.commit()
-        await self.session.refresh(db_obj)
-        return db_obj
+        # Sorting — whitelist allowed fields
+        sort_column = getattr(self.model, sort_by, self.model.created_at)
+        if sort_by not in ["created_at", "updated_at", "name", "deadline"]:
+            sort_column = self.model.created_at
 
-    async def archive(self, db_obj: Project) -> Project:
-        from datetime import datetime, timezone
-        db_obj.status = "ARCHIVED"
-        db_obj.archived_at = datetime.now(timezone.utc)
-        await self.session.commit()
-        await self.session.refresh(db_obj)
-        return db_obj
+        if sort_order.lower() == "desc":
+            query = query.order_by(desc(sort_column))
+        else:
+            query = query.order_by(asc(sort_column))
+
+        return await self.paginate(query, page, page_size)
+
+    async def get_task_summary(self, project_id: str) -> dict:
+        from app.models.task import Task
+
+        base = select(func.count()).where(Task.project_id == project_id, Task.archived_at.is_(None))
+
+        total = (await self.session.execute(base)).scalar_one()
+        completed = (await self.session.execute(base.where(Task.status == TaskStatus.COMPLETED))).scalar_one()
+        in_progress = (await self.session.execute(base.where(Task.status == TaskStatus.IN_PROGRESS))).scalar_one()
+        overdue = (
+            await self.session.execute(
+                base.where(
+                    Task.due_date < date.today(),
+                    Task.status != TaskStatus.COMPLETED,
+                )
+            )
+        ).scalar_one()
+
+        return {
+            "total": total,
+            "completed": completed,
+            "in_progress": in_progress,
+            "overdue": overdue,
+        }

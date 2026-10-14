@@ -1,32 +1,90 @@
-import uuid
-from typing import Optional, Tuple, List
+from __future__ import annotations
+
+from datetime import datetime, timezone
+
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.errors import NotFoundError
+from app.models.enums import ClientStatus
 from app.repositories.client import ClientRepository
-from app.schemas.client import ClientCreate, ClientUpdate, Client
-from app.models.user import User
+from app.schemas.client import ClientCreate, ClientResponse, ClientUpdate
+from app.schemas.common import PaginatedResponse
+
 
 class ClientService:
-    def __init__(self, repository: ClientRepository):
-        self.repository = repository
+    def __init__(self, session: AsyncSession):
+        self.session = session
+        self.client_repo = ClientRepository(session)
 
-    async def get_client(self, client_id: uuid.UUID, user: User) -> Optional[Client]:
-        return await self.repository.get(client_id=client_id, user_id=user.id)
+    async def create(self, user_id: str, data: ClientCreate) -> ClientResponse:
+        client_data = data.model_dump()
+        client_data["user_id"] = user_id
+        client = await self.client_repo.create(client_data)
+        return ClientResponse.model_validate(client)
 
-    async def list_clients(self, user: User, skip: int = 0, limit: int = 20, search: Optional[str] = None) -> Tuple[List[Client], int]:
-        items = await self.repository.list(user_id=user.id, skip=skip, limit=limit, search=search)
-        total = await self.repository.count(user_id=user.id, search=search)
-        return items, total
+    async def get(self, user_id: str, client_id: str) -> ClientResponse:
+        client = await self.client_repo.get_by_id(client_id)
+        if not client or str(client.user_id) != user_id:
+            raise NotFoundError("Client not found")
+        return ClientResponse.model_validate(client)
 
-    async def create_client(self, user: User, obj_in: ClientCreate) -> Client:
-        return await self.repository.create(user_id=user.id, obj_in=obj_in)
+    async def update(self, user_id: str, client_id: str, data: ClientUpdate) -> ClientResponse:
+        client = await self.client_repo.get_by_id(client_id)
+        if not client or str(client.user_id) != user_id:
+            raise NotFoundError("Client not found")
 
-    async def update_client(self, client_id: uuid.UUID, user: User, obj_in: ClientUpdate) -> Optional[Client]:
-        db_obj = await self.get_client(client_id, user)
-        if not db_obj:
-            return None
-        return await self.repository.update(db_obj=db_obj, obj_in=obj_in)
+        update_data = data.model_dump(exclude_unset=True)
+        if "status" in update_data:
+            if update_data["status"] == ClientStatus.ARCHIVED and client.status != ClientStatus.ARCHIVED:
+                update_data["archived_at"] = datetime.now(timezone.utc)
+            elif update_data["status"] != ClientStatus.ARCHIVED and client.status == ClientStatus.ARCHIVED:
+                update_data["archived_at"] = None
 
-    async def archive_client(self, client_id: uuid.UUID, user: User) -> Optional[Client]:
-        db_obj = await self.get_client(client_id, user)
-        if not db_obj:
-            return None
-        return await self.repository.archive(db_obj=db_obj)
+        client = await self.client_repo.update(client, update_data)
+        return ClientResponse.model_validate(client)
+
+    async def archive(self, user_id: str, client_id: str) -> ClientResponse:
+        client = await self.client_repo.get_by_id(client_id)
+        if not client or str(client.user_id) != user_id:
+            raise NotFoundError("Client not found")
+
+        if client.status != ClientStatus.ARCHIVED:
+            client = await self.client_repo.update(
+                client, {"status": ClientStatus.ARCHIVED, "archived_at": datetime.now(timezone.utc)}
+            )
+        return ClientResponse.model_validate(client)
+
+    async def list(
+        self,
+        user_id: str,
+        search: str | None = None,
+        status: ClientStatus | None = None,
+        page: int = 1,
+        page_size: int = 20,
+        sort_by: str = "created_at",
+        sort_order: str = "desc",
+    ) -> PaginatedResponse[ClientResponse]:
+        clients, total = await self.client_repo.list_by_user(
+            user_id=user_id,
+            search=search,
+            status=status,
+            page=page,
+            page_size=page_size,
+            sort_by=sort_by,
+            sort_order=sort_order,
+        )
+        items = [ClientResponse.model_validate(c) for c in clients]
+        return PaginatedResponse(items=items, total=total, page=page, page_size=page_size)
+
+    async def search(self, user_id: str, query: str) -> list[ClientResponse]:
+        clients, _ = await self.client_repo.list_by_user(user_id=user_id, search=query, page=1, page_size=20)
+        return [ClientResponse.model_validate(c) for c in clients]
+
+    # Convenience aliases for agent tools
+    async def create_client(self, user: Any, data: ClientCreate) -> ClientResponse:
+        user_id = str(user.id if hasattr(user, "id") else user)
+        return await self.create(user_id, data)
+
+    async def get_client(self, user: Any, client_id: Any) -> ClientResponse:
+        user_id = str(user.id if hasattr(user, "id") else user)
+        return await self.get(user_id, str(client_id))

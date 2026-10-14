@@ -1,131 +1,187 @@
-"""AI Assistant API endpoints.
+"""AI API Routes."""
 
-Provides natural language interaction with the TaskMate workspace.
-"""
+from __future__ import annotations
 
-import logging
-import time
-import uuid
-from collections import defaultdict
-from typing import Optional
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
-from fastapi import APIRouter, Depends, HTTPException, Request
-
-from app.ai.errors import AIError, AINotConfiguredError, AIUserRateLimitError
 from app.ai.schemas.responses import (
     AIChatRequest,
     AIChatResponse,
     AIUsageResponse,
-    ConversationListResponse,
-    ConversationResponse,
+    ConversationDetailResponse,
     ConversationMessageResponse,
+    ConversationResponse,
 )
-from app.api.dependencies import get_current_user, get_ai_orchestrator, get_conversation_service
+from app.ai.services.orchestrator import AIOrchestrator
+from app.api.deps import get_current_user
+from app.db.session import get_db
+from app.models.ai import AIRequestLog, Conversation, ConversationMessage
 from app.models.user import User
-from app.services.conversation import ConversationService
-from app.core.config import get_settings
 
-logger = logging.getLogger(__name__)
 router = APIRouter()
-
-# Simple in-memory rate limiter (per-user, per-minute)
-_rate_limit_store: dict[str, list[float]] = defaultdict(list)
-
-
-def _check_rate_limit(user_id: str, max_per_minute: int) -> None:
-    """Check per-user rate limit. Raises AIUserRateLimitError if exceeded."""
-    now = time.time()
-    window = 60.0  # 1 minute
-
-    # Clean old entries
-    _rate_limit_store[user_id] = [
-        ts for ts in _rate_limit_store[user_id] if now - ts < window
-    ]
-
-    if len(_rate_limit_store[user_id]) >= max_per_minute:
-        raise AIUserRateLimitError()
-
-    _rate_limit_store[user_id].append(now)
 
 
 @router.post("/chat", response_model=AIChatResponse)
 async def chat(
-    request: AIChatRequest,
-    user: User = Depends(get_current_user),
-    orchestrator = Depends(get_ai_orchestrator),
+    payload: AIChatRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    """Send a message to the AI assistant.
-
-    The AI will understand the intent, extract entities,
-    and execute the appropriate action through TaskMate services.
-    """
-    settings = get_settings()
-    _check_rate_limit(str(user.id), settings.AI_RATE_LIMIT_PER_MINUTE)
-
+    """Interact with TaskMate AI using natural language."""
+    orchestrator = AIOrchestrator(db=db)
     return await orchestrator.chat(
-        user=user,
-        message=request.message,
-        conversation_id=request.conversation_id,
+        user_id=current_user.id,
+        message=payload.message,
+        conversation_id=payload.conversation_id,
     )
 
 
-@router.get("/conversations", response_model=ConversationListResponse)
+@router.get("/conversations", response_model=list[ConversationResponse])
 async def list_conversations(
-    skip: int = 0,
-    limit: int = 20,
-    user: User = Depends(get_current_user),
-    conversation_service: ConversationService = Depends(get_conversation_service),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    """List the user's AI conversations."""
-    items, total = await conversation_service.list_conversations(user, skip, limit)
-    return ConversationListResponse(
-        items=[
+    """List recent AI conversations for the current user."""
+    result = await db.execute(
+        select(Conversation)
+        .where(Conversation.user_id == current_user.id)
+        .order_by(Conversation.updated_at.desc())
+        .limit(30)
+    )
+    conversations = list(result.scalars().all())
+
+    summaries: list[ConversationResponse] = []
+    for c in conversations:
+        # Get message count and last message
+        cnt_res = await db.execute(
+            select(func.count(ConversationMessage.id)).where(ConversationMessage.conversation_id == c.id)
+        )
+        msg_count = cnt_res.scalar_one() or 0
+
+        last_res = await db.execute(
+            select(ConversationMessage.content)
+            .where(ConversationMessage.conversation_id == c.id)
+            .order_by(ConversationMessage.created_at.desc())
+            .limit(1)
+        )
+        last_msg = last_res.scalar_one_or_none()
+
+        summaries.append(
             ConversationResponse(
                 id=c.id,
-                title=c.title,
                 created_at=c.created_at,
                 updated_at=c.updated_at,
-                messages=[],
+                message_count=msg_count,
+                last_message=last_msg,
             )
-            for c in items
-        ],
-        total=total,
-    )
+        )
+
+    return summaries
 
 
-@router.get("/conversations/{conversation_id}", response_model=ConversationResponse)
+@router.get("/conversations/{conversation_id}", response_model=ConversationDetailResponse)
 async def get_conversation(
-    conversation_id: uuid.UUID,
-    user: User = Depends(get_current_user),
-    conversation_service: ConversationService = Depends(get_conversation_service),
+    conversation_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    """Get a specific conversation with its messages."""
-    conversation = await conversation_service.get_conversation(conversation_id, user)
-    if not conversation:
-        raise HTTPException(status_code=404, detail="Conversation not found")
-    return ConversationResponse(
-        id=conversation.id,
-        title=conversation.title,
-        created_at=conversation.created_at,
-        updated_at=conversation.updated_at,
-        messages=[
-            ConversationMessageResponse(
-                id=m.id,
-                role=m.role,
-                content=m.content,
-                intent=m.intent,
-                created_at=m.created_at,
-            )
-            for m in conversation.messages
-        ],
+    """Get full conversation history by conversation ID."""
+    result = await db.execute(
+        select(Conversation)
+        .where(
+            Conversation.id == conversation_id,
+            Conversation.user_id == current_user.id,
+        )
+        .options(selectinload(Conversation.messages))
     )
+    conv = result.scalar_one_or_none()
+    if not conv:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Conversation not found",
+        )
+
+    messages = [
+        ConversationMessageResponse(
+            id=m.id,
+            role=m.role,
+            content=m.content,
+            created_at=m.created_at,
+        )
+        for m in conv.messages
+    ]
+
+    return ConversationDetailResponse(
+        id=conv.id,
+        created_at=conv.created_at,
+        updated_at=conv.updated_at,
+        messages=messages,
+    )
+
+
+@router.delete("/conversations/{conversation_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_conversation(
+    conversation_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Delete a conversation and its messages."""
+    result = await db.execute(
+        select(Conversation).where(
+            Conversation.id == conversation_id,
+            Conversation.user_id == current_user.id,
+        )
+    )
+    conv = result.scalar_one_or_none()
+    if not conv:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Conversation not found",
+        )
+
+    await db.delete(conv)
+    await db.commit()
+    return None
 
 
 @router.get("/usage", response_model=AIUsageResponse)
 async def get_usage(
-    user: User = Depends(get_current_user),
-    conversation_service: ConversationService = Depends(get_conversation_service),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    """Get AI usage statistics for the current user."""
-    stats = await conversation_service.get_usage_stats(user)
-    return AIUsageResponse(**stats)
+    """Get AI usage tokens and request stats for the user."""
+    # Total stats
+    tot_res = await db.execute(
+        select(
+            func.count(AIRequestLog.id),
+            func.coalesce(func.sum(AIRequestLog.prompt_tokens), 0),
+            func.coalesce(func.sum(AIRequestLog.completion_tokens), 0),
+        ).where(AIRequestLog.user_id == current_user.id)
+    )
+    row = tot_res.one()
+    total_reqs, prompt_tokens, comp_tokens = row[0], row[1], row[2]
+
+    # Intent breakdown
+    intents_res = await db.execute(
+        select(ConversationMessage.intent, func.count(ConversationMessage.id))
+        .join(Conversation, Conversation.id == ConversationMessage.conversation_id)
+        .where(
+            Conversation.user_id == current_user.id,
+            ConversationMessage.role == "assistant",
+            ConversationMessage.intent.isnot(None),
+        )
+        .group_by(ConversationMessage.intent)
+    )
+    by_intent = {r[0]: r[1] for r in intents_res.all() if r[0]}
+
+    return AIUsageResponse(
+        total_requests=total_reqs,
+        total_input_tokens=prompt_tokens,
+        total_output_tokens=comp_tokens,
+        requests_today=total_reqs,
+        tokens_today=prompt_tokens + comp_tokens,
+        by_intent=by_intent,
+    )
