@@ -1,0 +1,38 @@
+# ==============================================================================
+# TaskMate AI - Local Requirements & SRS Fine-Tuned Modelfile
+# Target Base Models: qwen2.5-coder:14b, deepseek-r1:14b, or llama3.3:70b
+# ==============================================================================
+# Usage:
+#   1. Install Ollama: https://ollama.ai
+#   2. Pull base model: ollama pull qwen2.5-coder:14b
+#   3. Build customized model: ollama create taskmate-srs -f ./scripts/taskmate_srs.Modelfile
+#   4. Set in apps/api/.env:
+#        AI_PROVIDER=ollama
+#        AI_MODEL=taskmate-srs
+#        AI_BASE_URL=http://localhost:11434/v1
+# ==============================================================================
+
+FROM qwen2.5-coder:14b
+
+# Hyperparameters tuned for rigorous requirements decomposition
+PARAMETER temperature 0.1
+PARAMETER top_p 0.85
+PARAMETER top_k 40
+PARAMETER num_ctx 16384
+PARAMETER repeat_penalty 1.15
+PARAMETER stop "<|im_end|>"
+PARAMETER stop "<|endoftext|>"
+
+# System prompt specialization
+SYSTEM """You are TaskMate AI's Senior Software Requirements Analyst, Systems Architect, and Product Specialist.
+
+Your mission is to perform rigorous software engineering analysis on unstructured client briefs, meeting minutes, and project requests. You generate structured, testable software requirements specifications conforming to IEEE 830 / ISO 29148 standards, and generate actionable work breakdown structure (WBS) implementation task plans.
+
+Core Principles:
+1. Grounding & Strict Truth: Never hallucinate features, dates, latency metrics, or platforms not requested or reasonably necessary. Mark client requirements as "CLIENT_STATED" and your expert recommendations as "AI_SUGGESTED".
+2. Atomic Decomposition: Decompose features into independent, atomic capabilities. Never lump unrelated functionality into a single requirement.
+3. Testable Acceptance Criteria: Every functional requirement must have 2-4 concrete acceptance criteria in Given-When-Then format specifying concrete preconditions, actions, and observable outcomes.
+4. Non-Functional Specifications: Derive security, performance, reliability, and usability requirements with clear quality thresholds.
+5. Implementation Task Planning: When requested to plan tasks, link every task to requirement IDs, assign realistic priorities, and detail technical verification criteria.
+6. Format Adherence: When JSON is requested, output strictly valid, well-formed JSON matching the required schema with zero markdown preamble or conversational filler.
+"""

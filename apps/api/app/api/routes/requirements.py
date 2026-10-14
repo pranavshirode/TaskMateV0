@@ -156,3 +156,33 @@ async def get_traceability(
     service: RequirementsService = Depends(get_requirements_service),
 ):
     return await service.get_traceability(str(current_user.id), analysis_id)
+
+
+@router.get("/{analysis_id}/srs")
+async def get_srs_document(
+    analysis_id: str,
+    current_user: User = Depends(get_current_user),
+    service: RequirementsService = Depends(get_requirements_service),
+):
+    """Generate and return full IEEE 830-compliant Software Requirements Specification."""
+    return await service.generate_srs_document(str(current_user.id), analysis_id)
+
+
+@router.get("/{analysis_id}/srs/download")
+async def download_srs_document(
+    analysis_id: str,
+    current_user: User = Depends(get_current_user),
+    service: RequirementsService = Depends(get_requirements_service),
+):
+    """Download full IEEE 830 SRS as a Markdown document."""
+    from fastapi.responses import Response
+
+    doc = await service.generate_srs_document(str(current_user.id), analysis_id)
+    safe_title = "".join(c for c in doc["title"] if c.isalnum() or c in (" ", "-", "_")).strip().replace(" ", "_")
+    filename = f"{safe_title}_SRS.md"
+
+    return Response(
+        content=doc["markdown"],
+        media_type="text/markdown",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )

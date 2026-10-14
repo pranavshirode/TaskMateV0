@@ -12,6 +12,7 @@ import { useWorkspaceUI } from "@/components/layout/WorkspaceUI";
 import { timeAgo } from "@/lib/format";
 import Icon, { type IconName } from "@/components/ui/Icon";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import MarkdownRenderer from "@/components/ui/MarkdownRenderer";
 
 type Mode = "chat" | "agent";
 
@@ -616,11 +617,10 @@ function MessageBubble({
         <Icon name={m.failed ? "alert" : "sparkles"} size={14} />
       </span>
       <div className="min-w-0 flex-1 space-y-2.5">
-        <div
-          className={`whitespace-pre-wrap text-sm leading-relaxed ${m.failed ? "text-[var(--danger)]" : ""}`}
-        >
-          {m.content}
-        </div>
+        <MarkdownRenderer
+          content={m.content}
+          className={m.failed ? "!text-[var(--danger)]" : ""}
+        />
 
         {m.clarify && (
           <p className="inline-flex items-center gap-1 rounded-full bg-[var(--warning-soft)] px-2 py-0.5 text-[11px] font-medium text-[var(--warning)]">

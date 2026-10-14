@@ -20,10 +20,16 @@ def get_ai_provider(provider_type: str | None = None) -> BaseAIProvider:
     if name == "mock":
         return MockAIProvider()
 
+    if name in ("local", "ollama", "lmstudio", "vllm"):
+        base_url = settings.AI_BASE_URL or (
+            "http://localhost:1234/v1" if name == "lmstudio" else "http://localhost:11434/v1"
+        )
+        api_key = settings.AI_API_KEY or "local-key"
+        return OpenAIProvider(api_key=api_key, model=settings.AI_MODEL, base_url=base_url)
+
     if name == "openai":
         if settings.AI_API_KEY:
             return OpenAIProvider()
-        # Fallback to Mock provider if API key is not yet set
         return MockAIProvider()
 
     return MockAIProvider()

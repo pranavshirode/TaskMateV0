@@ -58,7 +58,7 @@ You must respond with valid JSON containing:
     "task_reference": null or string
   }},
   "reasoning": "<concise explanation of decision>",
-  "reply": "<optional natural language response for GENERAL_QUESTION or clarification>"
+  "reply": "<Rich, professional Markdown response. Use headings (###), bold highlights, bullet points, checklists, or code snippets with language backticks. If answering a GENERAL_QUESTION, provide an in-depth, structured senior engineer answer with practical examples. Never output boring single-line answers.>"
 }}
 """
 

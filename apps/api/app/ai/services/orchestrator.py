@@ -272,9 +272,20 @@ class AIOrchestrator:
 
                 created_task = await self.task_service.create(user_id=user_id, data=create_payload)
 
-                proj_msg = f" for project '{resolved.project_name}'" if resolved.project_name else ""
-                due_msg = f", due {resolved.due_date.isoformat()}" if resolved.due_date else ""
-                final_message = f"Created task '{created_task.title}' ({priority.value} priority{due_msg}){proj_msg}."
+                prio_badge = f"`{priority.value}`"
+                proj_line = f"- **Project:** 📁 `{resolved.project_name}`\n" if resolved.project_name else ""
+                due_line = f"- **Due Date:** 📅 `{resolved.due_date.strftime('%Y-%m-%d')}`\n" if resolved.due_date else ""
+                desc_line = f"\n> {entities.task_description}\n" if entities.task_description else ""
+
+                final_message = (
+                    f"### ✅ Task Created: **{created_task.title}**\n\n"
+                    f"- **Priority:** {prio_badge}\n"
+                    f"- **Status:** 📋 `{status.value}`\n"
+                    f"{proj_line}"
+                    f"{due_line}"
+                    f"{desc_line}\n"
+                    f"*Task added to workspace. Ask me anytime to adjust details, assign labels, or break it into subtasks.*"
+                )
                 actions.append(
                     AIActionResult(
                         type="TASK_CREATED",
@@ -301,7 +312,11 @@ class AIOrchestrator:
                         task_id=target_task_id,
                         data=TaskStatusUpdate(status=TaskStatus.COMPLETED),
                     )
-                    final_message = f"Marked task '{updated.title}' as COMPLETED."
+                    final_message = (
+                        f"### 🎉 Task Completed!\n\n"
+                        f"Successfully marked **'{updated.title}'** as **`COMPLETED`**.\n\n"
+                        f"> Keep up the momentum! You can ask *\"What should I work on today?\"* to pick your next task."
+                    )
                     actions.append(
                         AIActionResult(
                             type="TASK_COMPLETED",
@@ -330,7 +345,10 @@ class AIOrchestrator:
                         task_id=target_task_id,
                         data=TaskStatusUpdate(status=target_status),
                     )
-                    final_message = f"Moved task '{updated.title}' to status {target_status.value}."
+                    final_message = (
+                        f"### ⚡ Status Updated\n\n"
+                        f"Task **'{updated.title}'** moved to **`{target_status.value}`**."
+                    )
                     actions.append(
                         AIActionResult(
                             type="STATUS_CHANGED",
@@ -359,7 +377,10 @@ class AIOrchestrator:
                         task_id=target_task_id,
                         data=TaskPriorityUpdate(priority=target_prio),
                     )
-                    final_message = f"Set priority of '{updated.title}' to {target_prio.value}."
+                    final_message = (
+                        f"### 🎯 Priority Updated\n\n"
+                        f"Priority of **'{updated.title}'** updated to **`{target_prio.value}`**."
+                    )
                     actions.append(
                         AIActionResult(
                             type="PRIORITY_CHANGED",
@@ -376,19 +397,20 @@ class AIOrchestrator:
                 due_count = len(dashboard.due_today)
                 overdue_count = len(dashboard.overdue)
 
-                lines = [f"Here is your workload for today ({dashboard.date.isoformat()}):"]
+                lines = [f"### 📅 Today's Workload Overview ({dashboard.date.strftime('%A, %B %d, %Y')})\n"]
                 if due_count > 0:
-                    lines.append(f"\nTasks Due Today ({due_count}):")
+                    lines.append(f"#### ⏳ Due Today ({due_count})\n")
                     for t in dashboard.due_today:
-                        lines.append(f"- [{t.priority.value}] {t.title} ({t.status.value})")
+                        lines.append(f"- **{t.title}** (`{t.priority.value}`) — Status: `{t.status.value}`")
                 else:
-                    lines.append("\nNo tasks due today.")
+                    lines.append("#### ⏳ Due Today\n- *No tasks due today. Everything is on schedule!*\n")
 
                 if overdue_count > 0:
-                    lines.append(f"\nOverdue Tasks ({overdue_count}):")
+                    lines.append(f"\n#### 🚨 Overdue Tasks ({overdue_count})\n")
                     for t in dashboard.overdue:
-                        lines.append(f"- [OVERDUE] {t.title} ({t.priority.value})")
+                        lines.append(f"- ⚠️ **{t.title}** (`{t.priority.value}`) — *Overdue*")
 
+                lines.append("\n💡 *Ask me to move, prioritize, or complete any of these tasks.*")
                 final_message = "\n".join(lines)
                 actions.append(
                     AIActionResult(
@@ -403,11 +425,12 @@ class AIOrchestrator:
                 dashboard = await self.dashboard_service.get_today_dashboard(user_id=user_id)
                 overdue_count = len(dashboard.overdue)
                 if overdue_count == 0:
-                    final_message = "Great news! You have no overdue tasks."
+                    final_message = "### 🎉 Great news!\nYou have **0 overdue tasks**. Your backlog and schedule are up to date."
                 else:
-                    lines = [f"You have {overdue_count} overdue task(s):"]
+                    lines = [f"### 🚨 Overdue Tasks ({overdue_count})\n"]
                     for t in dashboard.overdue:
-                        lines.append(f"- {t.title} (Priority: {t.priority.value}, Due: {t.due_date})")
+                        lines.append(f"- **{t.title}** (`{t.priority.value}`) — Due: `{t.due_date}`")
+                    lines.append("\n> Recommendation: Tackle high priority overdue items first or reschedule them.")
                     final_message = "\n".join(lines)
 
                 actions.append(
@@ -423,11 +446,13 @@ class AIOrchestrator:
                 query = entities.search_query or ""
                 search_results = await self.task_service.search(user_id=user_id, query=query)
                 if not search_results:
-                    final_message = f"No tasks found matching '{query}'."
+                    final_message = f"### 🔍 No Results\n\nNo tasks found matching query *\"{query}\"*. Try different keywords or ask to see all active tasks."
                 else:
-                    lines = [f"Found {len(search_results)} matching task(s) for '{query}':"]
+                    lines = [f"### 🔍 Search Results for *\"{query}\"* ({len(search_results)} tasks)\n"]
                     for t in search_results[:10]:
-                        lines.append(f"- [{t.status.value}] {t.title} ({t.priority.value} priority)")
+                        lines.append(f"- **{t.title}** — Priority: `{t.priority.value}` | Status: `{t.status.value}`")
+                    if len(search_results) > 10:
+                        lines.append(f"\n*...and {len(search_results) - 10} more tasks.*")
                     final_message = "\n".join(lines)
 
                 actions.append(
@@ -443,10 +468,11 @@ class AIOrchestrator:
                 if resolved.project_id:
                     proj = await self.project_service.get(user_id=user_id, project_id=resolved.project_id)
                     final_message = (
-                        f"Project: {proj.name}\n"
-                        f"Status: {proj.status.value}\n"
-                        f"Description: {proj.description or 'None'}\n"
-                        f"Summary: {proj.task_summary}"
+                        f"### 📁 Project: **{proj.name}**\n\n"
+                        f"- **Status:** `{proj.status.value}`\n"
+                        f"- **Description:** {proj.description or '*No description provided*'}\n"
+                        f"- **Tasks Summary:** {proj.task_summary}\n\n"
+                        f"> Ask me *\"What tasks are in {proj.name}?\"* or *\"Create a task for {proj.name}\"*."
                     )
                     actions.append(
                         AIActionResult(
@@ -457,19 +483,21 @@ class AIOrchestrator:
                         )
                     )
                 else:
+                    active_projs = ", ".join([f"`{p['name']}`" for p in context.projects]) or "None"
                     final_message = (
-                        f"I couldn't find a project matching '{entities.project_name}'. "
-                        f"Your active projects are: {', '.join([p['name'] for p in context.projects]) or 'None'}."
+                        f"### ⚠️ Project Not Found\n\n"
+                        f"I couldn't find a project matching *\"{entities.project_name}\"*.\n\n"
+                        f"**Your active projects:** {active_projs}"
                     )
 
             elif intent_val == IntentType.GET_CLIENT_INFO.value or intent_val == "GET_CLIENT_INFO":
                 if resolved.client_id:
                     client = await self.client_service.get(user_id=user_id, client_id=resolved.client_id)
                     final_message = (
-                        f"Client: {client.name}\n"
-                        f"Company: {client.company_name or 'N/A'}\n"
-                        f"Email: {client.email or 'N/A'}\n"
-                        f"Status: {client.status.value}"
+                        f"### 🏢 Client: **{client.name}**\n\n"
+                        f"- **Company:** {client.company_name or '*N/A*'}\n"
+                        f"- **Email:** `{client.email or 'N/A'}`\n"
+                        f"- **Status:** `{client.status.value}`\n"
                     )
                     actions.append(
                         AIActionResult(
@@ -480,9 +508,11 @@ class AIOrchestrator:
                         )
                     )
                 else:
+                    active_clients = ", ".join([f"`{c['name']}`" for c in context.clients]) or "None"
                     final_message = (
-                        f"I couldn't find a client matching '{entities.client_name}'. "
-                        f"Your active clients are: {', '.join([c['name'] for c in context.clients]) or 'None'}."
+                        f"### ⚠️ Client Not Found\n\n"
+                        f"I couldn't find a client matching *\"{entities.client_name}\"*.\n\n"
+                        f"**Your clients:** {active_clients}"
                     )
 
             else:

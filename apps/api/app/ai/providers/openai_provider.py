@@ -41,12 +41,13 @@ logger = logging.getLogger(__name__)
 
 
 class OpenAIProvider(BaseAIProvider):
-    """OpenAI / OpenAI-compatible API provider."""
+    """OpenAI / OpenAI-compatible API provider (supports Gemini, OpenAI, Ollama, LM Studio, vLLM)."""
 
-    def __init__(self, api_key: str | None = None, model: str | None = None):
+    def __init__(self, api_key: str | None = None, model: str | None = None, base_url: str | None = None):
         settings = get_settings()
         self._api_key = api_key or settings.AI_API_KEY
         self._default_model = model or settings.AI_MODEL
+        self._base_url = base_url or settings.AI_BASE_URL
         self._default_temperature = settings.AI_TEMPERATURE
         self._default_max_tokens = settings.AI_MAX_TOKENS
         self._timeout = settings.AI_TIMEOUT
@@ -55,7 +56,7 @@ class OpenAIProvider(BaseAIProvider):
         self._client = (
             AsyncOpenAI(
                 api_key=self._api_key,
-                base_url=settings.AI_BASE_URL or None,
+                base_url=self._base_url or None,
                 timeout=float(self._timeout),
                 max_retries=self._max_retries,
             )

@@ -659,3 +659,232 @@ Create a structured implementation task plan in JSON breaking down these require
             overall_progress_percent=round(overall_progress, 1),
             items=items,
         )
+
+    async def generate_srs_document(self, user_id: str, analysis_id: str) -> dict[str, Any]:
+        """Generate a complete IEEE 830-compliant Software Requirements Specification (SRS)."""
+        analysis = await self.get_analysis(user_id, analysis_id)
+        project = await self.project_repo.get_by_id(analysis.project_id)
+        project_name = project.name if project else "Project"
+
+        overview = analysis.overview_data or {}
+        objective = overview.get("project_objective") or analysis.brief
+        business_problem = overview.get("business_problem") or "Client freelance project implementation."
+        intended_outcome = overview.get("intended_outcome") or analysis.desired_outcome or "Production-ready software release."
+        in_scope = overview.get("in_scope") or []
+        out_of_scope = overview.get("out_of_scope") or []
+
+        fr_list = [r for r in analysis.requirements if getattr(r.category, "value", r.category) == "FUNCTIONAL"]
+        nfr_list = [r for r in analysis.requirements if getattr(r.category, "value", r.category) == "NON_FUNCTIONAL"]
+        extra_nfrs = analysis.non_functional_requirements or []
+        constraints = analysis.technical_constraints or []
+        assumptions = analysis.assumptions or []
+        risks = analysis.risks or []
+        questions = analysis.questions or []
+
+        doc_lines = [
+            f"# Software Requirements Specification (SRS)",
+            f"## Project: {project_name} — {analysis.title}",
+            f"",
+            f"| Attribute | Specification Details |",
+            f"| :--- | :--- |",
+            f"| **Document Version** | v{analysis.version}.0.0 |",
+            f"| **Standard Compliance** | IEEE 830-1998 / ISO/IEC/IEEE 29148:2018 |",
+            f"| **Status** | {analysis.status.value if hasattr(analysis.status, 'value') else analysis.status} |",
+            f"| **Generated On** | {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')} |",
+            f"| **System Architect** | TaskMate AI Senior Requirements Engine |",
+            f"",
+            f"---",
+            f"",
+            f"## 1. Introduction & Executive Summary",
+            f"",
+            f"### 1.1 Purpose",
+            f"This Software Requirements Specification (SRS) defines the complete functional and non-functional requirements, technical constraints, quality attributes, and implementation task breakdown for **{project_name}**. It serves as the definitive contractual baseline for the development lifecycle.",
+            f"",
+            f"### 1.2 Business Problem & Value Proposition",
+            f"{business_problem}",
+            f"",
+            f"### 1.3 Project Objective & Intended Outcome",
+            f"{objective}",
+            f"",
+            f"**Target Outcome:** {intended_outcome}",
+            f"",
+            f"### 1.4 Scope Boundaries",
+        ]
+
+        if in_scope:
+            doc_lines.append("#### In-Scope Capabilities:")
+            for item in in_scope:
+                doc_lines.append(f"- ✅ {item}")
+            doc_lines.append("")
+
+        if out_of_scope:
+            doc_lines.append("#### Out-of-Scope (Deferred / Excluded):")
+            for item in out_of_scope:
+                doc_lines.append(f"- ❌ {item}")
+            doc_lines.append("")
+
+        doc_lines.extend([
+            f"---",
+            f"",
+            f"## 2. Overall Description & System Context",
+            f"",
+            f"### 2.1 Product Perspective & Architecture",
+            f"The system is designed as a modern, decoupled client-server architecture with secure API endpoints, relational persistence, and event-driven automation.",
+            f"",
+            f"### 2.2 User Classes & Personas",
+            f"- **Primary Users / Freelance Developers:** Manage tasks, execute client requirements, track delivery milestones.",
+            f"- **Clients / Stakeholders:** Submit briefs, review deliverables, track project status.",
+            f"- **System Administrators:** Configure integrations, manage API tokens, inspect audit logs.",
+            f"",
+            f"### 2.3 Technical Constraints & Environment",
+        ])
+
+        if constraints:
+            for c in constraints:
+                if isinstance(c, dict):
+                    cat = c.get("category", "GENERAL")
+                    detail = c.get("constraint", "")
+                    doc_lines.append(f"- **[{cat}]** {detail}")
+                else:
+                    doc_lines.append(f"- {c}")
+        else:
+            doc_lines.append("- Standard cloud or containerized deployment environment (Docker / Linux).")
+
+        doc_lines.extend([
+            f"",
+            f"---",
+            f"",
+            f"## 3. System Features & Functional Requirements",
+            f"",
+        ])
+
+        if not fr_list:
+            doc_lines.append("*No functional requirements recorded yet. Run requirements analysis to extract features.*")
+        else:
+            for fr in fr_list:
+                doc_lines.append(f"### 3.{fr.key or 'FR'}: {fr.title}")
+                doc_lines.append(f"- **Identifier:** `{fr.key}`")
+                doc_lines.append(f"- **Priority:** `{fr.priority}`")
+                doc_lines.append(f"- **Status:** `{fr.status.value if hasattr(fr.status, 'value') else fr.status}`")
+                doc_lines.append(f"- **Source:** `{fr.source or 'CLIENT_STATED'}`")
+                if fr.dependencies:
+                    doc_lines.append(f"- **Dependencies:** `{', '.join(fr.dependencies)}`")
+                doc_lines.append(f"\n**Description:**\n{fr.description}\n")
+
+                if fr.acceptance_criteria:
+                    doc_lines.append("**Testable Acceptance Criteria (Given-When-Then):**")
+                    for ac in fr.acceptance_criteria:
+                        doc_lines.append(f"- {ac}")
+                    doc_lines.append("")
+
+        doc_lines.extend([
+            f"---",
+            f"",
+            f"## 4. Non-Functional Requirements & Quality Attributes",
+            f"",
+        ])
+
+        all_nfrs = []
+        for nfr in nfr_list:
+            all_nfrs.append({
+                "key": nfr.key,
+                "title": nfr.title,
+                "category": getattr(nfr.category, "value", str(nfr.category)),
+                "description": nfr.description,
+                "priority": nfr.priority,
+            })
+        for nfr in extra_nfrs:
+            if isinstance(nfr, dict):
+                all_nfrs.append({
+                    "key": nfr.get("key", "NFR"),
+                    "title": nfr.get("title", ""),
+                    "category": nfr.get("category", "QUALITY"),
+                    "description": nfr.get("description", ""),
+                    "priority": nfr.get("priority", "HIGH"),
+                })
+
+        if not all_nfrs:
+            doc_lines.append("- **Security:** All endpoints require authenticated bearer tokens. Sensitive keys encrypted at rest with Fernet.")
+            doc_lines.append("- **Performance:** Standard API p95 response time < 200ms under nominal workload.")
+            doc_lines.append("- **Reliability:** Service availability target 99.9% with automated database backups.")
+        else:
+            for item in all_nfrs:
+                doc_lines.append(f"### {item['key']}: {item['title']} (`{item['category']}`)")
+                doc_lines.append(f"- **Priority:** `{item['priority']}`")
+                doc_lines.append(f"- **Requirement:** {item['description']}\n")
+
+        doc_lines.extend([
+            f"---",
+            f"",
+            f"## 5. Risk Assessment & Mitigation Matrix",
+            f"",
+        ])
+
+        if risks:
+            doc_lines.append("| Risk Identifier & Description | Category | Severity | Mitigation Strategy |")
+            doc_lines.append("| :--- | :--- | :--- | :--- |")
+            for r in risks:
+                desc = r.description.replace("|", "/")
+                rtype = r.risk_type.replace("|", "/")
+                sev = r.severity.replace("|", "/")
+                mit = r.mitigation.replace("|", "/")
+                doc_lines.append(f"| {desc} | `{rtype}` | `{sev}` | {mit} |")
+            doc_lines.append("")
+        else:
+            doc_lines.append("*No critical technical risks identified during baseline analysis.*")
+
+        doc_lines.extend([
+            f"",
+            f"---",
+            f"",
+            f"## 6. Assumptions & Open Clarification Questions",
+            f"",
+        ])
+
+        if assumptions:
+            doc_lines.append("### 6.1 Architectural Assumptions:")
+            for a in assumptions:
+                doc_lines.append(f"- **{a.description}** *(Confidence: `{a.confidence}`, Reason: {a.reason})*")
+            doc_lines.append("")
+
+        if questions:
+            doc_lines.append("### 6.2 Stakeholder Clarification Questions:")
+            for q in questions:
+                ans_str = f"**Answer:** {q.answer}" if q.answer else "*Status: Unresolved — awaiting client input*"
+                doc_lines.append(f"- **[{q.question_key}] {q.question}**\n  - Topic: `{q.context_topic or 'General'}` | {ans_str}")
+            doc_lines.append("")
+
+        doc_lines.extend([
+            f"---",
+            f"",
+            f"## 7. Work Breakdown Structure (WBS) & Implementation Plan",
+            f"",
+            f"The approved requirements are mapped to concrete, actionable development tasks below:",
+            f"",
+        ])
+
+        # Link traceability tasks
+        traceability = await self.get_traceability(user_id, analysis_id)
+        if traceability.items:
+            for t_item in traceability.items:
+                doc_lines.append(f"### Requirement `{t_item.key}`: {t_item.title} ({t_item.progress_percent}% Implemented)")
+                if t_item.linked_tasks:
+                    for lt in t_item.linked_tasks:
+                        doc_lines.append(f"  - [ ] **Task:** {lt.title} | Priority: `{lt.priority}` | Status: `{lt.status}`")
+                else:
+                    doc_lines.append("  - *(Pending Task Plan generation & approval)*")
+                doc_lines.append("")
+
+        markdown_content = "\n".join(doc_lines)
+
+        return {
+            "analysis_id": analysis.id,
+            "project_name": project_name,
+            "title": analysis.title,
+            "version": f"v{analysis.version}.0.0",
+            "markdown": markdown_content,
+            "total_functional_requirements": len(fr_list),
+            "total_non_functional_requirements": len(all_nfrs),
+            "total_risks": len(risks),
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+        }
