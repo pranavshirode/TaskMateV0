@@ -6,9 +6,7 @@ _Last updated 2026-10-14, after Sprint 5 (see [AUDIT_2026-10-14.md](./AUDIT_2026
 
 ## 1. Overview
 
-This file lists the things **only you** (the human team) can do: decisions, accounts, secrets, compute, and demo preparation. An AI coding assistant can write the code, but it can't decide what your faculty will accept, label your dataset, or create your API keys.
-
-> **Demo prep:** read [`/DEMO.md`](../DEMO.md). It covers what works, the 10-minute demo script, how to plug in your fine-tuned model, and the Colab prompt.
+Tnp:** read [`/DEMO.md`](../DEMO.md). It covers what works, the 10-minute demo script, how to plug in your fine-tuned model, and the Colab prompt.
 >
 > **Read §2 first.** Sprint 5 fixed the broken setup commands (`make migrate`, the seed scripts). Section 6 now lists commands verified on 2026-10-14.
 

@@ -177,3 +177,4 @@ cd apps/api
 - [x] Model integrated into core application workflow (`app/ai/services/local_classifier.py` and `orchestrator.py`).
 - [x] Full test suite proving artifact loading, inference, and fallback behavior (`tests/test_local_classifier.py`).
 - [x] Full documentation and reproduction guide compiled (`MODEL_TRAINING_REPORT.md`).
+
