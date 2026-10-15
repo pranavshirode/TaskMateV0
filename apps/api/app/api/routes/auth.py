@@ -86,8 +86,8 @@ async def google_callback(
         msg = urllib.parse.quote("No authorization code was returned from Google.")
         return RedirectResponse(f"{frontend_url}/auth/callback?error={msg}", status_code=302)
 
-    if not settings.GOOGLE_SIGN_IN_CLIENT_ID:
-        msg = urllib.parse.quote("Google Sign-In is not configured on this server.")
+    if not settings.GOOGLE_SIGN_IN_CLIENT_ID or not settings.GOOGLE_SIGN_IN_CLIENT_SECRET:
+        msg = urllib.parse.quote("Google Sign-In is incomplete: GOOGLE_SIGN_IN_CLIENT_SECRET is missing from .env.")
         return RedirectResponse(f"{frontend_url}/auth/callback?error={msg}", status_code=302)
 
     try:
@@ -104,7 +104,13 @@ async def google_callback(
                 },
             )
             if token_resp.status_code != 200:
-                msg = urllib.parse.quote("Failed to exchange authorization code with Google.")
+                err_detail = token_resp.text
+                try:
+                    err_json = token_resp.json()
+                    err_detail = err_json.get("error_description") or err_json.get("error") or token_resp.text
+                except Exception:
+                    pass
+                msg = urllib.parse.quote(f"Google token exchange failed: {err_detail}")
                 return RedirectResponse(f"{frontend_url}/auth/callback?error={msg}", status_code=302)
             token_data = token_resp.json()
 
