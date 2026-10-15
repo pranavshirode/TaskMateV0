@@ -16,6 +16,7 @@ ollama run qwen2.5-coder:14b
 ```
 *(For machines with lower VRAM / 8GB RAM, use `qwen2.5-coder:7b` or `deepseek-r1:8b`)*.
 
+
 ### Step 3: Build the Specialized `taskmate-srs` Model
 Run this from your `TaskMateAI` project root:
 ```bash
