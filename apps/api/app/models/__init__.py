@@ -2,6 +2,7 @@ from app.db.base import Base  # noqa: F401
 from app.models.agent_execution import AgentExecution, AgentExecutionStep  # noqa: F401
 from app.models.ai import AIRequestLog, Conversation, ConversationMessage  # noqa: F401
 from app.models.client import Client  # noqa: F401
+from app.models.client_communication import ClientCommunication  # noqa: F401
 from app.models.enums import (  # noqa: F401
     AnalysisStatus,
     AutomationType,

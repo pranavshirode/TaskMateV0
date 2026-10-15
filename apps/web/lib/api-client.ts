@@ -429,6 +429,55 @@ export interface Proposal {
   version_history: ProposalVersionSummary[];
 }
 
+export interface ClientCommunication {
+  id: string;
+  client_id: string;
+  project_id?: string;
+  user_id: string;
+  subject: string;
+  content: string;
+  channel: string;
+  communication_type: string;
+  status: string;
+  scheduled_at?: string;
+  approved_at?: string;
+  sent_at?: string;
+  notes?: string;
+  client_name?: string;
+  project_name?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ClientCommunicationCreate {
+  client_id: string;
+  project_id?: string;
+  subject: string;
+  content: string;
+  channel?: string;
+  communication_type?: string;
+  scheduled_at?: string;
+  notes?: string;
+}
+
+export interface ClientCommunicationUpdate {
+  subject?: string;
+  content?: string;
+  channel?: string;
+  communication_type?: string;
+  scheduled_at?: string;
+  notes?: string;
+  status?: string;
+}
+
+export interface AIGenerateCommunicationRequest {
+  client_id: string;
+  project_id?: string;
+  communication_type?: string;
+  tone?: string;
+  context_notes?: string;
+}
+
 // ─── ApiClient ────────────────────────────────────────────────────────────────
 
 export class ApiClient {
@@ -1164,6 +1213,74 @@ export class ApiClient {
     });
     if (!res.ok) throw new Error("Failed to download markdown");
     return res.text();
+  }
+
+  // ── Client Communications ──────────────────────────────────────────────────
+
+  async listClientCommunications(
+    clientId: string,
+    params?: { project_id?: string; status?: string }
+  ): Promise<ClientCommunication[]> {
+    const qs = new URLSearchParams();
+    if (params?.project_id) qs.set("project_id", params.project_id);
+    if (params?.status) qs.set("status", params.status);
+    const query = qs.toString() ? `?${qs.toString()}` : "";
+    return this.fetchAPI(`/clients/${clientId}/communications${query}`) as Promise<ClientCommunication[]>;
+  }
+
+  async createClientCommunication(data: ClientCommunicationCreate): Promise<ClientCommunication> {
+    return this.fetchAPI("/client-communications", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }) as Promise<ClientCommunication>;
+  }
+
+  async getClientCommunication(id: string): Promise<ClientCommunication> {
+    return this.fetchAPI(`/client-communications/${id}`) as Promise<ClientCommunication>;
+  }
+
+  async updateClientCommunication(
+    id: string,
+    data: ClientCommunicationUpdate
+  ): Promise<ClientCommunication> {
+    return this.fetchAPI(`/client-communications/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }) as Promise<ClientCommunication>;
+  }
+
+  async approveClientCommunication(id: string): Promise<ClientCommunication> {
+    return this.fetchAPI(`/client-communications/${id}/approve`, {
+      method: "POST",
+    }) as Promise<ClientCommunication>;
+  }
+
+  async sendClientCommunication(id: string): Promise<ClientCommunication> {
+    return this.fetchAPI(`/client-communications/${id}/send`, {
+      method: "POST",
+    }) as Promise<ClientCommunication>;
+  }
+
+  async transitionCommunicationStatus(
+    id: string,
+    status: string,
+    notes?: string
+  ): Promise<ClientCommunication> {
+    return this.fetchAPI(`/client-communications/${id}/status`, {
+      method: "POST",
+      body: JSON.stringify({ status, notes }),
+    }) as Promise<ClientCommunication>;
+  }
+
+  async deleteClientCommunication(id: string): Promise<void> {
+    await this.fetchAPI(`/client-communications/${id}`, { method: "DELETE" });
+  }
+
+  async aiDraftCommunication(data: AIGenerateCommunicationRequest): Promise<ClientCommunication> {
+    return this.fetchAPI("/client-communications/ai-draft", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }) as Promise<ClientCommunication>;
   }
 }
 

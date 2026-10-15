@@ -31,16 +31,25 @@ AGENT_REQUIRE_APPROVAL_FOR_WRITES=true
 EOF
 fi
 
+# Resolve Python interpreter
+if [ -f "$PROJECT_ROOT/apps/api/.venv/bin/python" ]; then
+    PYTHON="$PROJECT_ROOT/apps/api/.venv/bin/python"
+elif [ -f "$PROJECT_ROOT/.venv/bin/python" ]; then
+    PYTHON="$PROJECT_ROOT/.venv/bin/python"
+else
+    PYTHON="python3"
+fi
+
 # Ensure database exists and is seeded
 if [ ! -f "$PROJECT_ROOT/taskmate.db" ]; then
     echo "Initializing database & demo seed data..."
-    "$PROJECT_ROOT/.venv/bin/python" "$PROJECT_ROOT/scripts/seed.py"
+    "$PYTHON" "$PROJECT_ROOT/scripts/seed.py"
 fi
 
 # Start Backend API in background
 echo "Starting FastAPI Backend on http://localhost:8000 (Docs: http://localhost:8000/docs)..."
 cd "$PROJECT_ROOT/apps/api"
-"$PROJECT_ROOT/.venv/bin/python" -m uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+"$PYTHON" -m uvicorn app.main:app --host 0.0.0.0 --port 8000 &
 BACKEND_PID=$!
 
 # Trap signals to cleanup processes

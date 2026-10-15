@@ -95,11 +95,13 @@ async def get_agent_orchestrator(
     conversation_service = ConversationService(ConversationRepository(db))
     task_service = TaskService(db)
     client_service = ClientService(db)
+    from app.services.client_communication import ClientCommunicationService
     from app.services.milestone import MilestoneService
     from app.services.proposal import ProposalService
 
     milestone_service = MilestoneService(db)
     proposal_service = ProposalService(db, ai_provider)
+    communication_service = ClientCommunicationService(db, ai_provider)
     return AgentOrchestrator(
         ai_provider=ai_provider,
         tool_registry=tool_registry,
@@ -115,6 +117,7 @@ async def get_agent_orchestrator(
         google_service=google_service,
         milestone_service=milestone_service,
         proposal_service=proposal_service,
+        communication_service=communication_service,
     )
 
 

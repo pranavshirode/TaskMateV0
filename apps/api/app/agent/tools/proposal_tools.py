@@ -134,3 +134,4 @@ class ProposalListTool(AgentTool):
 
 def get_proposal_tools() -> list[AgentTool]:
     return [ProposalCreateTool(), ProposalListTool()]
+

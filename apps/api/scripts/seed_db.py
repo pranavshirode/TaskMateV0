@@ -25,7 +25,10 @@ from app.models.enums import (
     TaskPriority,
     TaskStatus,
 )
+from app.models.client_communication import ClientCommunication
+from app.models.milestone import Milestone
 from app.models.project import Project
+from app.models.proposal import Proposal, ProposalVersion
 from app.models.repository import Repository
 from app.models.task import Task
 from app.models.task_event import TaskEvent
@@ -318,6 +321,117 @@ async def seed():
 
             await db.commit()
             print("Tasks created.")
+
+        # Seed Milestones
+        print("Checking milestones...")
+        result = await db.execute(select(Milestone).filter_by(user_id=user.id))
+        milestones = result.scalars().all()
+        if not milestones and project_map:
+            p = next(iter(project_map.values()))
+            m1 = Milestone(
+                id=str(uuid.uuid4()),
+                project_id=p.id,
+                user_id=user.id,
+                title="Phase 1: Architecture & API",
+                description="Core database schemas, authentication, and REST endpoints.",
+                status="COMPLETED",
+                due_date=today - timedelta(days=5),
+            )
+            m2 = Milestone(
+                id=str(uuid.uuid4()),
+                project_id=p.id,
+                user_id=user.id,
+                title="Phase 2: UI & Workflows",
+                description="Frontend dashboard, milestones, proposals, and assistant integration.",
+                status="IN_PROGRESS",
+                due_date=today + timedelta(days=14),
+            )
+            db.add_all([m1, m2])
+            await db.commit()
+            print("Demo milestones created.")
+
+        # Seed Proposals
+        print("Checking proposals...")
+        result = await db.execute(select(Proposal).filter_by(user_id=user.id))
+        proposals = result.scalars().all()
+        if not proposals and project_map:
+            p = next(iter(project_map.values()))
+            prop = Proposal(
+                id=str(uuid.uuid4()),
+                project_id=p.id,
+                user_id=user.id,
+                title="TaskMate Platform Architecture & Implementation Proposal",
+                client_name="Acme Technologies Inc.",
+                executive_summary="This proposal outlines the technical specifications, delivery milestones, and cost estimates for developing the custom developer platform.",
+                currency="USD",
+                discount_percent=0.0,
+                tax_percent=5.0,
+                subtotal=7500.0,
+                total_amount=7875.0,
+                estimated_duration_weeks=6,
+                status="APPROVED",
+                line_items=[
+                    {"description": "Backend API & Database Architecture", "quantity": 1, "unit_price": 3500.0, "total": 3500.0},
+                    {"description": "Next.js Frontend & State Management", "quantity": 1, "unit_price": 3000.0, "total": 3000.0},
+                    {"description": "AI Agent Orchestration & Tool Registry", "quantity": 1, "unit_price": 1000.0, "total": 1000.0},
+                ],
+                sections=[
+                    {"heading": "Project Scope", "content": "Full stack delivery including backend REST APIs, PostgreSQL relational persistence, and interactive Next.js dashboard."},
+                    {"heading": "Key Deliverables", "content": "Containerized application, automated test coverage, and milestone tracking."},
+                    {"heading": "Payment Terms", "content": "50% upfront deposit, 50% upon final acceptance testing."},
+                ],
+                notes="Standard commercial terms apply.",
+            )
+            db.add(prop)
+            await db.commit()
+            print("Demo proposal created.")
+
+        # Seed Client Communications
+        print("Checking client communications...")
+        result = await db.execute(select(ClientCommunication).filter_by(user_id=user.id))
+        comms = result.scalars().all()
+        if not comms and client_map:
+            c = next(iter(client_map.values()))
+            p = next(iter(project_map.values())) if project_map else None
+            comm1 = ClientCommunication(
+                id=str(uuid.uuid4()),
+                client_id=c.id,
+                project_id=p.id if p else None,
+                user_id=user.id,
+                subject="Weekly Progress Update — Milestone 1 Completed",
+                content=(
+                    f"Hi {c.name} Team,\n\n"
+                    "We are pleased to report that Milestone 1 (Backend Architecture & APIs) has been successfully delivered and verified with 100% test coverage.\n\n"
+                    "We are now progressing directly into Phase 2 frontend views and agent integrations. Please review the attached summary at your convenience.\n\n"
+                    "Best regards,\nAlex Developer"
+                ),
+                channel="EMAIL",
+                communication_type="STATUS_UPDATE",
+                status="SENT",
+                approved_at=datetime.now(timezone.utc) - timedelta(days=2),
+                sent_at=datetime.now(timezone.utc) - timedelta(days=2),
+                notes="Dispatched to client with milestone sign-off link.",
+            )
+            comm2 = ClientCommunication(
+                id=str(uuid.uuid4()),
+                client_id=c.id,
+                project_id=p.id if p else None,
+                user_id=user.id,
+                subject="Follow-up: Design Specifications & Review Sync",
+                content=(
+                    f"Hello {c.name},\n\n"
+                    "Following up on our sprint review: please confirm the approved branding assets and color palette when you have a moment so we can align the final styling.\n\n"
+                    "Thanks!\nAlex"
+                ),
+                channel="EMAIL",
+                communication_type="FOLLOW_UP",
+                status="APPROVED",
+                approved_at=datetime.now(timezone.utc) - timedelta(hours=3),
+                notes="Approved by developer; pending scheduled morning dispatch.",
+            )
+            db.add_all([comm1, comm2])
+            await db.commit()
+            print("Demo client communications created.")
 
     print("Seed completed successfully!")
     print()

@@ -33,3 +33,6 @@ class Client(Base):
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="clients")
     projects: Mapped[list["Project"]] = relationship("Project", back_populates="client", lazy="select")
+    communications: Mapped[list["ClientCommunication"]] = relationship(
+        "ClientCommunication", back_populates="client", lazy="selectin"
+    )

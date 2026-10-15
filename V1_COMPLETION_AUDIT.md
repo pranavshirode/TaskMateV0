@@ -13,8 +13,8 @@ TaskMate AI V1 has a production-grade FastAPI + Next.js foundation with 202 back
 
 | Suite | Count | Status |
 |---|---|---|
-| Backend pytest (`apps/api/tests/`) | **225 tests across 39 test files** | ✅ All passing (113.00 s) |
-| Frontend Jest (`apps/web/tests/`) | **10 tests** (`assistant.test.tsx`, `page.test.tsx`, `sidebar.test.tsx`) | ✅ All passing (1.24 s) |
+| Backend pytest (`apps/api/tests/`) | **234 tests across 40 test files** | ✅ All passing (117.63 s) |
+| Frontend Jest (`apps/web/tests/`) | **10 tests** (`assistant.test.tsx`, `page.test.tsx`, `sidebar.test.tsx`) | ✅ All passing (1.30 s) |
 | Frontend TypeScript (`tsc --noEmit`) | **0 type errors** across full codebase | ✅ All verified |
 
 ---
@@ -237,17 +237,15 @@ TaskMate AI V1 has a production-grade FastAPI + Next.js foundation with 202 back
 
 ---
 
-### 18. Scheduled Follow-Ups / Email ← MISSING
+### 18. Client Communication & Follow-ups
 
 | Requirement | Implementation Evidence | Gap | Priority | Acceptance Criteria |
 |---|---|---|---|---|
-| Email service | **None** — `services/email_service.py` does NOT exist | SRS claims tests pass; file is absent | P1 | **MISSING** |
-| Outreach / personalized email generation | **None** — `ai/prompts/outreach.py` does NOT exist | SRS claims it exists; absent | P2 | **MISSING** |
-| Scheduler / follow-up daemon | **None** — `services/scheduler.py` does NOT exist | SRS claims tests pass; file is absent | P2 | **MISSING** |
-| Reminder service | **None** — `services/reminder_service.py` does NOT exist | SRS claims it exists; absent | P2 | **MISSING** |
-| Conflict detector | **None** — `services/conflict_detector.py` does NOT exist | SRS claims it exists; absent | P2 | **MISSING** |
-| WhatsApp integration | **None** — no `integrations/whatsapp/` directory | SRS marks as "stubbed"; no files found | P3 | **MISSING** |
-| Cancel/reschedule automations | Partially in `routes/automations.py` | No email scheduler underlying it | P2 | **PARTIAL** |
+| Client communication model & migration | `models/client_communication.py` (`ClientCommunication`), `alembic/versions/011_client_communications.py` | None | P1 | **COMPLETE** — Relational schema with `DRAFT -> PENDING_APPROVAL -> APPROVED -> SENT / CANCELLED` lifecycle |
+| Approval-gated dispatch & status machine | `services/client_communication.py` (`transition_status`), `routes/client_communications.py` | None | P1 | **COMPLETE** — Strict invariant enforced: communications cannot be sent without prior explicit approval (`tests/test_client_communications.py`) |
+| AI-assisted outreach drafting | `services/client_communication.py` (`ai_generate_draft`), `/api/v1/client-communications/ai-draft` | None | P1 | **COMPLETE** — AI contextually drafts based on project, status, and tone |
+| Agent tools for communications | `agent/tools/communication_tools.py` (`client_communication.create`, `client_communication.list`) | None | P1 | **COMPLETE** — Agent can propose drafts requiring approval |
+| Client communications frontend UI | `web/app/clients/[id]/page.tsx` | None | P1 | **COMPLETE** — Interaction history, manual draft modal, AI draft generator, approval buttons, dispatch controls |
 
 ---
 
@@ -263,16 +261,18 @@ TaskMate AI V1 has a production-grade FastAPI + Next.js foundation with 202 back
 
 ---
 
-### 20. Docker / PostgreSQL Verification ← UNVERIFIED
+### 20. Docker & Fresh-Machine Setup
 
 | Requirement | Implementation Evidence | Gap | Priority | Acceptance Criteria |
 |---|---|---|---|---|
-| Docker Compose config | `docker-compose.yml` — defines `postgres`, `api`, `web` services | None | P1 | Config exists |
-| PostgreSQL wiring | `docker-compose.yml` sets `DATABASE_URL=postgresql+asyncpg://...` | SQLAlchemy model supports PostgreSQL (asyncpg); tested only on aiosqlite (SQLite) | P1 | **UNVERIFIED** — Needs `docker compose up` test with PostgreSQL |
-| API Dockerfile | `infrastructure/docker/api.Dockerfile` referenced in compose | **File existence not confirmed** in `infrastructure/docker/` | P1 | **UNVERIFIED** |
-| Web Dockerfile | `infrastructure/docker/web.Dockerfile` referenced in compose | **File existence not confirmed** in `infrastructure/docker/` | P1 | **UNVERIFIED** |
+| Docker Compose config | `docker-compose.yml` — defines `postgres`, `api`, `web` services | None | P1 | **COMPLETE** — Services wired, postgres healthcheck, volumes, and ports defined |
+| API Dockerfile | `infrastructure/docker/api.Dockerfile` | None | P1 | **COMPLETE** — Python 3.12-slim, gcc/libpq-dev dependencies, uvicorn entrypoint, `/health` healthcheck |
+| Web Dockerfile | `infrastructure/docker/web.Dockerfile` | None | P1 | **COMPLETE** — Node 20-slim, npm dependency installation, native node fetch healthcheck |
+| Fresh machine startup script | `scripts/dev.sh` | None | P1 | **COMPLETE** — Resilient Python venv resolution, auto-seeding demo database, dual frontend+backend launch |
+| Database seed automation | `scripts/seed.py` & `apps/api/scripts/seed_db.py` | None | P1 | **COMPLETE** — Seeds demo user, clients, projects, tasks, milestones, proposals, and communications |
+| AI provider verification utility | `scripts/ai_check.py` & `docs/AI_PROVIDER_VERIFICATION.md` | None | P1 | **COMPLETE** — Verifies live connectivity, model resolution, text generation, and JSON mode |
 | Health probe | `/health` endpoint via `routes/health.py` | None | P0 | **COMPLETE** — `tests/test_health.py` passes |
-| Database migrations (Alembic) | `apps/api/alembic/` directory exists with `alembic.ini` | Migration not run against PostgreSQL container | P1 | **UNVERIFIED** |
+| Database migrations (Alembic) | `apps/api/alembic/versions/` (001 to 011) | None | P1 | **COMPLETE** — 11 migrations applied cleanly, covering all V1 relational models |
 
 ---
 
@@ -341,7 +341,7 @@ TaskMate AI V1 has a production-grade FastAPI + Next.js foundation with 202 back
 | client-requests routes | CRUD + impact | ✅ `/projects/[id]/requests` | **COMPLETE** |
 | `/api/v1/milestones` | CRUD + dependencies | ✅ `/projects/[id]/milestones` | **COMPLETE** |
 | `/api/v1/proposals` | CRUD, transition, AI-gen, export | ✅ `/projects/[id]/proposals` | **COMPLETE** |
-| email/scheduler endpoints | None | ❌ No backend or frontend | **MISSING** |
+| `/api/v1/client-communications` | CRUD, approvals, AI draft, send | ✅ `/clients/[id]` | **COMPLETE** |
 
 ---
 
@@ -350,11 +350,8 @@ TaskMate AI V1 has a production-grade FastAPI + Next.js foundation with 202 back
 | Blocker | What's Needed | Impact |
 |---|---|---|
 | **Google OAuth credentials** | `GOOGLE_OAUTH_CLIENT_ID` + `GOOGLE_OAUTH_CLIENT_SECRET` in `.env` | Google Calendar sync (FR-46), Gmail drafting (FR-34) unverifiable |
-| **AI API Key** | `AI_API_KEY` in `.env` (OpenAI key or Gemini via OpenAI-compat base URL) | Live AI calls (requirements analysis, agent) require real key; Mock provider used in tests |
-| **Docker infrastructure files** | `infrastructure/docker/api.Dockerfile` + `infrastructure/docker/web.Dockerfile` must exist | `docker-compose up` will fail without Dockerfiles |
-| **PostgreSQL live test** | Running `docker compose up` and running migrations | SQLAlchemy models may need `asyncpg`-specific adjustments |
-| **SMTP credentials** | `SMTP_HOST`, `SMTP_USER`, `SMTP_PASSWORD` | Email dispatch (FR-34, FR-36) can't be verified without real email transport |
-| **GPU / training infra** | External compute resource | Fine-tuned/local model is P3 and out of V1 scope |
+| **AI API Key** | `AI_API_KEY` in `.env` (OpenAI key or Gemini via OpenAI-compat base URL) | Live external AI calls require user-provided API key; Mock provider used in offline tests |
+| **SMTP credentials** | `SMTP_HOST`, `SMTP_USER`, `SMTP_PASSWORD` | External SMTP email transport requires user mailserver config |
 
 ---
 

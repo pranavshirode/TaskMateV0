@@ -108,11 +108,14 @@ def create_default_registry() -> ToolRegistry:
 def create_extended_registry() -> ToolRegistry:
     """Create a ToolRegistry including milestones, proposals, and requirements tools."""
     registry = create_default_registry()
+    from app.agent.tools.communication_tools import get_communication_tools
     from app.agent.tools.milestone_tools import get_milestone_tools
     from app.agent.tools.proposal_tools import get_proposal_tools
 
     for tool in get_milestone_tools():
         registry.register(tool)
     for tool in get_proposal_tools():
+        registry.register(tool)
+    for tool in get_communication_tools():
         registry.register(tool)
     return registry

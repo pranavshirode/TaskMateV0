@@ -14,6 +14,7 @@ from app.api.routes import (
     ai,
     auth,
     automations,
+    client_communications,
     client_requests,
     clients,
     dashboard,
@@ -47,3 +48,4 @@ v1_router.include_router(client_requests.router, tags=["client-requests"])
 v1_router.include_router(automations.router, prefix="/automations", tags=["automations"])
 v1_router.include_router(proposals.router, prefix="", tags=["proposals"])
 v1_router.include_router(milestones.router, prefix="", tags=["milestones"])
+v1_router.include_router(client_communications.router, prefix="", tags=["client-communications"])
