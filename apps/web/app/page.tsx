@@ -227,7 +227,57 @@ function HeroMockup() {
             { label: "Clients", active: false },
             { label: "AI Assistant", active: false },
             { label: "Requirements", active: false },
+          ].map((item) => (
+            <div key={item.label} style={{
+              padding: "7px 14px",
+              fontSize: 12,
+              color: item.active ? "var(--lp-violet)" : "var(--lp-text2)",
+              background: item.active ? "rgba(139,124,255,0.12)" : "transparent",
+              margin: "1px 8px",
+              borderRadius: 6,
+            }}>
+              {item.label}
+            </div>
+          ))}
+        </div>
 
+        {/* Main content */}
+        <div style={{ flex: 1, padding: 20, overflowY: "auto" }}>
+          <div style={{ marginBottom: 16 }}>
+            <p style={{ fontSize: 11, color: "var(--lp-text2)", marginBottom: 4 }}>Good morning</p>
+            <h3 style={{ fontSize: 15, fontWeight: 700, color: "var(--lp-text)", margin: 0 }}>Your workspace</h3>
+          </div>
+
+          {/* Stat tiles */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 14 }}>
+            {[{ label: "Tasks due", value: "3", c: "#8B7CFF" }, { label: "Projects", value: "5", c: "#66A6FF" }, { label: "Clients", value: "4", c: "#34d399" }].map((s) => (
+              <div key={s.label} style={{ background: "var(--lp-bg2)", borderRadius: 8, border: "1px solid var(--lp-border)", padding: "10px 12px" }}>
+                <div style={{ fontSize: 18, fontWeight: 700, color: s.c }}>{s.value}</div>
+                <div style={{ fontSize: 10, color: "var(--lp-text2)", marginTop: 2 }}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Task list */}
+          <div style={{ background: "var(--lp-bg2)", borderRadius: 8, border: "1px solid var(--lp-border)", padding: "10px 12px", marginBottom: 10 }}>
+            <p style={{ fontSize: 10, fontWeight: 600, color: "var(--lp-text2)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Due today</p>
+            {[
+              { task: "Set up auth flow", project: "ClientPortal v2", done: true },
+              { task: "Review API schema", project: "DataSync", done: false },
+              { task: "Send proposal draft", project: "MobileApp MVP", done: false },
+            ].map((t) => (
+              <div key={t.task} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                <div style={{ width: 14, height: 14, borderRadius: 4, border: `1.5px solid ${t.done ? "var(--lp-violet)" : "var(--lp-border2)"}`, background: t.done ? "var(--lp-violet)" : "transparent", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  {t.done && <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>}
+                </div>
+                <span style={{ fontSize: 11, color: t.done ? "var(--lp-text2)" : "var(--lp-text)", textDecoration: t.done ? "line-through" : "none", flex: 1 }}>{t.task}</span>
+                <span style={{ fontSize: 10, color: "var(--lp-text2)", background: "rgba(139,124,255,0.1)", padding: "1px 6px", borderRadius: 4 }}>{t.project}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* AI prompt bar */}
+          <div style={{ background: "var(--lp-bg2)", borderRadius: 8, border: "1px solid rgba(139,124,255,0.3)", padding: "8px 12px", display: "flex", alignItems: "center", gap: 8 }}>
             <div style={{ width: 16, height: 16, borderRadius: "50%", background: "linear-gradient(135deg, #8B7CFF, #66A6FF)", flexShrink: 0 }} />
             <span style={{ fontSize: 11, color: "var(--lp-text2)", fontStyle: "italic" }}>Ask TaskMate to organize your week…</span>
           </div>
@@ -236,6 +286,8 @@ function HeroMockup() {
     </div>
   );
 }
+
+
 
 /* ─── Section wrapper ────────────────────────────────────────────── */
 function Section({ id, children, style = {} }: { id?: string; children: React.ReactNode; style?: React.CSSProperties }) {
