@@ -315,9 +315,16 @@ function SectionHeading({ children }: { children: React.ReactNode }) {
   );
 }
 
-function SectionSubtitle({ children }: { children: React.ReactNode }) {
+function SectionSubtitle({ children, center }: { children: React.ReactNode; center?: boolean }) {
   return (
-    <p style={{ fontSize: 17, color: "var(--lp-text2)", lineHeight: 1.7, maxWidth: 560, margin: "0 0 48px" }}>
+    <p style={{
+      fontSize: 17,
+      color: "var(--lp-text2)",
+      lineHeight: 1.7,
+      maxWidth: 600,
+      margin: center ? "0 auto 48px" : "0 0 48px",
+      textAlign: center ? "center" : "left",
+    }}>
       {children}
     </p>
   );
@@ -439,7 +446,7 @@ function ProblemSection() {
       <div style={{ textAlign: "center", marginBottom: 56 }}>
         <SectionLabel>The problem</SectionLabel>
         <SectionHeading>Freelancing is great. The admin is not.</SectionHeading>
-        <SectionSubtitle>
+        <SectionSubtitle center>
           You're great at building software. But the operational overhead of client work eats into your productive hours every day.
         </SectionSubtitle>
       </div>
@@ -595,11 +602,11 @@ function FeaturesSection() {
       <div style={{ textAlign: "center", marginBottom: 56 }}>
         <SectionLabel>Features</SectionLabel>
         <SectionHeading>Everything a freelance dev needs</SectionHeading>
-        <SectionSubtitle>
+        <SectionSubtitle center>
           Built from the ground up for solo developers — not bloated enterprise PM tools.
         </SectionSubtitle>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }} className="lp-bento">
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20 }} className="lp-bento">
         {FEATURES.map((f) => <FeatureCard key={f.title} f={f} />)}
       </div>
     </Section>
@@ -690,7 +697,7 @@ function InteractivePreview() {
       <div style={{ textAlign: "center", marginBottom: 48 }}>
         <SectionLabel>See it in action</SectionLabel>
         <SectionHeading>From brief to plan</SectionHeading>
-        <SectionSubtitle>Watch how a vague client message becomes a structured, actionable project plan.</SectionSubtitle>
+        <SectionSubtitle center>Watch how a vague client message becomes a structured, actionable project plan.</SectionSubtitle>
       </div>
       <div style={{ background: "var(--lp-card)", border: "1px solid var(--lp-border2)", borderRadius: 16, overflow: "hidden", boxShadow: "0 20px 60px rgba(0,0,0,0.5)" }}>
         {/* Tabs */}
@@ -700,7 +707,7 @@ function InteractivePreview() {
               key={t.id}
               onClick={() => setTab(t.id)}
               style={{
-                padding: "12px 20px",
+                padding: "13px 24px",
                 fontSize: 13,
                 fontWeight: tab === t.id ? 700 : 400,
                 color: tab === t.id ? "var(--lp-violet)" : "var(--lp-text2)",
@@ -715,8 +722,8 @@ function InteractivePreview() {
             </button>
           ))}
         </div>
-        {/* Content */}
-        <div style={{ minHeight: 280 }}>
+        {/* Content — no minHeight, content drives the height */}
+        <div>
           {active.content}
         </div>
       </div>
