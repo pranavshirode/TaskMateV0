@@ -534,64 +534,74 @@ function WorkflowSection() {
 const FEATURES = [
   {
     title: "Multi-agent requirement analysis",
-    desc: "Specialized AI agents extract structured requirements, risks, assumptions, and clarifying questions from any client brief. The pipeline pauses and asks you when information is missing — no hallucination.",
+    desc: "Specialized AI agents extract structured requirements, risks, assumptions, and clarifying questions from any client brief. Pauses and asks when information is missing.",
     accent: "#8B7CFF",
-    wide: true,
+    icon: "🧩",
   },
   {
     title: "Visual task board",
-    desc: "Kanban-style board with drag-and-drop, priorities, deadlines, and dependency tracking across all projects.",
+    desc: "Kanban-style board with priorities, deadlines, and dependency tracking. Organize all your projects in one clean, focused view.",
     accent: "#66A6FF",
-    wide: false,
+    icon: "📋",
   },
   {
-    title: "Milestones and dependencies",
-    desc: "Structure work into milestones. Define blocking and blocked relationships between tasks.",
+    title: "Milestones & dependencies",
+    desc: "Structure work into delivery milestones. Define blocking and blocked relationships between tasks to keep projects on track.",
     accent: "#34d399",
-    wide: false,
+    icon: "🏁",
   },
   {
-    title: "Proposal and estimate generation",
-    desc: "Turn approved requirements into a structured client proposal with scope, deliverables, exclusions, and timeline estimates.",
+    title: "Proposal generation",
+    desc: "Turn approved requirements into a structured client proposal — scope, deliverables, exclusions, and timeline estimates, ready to send.",
     accent: "#f59e0b",
-    wide: false,
+    icon: "📄",
   },
   {
-    title: "Client and project management",
-    desc: "Link projects to clients. Track communications, status, and interaction history in one place.",
+    title: "Client management",
+    desc: "Link projects to clients. Track communications, status, and interaction history. Keep every engagement organized in one place.",
     accent: "#f472b6",
-    wide: false,
+    icon: "🤝",
   },
   {
-    title: "Local AI intent classifier",
-    desc: "A trained TF-IDF + Logistic Regression model routes your workspace queries to the right agent — fast, offline, no API cost.",
+    title: "Local AI classifier",
+    desc: "A trained TF-IDF + Logistic Regression model routes queries to the right agent — fast, offline, and zero API cost.",
     accent: "#8B7CFF",
-    wide: true,
+    icon: "🤖",
   },
 ];
 
 function FeatureCard({ f }: { f: typeof FEATURES[0] }) {
   return (
     <div
-      data-wide={f.wide ? "true" : "false"}
       style={{
         background: "var(--lp-card)",
         border: "1px solid var(--lp-border)",
         borderRadius: 16,
-        padding: 28,
-        gridColumn: f.wide ? "span 2" : "span 1",
+        padding: "28px 28px 32px",
         transition: "border-color 0.2s, transform 0.2s",
         position: "relative",
         overflow: "hidden",
+        display: "flex",
+        flexDirection: "column",
+        gap: 0,
       }}
       className="lp-feature-card"
     >
-      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, ${f.accent}66, transparent)` }} />
-      <div style={{ width: 36, height: 36, borderRadius: 10, background: `${f.accent}1a`, border: `1px solid ${f.accent}33`, marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ width: 14, height: 14, borderRadius: "50%", background: f.accent }} />
+      {/* Top accent line */}
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, ${f.accent}88, transparent)` }} />
+      {/* Icon badge */}
+      <div style={{
+        width: 44, height: 44, borderRadius: 12,
+        background: `${f.accent}18`,
+        border: `1px solid ${f.accent}30`,
+        marginBottom: 20,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: 20,
+      }}>
+        {f.icon}
       </div>
-      <h3 style={{ fontSize: 16, fontWeight: 700, color: "var(--lp-text)", margin: "0 0 10px" }}>{f.title}</h3>
-      <p style={{ fontSize: 14, color: "var(--lp-text2)", lineHeight: 1.7, margin: 0 }}>{f.desc}</p>
+      <h3 style={{ fontSize: 16, fontWeight: 700, color: "var(--lp-text)", margin: "0 0 10px", lineHeight: 1.3 }}>{f.title}</h3>
+      <p style={{ fontSize: 14, color: "var(--lp-text2)", lineHeight: 1.75, margin: 0, flex: 1 }}>{f.desc}</p>
     </div>
   );
 }
@@ -606,12 +616,14 @@ function FeaturesSection() {
           Built from the ground up for solo developers — not bloated enterprise PM tools.
         </SectionSubtitle>
       </div>
+      {/* Uniform 3×2 grid — perfectly symmetric */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20 }} className="lp-bento">
         {FEATURES.map((f) => <FeatureCard key={f.title} f={f} />)}
       </div>
     </Section>
   );
 }
+
 
 /* ─── Interactive preview ────────────────────────────────────────── */
 const PREVIEW_TABS = [
@@ -945,26 +957,22 @@ function ResponsiveStyles() {
       .lp-feature-card:hover {
         border-color: rgba(139,124,255,0.3);
         transform: translateY(-2px);
+        box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      }
+
+      @media (max-width: 1024px) {
+        .lp-bento { grid-template-columns: repeat(2, 1fr) !important; }
       }
 
       @media (max-width: 900px) {
         .lp-hero-grid { grid-template-columns: 1fr !important; }
         .lp-3col { grid-template-columns: 1fr !important; }
-        .lp-bento { grid-template-columns: repeat(2, 1fr) !important; }
       }
 
-      @media (max-width: 640px) {
+      @media (max-width: 600px) {
         .lp-desktop-nav { display: none !important; }
         .lp-hamburger { display: flex !important; }
         .lp-bento { grid-template-columns: 1fr !important; }
-        .lp-feature-card { grid-column: span 1 !important; }
-      }
-
-      @media (max-width: 900px) {
-        .lp-feature-card[data-wide="true"] { grid-column: span 2; }
-      }
-      @media (max-width: 640px) {
-        .lp-feature-card[data-wide="true"] { grid-column: span 1; }
       }
     `}</style>
   );
