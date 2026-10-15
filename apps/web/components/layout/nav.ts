@@ -18,7 +18,7 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       {
         name: "Today",
-        href: "/",
+        href: "/dashboard",
         icon: "today",
         description: "Your focus for today",
       },
@@ -81,7 +81,7 @@ export const NAV_SECTIONS: NavSection[] = [
 export const ALL_NAV_ITEMS = NAV_SECTIONS.flatMap((s) => s.items);
 
 export function isNavActive(pathname: string, href: string) {
-  if (href === "/") return pathname === "/";
+  if (href === "/dashboard") return pathname === "/" || pathname === "/dashboard";
   // The legacy /assistant route is the same experience as /ai.
   if (href === "/ai" && pathname.startsWith("/assistant")) return true;
   return pathname === href || pathname.startsWith(href + "/");

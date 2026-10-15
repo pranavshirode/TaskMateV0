@@ -101,3 +101,55 @@
 .animate-pop {
   animation: pop-in 160ms ease-out;
 }
+
+/* ─── Landing page design tokens ──────────────────────────────────── */
+.landing {
+  --lp-bg: #090b10;
+  --lp-bg2: #0f121a;
+  --lp-card: #141925;
+  --lp-card2: #1a2030;
+  --lp-text: #f5f7fb;
+  --lp-text2: #a1a9b8;
+  --lp-violet: #8b7cff;
+  --lp-blue: #66a6ff;
+  --lp-border: rgba(255, 255, 255, 0.08);
+  --lp-border2: rgba(255, 255, 255, 0.13);
+  --lp-glow-violet: rgba(139, 124, 255, 0.18);
+  --lp-glow-blue: rgba(102, 166, 255, 0.15);
+  color-scheme: dark;
+}
+
+@keyframes lp-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes lp-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes lp-shimmer {
+  from { background-position: -200% center; }
+  to   { background-position: 200% center; }
+}
+
+.lp-animate-fade-up {
+  animation: lp-fade-up 0.6s ease-out both;
+}
+.lp-animate-fade-in {
+  animation: lp-fade-in 0.5s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-animate-fade-up,
+  .lp-animate-fade-in {
+    animation: none;
+  }
+}

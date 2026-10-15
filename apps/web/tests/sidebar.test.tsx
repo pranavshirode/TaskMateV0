@@ -48,8 +48,8 @@ describe("Sidebar", () => {
 
   it("marks the Today link as active when on the root path", async () => {
     await renderWithAuth(<Sidebar />);
-    // The Today link should exist and navigate to "/"
+    // The Today link now navigates to "/dashboard" (root "/" is the landing page)
     const todayLink = screen.getByText("Today").closest("a");
-    expect(todayLink).toHaveAttribute("href", "/");
+    expect(todayLink).toHaveAttribute("href", "/dashboard");
   });
 });

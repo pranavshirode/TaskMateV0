@@ -19,11 +19,12 @@ export default function ClientLayout({
   useEffect(() => setMenuOpen(false), [pathname]);
 
   const isAuthPage = pathname === "/login" || pathname === "/register";
+  const isLandingPage = pathname === "/";
   // Chat pages manage their own full-height scrolling.
   const isFullBleed =
     pathname.startsWith("/ai") || pathname.startsWith("/assistant");
 
-  if (isAuthPage) {
+  if (isAuthPage || isLandingPage) {
     return (
       <FeedbackProvider>
         <main className="flex-1 overflow-y-auto">{children}</main>

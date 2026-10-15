@@ -22,7 +22,7 @@ export default function Sidebar({
       className={`flex w-60 flex-col border-r border-[var(--sidebar-border)] bg-[var(--nav-bg)] ${className}`}
     >
       <Link
-        href="/"
+        href="/dashboard"
         onClick={onNavigate}
         className="flex h-14 items-center gap-2.5 border-b border-[var(--sidebar-border)] px-5"
       >
