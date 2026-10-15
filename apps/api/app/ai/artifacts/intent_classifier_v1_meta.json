@@ -1,0 +1,295 @@
+{
+  "model_name": "TaskMate Workspace Intent Classifier",
+  "model_version": "1.0.0",
+  "trained_at": "2026-10-15T08:00:38.489177+00:00",
+  "algorithm": "TF-IDF (1,2 ngrams) + LogisticRegression(C=3.0, class_weight='balanced')",
+  "training_samples": 80,
+  "test_samples": 20,
+  "total_samples": 100,
+  "classes": [
+    "CHANGE_TASK_PRIORITY",
+    "CHANGE_TASK_STATUS",
+    "CREATE_TASK",
+    "GENERAL_QUESTION",
+    "GET_CLIENT_INFO",
+    "GET_OVERDUE_TASKS",
+    "GET_PROJECT_INFO",
+    "GET_TODAY_TASKS",
+    "RUN_AGENT",
+    "SEARCH_TASKS",
+    "UNKNOWN",
+    "UPDATE_TASK"
+  ],
+  "baseline_metrics": {
+    "model": "CountVectorizer + MultinomialNB",
+    "accuracy": 0.5,
+    "macro_f1": 0.069,
+    "macro_precision": 0.0526,
+    "macro_recall": 0.1
+  },
+  "primary_metrics": {
+    "model": "TfidfVectorizer + LogisticRegression",
+    "accuracy": 0.4,
+    "macro_f1": 0.0696,
+    "macro_precision": 0.0615,
+    "macro_recall": 0.08,
+    "weighted_f1": 0.3478
+  },
+  "classification_report": {
+    "CHANGE_TASK_PRIORITY": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 1.0
+    },
+    "CHANGE_TASK_STATUS": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 1.0
+    },
+    "CREATE_TASK": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 2.0
+    },
+    "GENERAL_QUESTION": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 1.0
+    },
+    "GET_CLIENT_INFO": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 1.0
+    },
+    "GET_OVERDUE_TASKS": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 0.0
+    },
+    "GET_PROJECT_INFO": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 1.0
+    },
+    "GET_TODAY_TASKS": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 1.0
+    },
+    "RUN_AGENT": {
+      "precision": 0.6153846153846154,
+      "recall": 0.8,
+      "f1-score": 0.6956521739130435,
+      "support": 10.0
+    },
+    "SEARCH_TASKS": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 1.0
+    },
+    "UNKNOWN": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 0.0
+    },
+    "UPDATE_TASK": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 1.0
+    },
+    "accuracy": 0.4,
+    "macro avg": {
+      "precision": 0.05128205128205129,
+      "recall": 0.06666666666666667,
+      "f1-score": 0.057971014492753624,
+      "support": 20.0
+    },
+    "weighted avg": {
+      "precision": 0.3076923076923077,
+      "recall": 0.4,
+      "f1-score": 0.34782608695652173,
+      "support": 20.0
+    }
+  },
+  "confusion_matrix": [
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      1
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      8,
+      1,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  ]
+}

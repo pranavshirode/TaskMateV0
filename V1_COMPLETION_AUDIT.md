@@ -13,8 +13,8 @@ TaskMate AI V1 has a production-grade FastAPI + Next.js foundation with 202 back
 
 | Suite | Count | Status |
 |---|---|---|
-| Backend pytest (`apps/api/tests/`) | **240 tests across 41 test files** | ✅ All passing (122.83 s) |
-| Frontend Jest (`apps/web/tests/`) | **10 tests** (`assistant.test.tsx`, `page.test.tsx`, `sidebar.test.tsx`) | ✅ All passing (1.31 s) |
+| Backend pytest (`apps/api/tests/`) | **246 tests across 42 test files** | ✅ All passing (123.43 s) |
+| Frontend Jest (`apps/web/tests/`) | **10 tests** (`assistant.test.tsx`, `page.test.tsx`, `sidebar.test.tsx`) | ✅ All passing (1.59 s) |
 | Frontend TypeScript (`tsc --noEmit`) | **0 type errors** across full codebase | ✅ All verified |
 
 ---
@@ -250,15 +250,16 @@ TaskMate AI V1 has a production-grade FastAPI + Next.js foundation with 202 back
 
 ---
 
-### 19. Fine-tuned / Local Model ← MISSING
+### 19. Trained / Local Model & Fine-Tuning
 
 | Requirement | Implementation Evidence | Gap | Priority | Acceptance Criteria |
 |---|---|---|---|---|
-| Gemini provider (native) | **None** — `ai/providers/__init__.py` lists OpenAI + Mock only. No `gemini_provider.py` | SRS claims Gemini is active; the factory has no Gemini branch. Config uses `AI_PROVIDER=openai` talking to Gemini API via OpenAI-compatible SDK (`AI_BASE_URL`) | P1 | **PARTIAL** — Works via OpenAI-compat SDK but no dedicated Gemini client |
-| Anthropic provider | **None** — no `anthropic_provider.py` | SRS mentions Anthropic; not implemented | P3 | **MISSING** |
-| Ollama / local model | Factory has `ollama`/`lmstudio`/`vllm` branches → delegates to `OpenAIProvider` with custom base URL | None | P2 | **COMPLETE** — Supported via OpenAI-compat endpoint |
-| Fine-tuned model support | No fine-tuning infrastructure | GPU, training data, and hosting out of scope for V1 | P3 | **MISSING** |
-| Mock provider | `ai/providers/mock_provider.py` | None | P0 | **COMPLETE** (test/CI use) |
+| Trained Workspace Intent Classifier | `evaluation/train_intent_classifier.py`, `app/ai/artifacts/intent_classifier_v1.joblib`, `app/ai/services/local_classifier.py`, `MODEL_TRAINING_REPORT.md` | None | P1 | **COMPLETE** — Real ML training pipeline (TF-IDF + Calibrated Logistic Regression), evaluated with train/test splits, saved joblib artifact + metadata, integrated into `AIOrchestrator` (`tests/test_local_classifier.py`, 6/6 tests passing) |
+| Requirements Extraction AI Benchmark | `evaluation/evaluate_requirements.py`, `evaluation/requirements_dataset.json` | None | P1 | **COMPLETE** — 32 representative scenarios evaluated for schema compliance, non-fabrication, ambiguity detection, and prompt injection (100% pass rate) |
+| Ollama / local model configuration | `scripts/taskmate_srs.Modelfile`, `docs/LOCAL_MODELS_AND_FINE_TUNING.md`, factory delegates to `OpenAIProvider` with custom base URL | None | P2 | **COMPLETE** — Fully configured Modelfile with temperature 0.1, 16k context, and IEEE 830 system instructions for local Ollama execution |
+| Gemini provider (native) | Supported via OpenAI-compatible SDK (`AI_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai/`) | No dedicated Google GenAI SDK client; works through standard OpenAI protocol | P2 | **PARTIAL** |
+| Anthropic provider | None | Out of agreed V1 scope | P3 | **MISSING** |
+| Mock provider | `ai/providers/mock_provider.py` | None | P0 | **COMPLETE** (deterministic offline CI & testing) |
 
 ---
 

@@ -28,6 +28,7 @@ from app.ai.providers import get_ai_provider
 from app.ai.providers.base import AIMessage, BaseAIProvider
 from app.ai.schemas.intent import ExtractedEntities, IntentType
 from app.ai.schemas.responses import AIActionResult, AIChatResponse
+from app.ai.services.local_classifier import LocalIntentClassifier, get_local_classifier
 from app.models.ai import AIRequestLog, Conversation, ConversationMessage
 from app.models.enums import TaskPriority, TaskStatus
 from app.schemas.task import TaskCreate, TaskPriorityUpdate, TaskStatusUpdate
@@ -40,9 +41,15 @@ logger = logging.getLogger(__name__)
 
 
 class AIOrchestrator:
-    def __init__(self, db: AsyncSession, provider: BaseAIProvider | None = None):
+    def __init__(
+        self,
+        db: AsyncSession,
+        provider: BaseAIProvider | None = None,
+        local_classifier: LocalIntentClassifier | None = None,
+    ):
         self.db = db
         self.provider = provider or get_ai_provider()
+        self.local_classifier = local_classifier or get_local_classifier()
         self.context_builder = AIContextBuilder(db)
         self.task_service = TaskService(db)
         self.project_service = ProjectService(db)
@@ -188,7 +195,9 @@ class AIOrchestrator:
         )
         self.db.add(req_log)
 
-        # 6. Parse and Validate Structured Output
+        # 6. Parse and Validate Structured Output (assisted by local trained intent classifier)
+        local_result = self.local_classifier.predict(message)
+
         try:
             parsed_dict = self._parse_llm_json(ai_resp.content)
             intent_val = parsed_dict.get("intent", "GENERAL_QUESTION")
@@ -197,11 +206,33 @@ class AIOrchestrator:
             entities = ExtractedEntities(**entities_raw)
             reply = parsed_dict.get("reply", "")
         except Exception as e:
-            logger.warning("Failed to parse intent JSON, falling back to general question: %s", e)
-            intent_val = "GENERAL_QUESTION"
-            confidence = 0.5
+            logger.warning(
+                "Failed to parse intent JSON, falling back to local classifier or general question: %s",
+                e,
+            )
+            if local_result.is_confident:
+                intent_val = local_result.intent
+                confidence = local_result.confidence
+            else:
+                intent_val = "GENERAL_QUESTION"
+                confidence = 0.5
             entities = ExtractedEntities()
             reply = ai_resp.content or "I couldn't clearly parse that request. Could you rephrase it?"
+
+        # If LLM defaulted to GENERAL_QUESTION but local trained classifier has a confident domain prediction,
+        # adopt the local model's prediction while respecting all authorization and domain rules.
+        if (
+            intent_val == "GENERAL_QUESTION"
+            and local_result.is_confident
+            and local_result.intent != "GENERAL_QUESTION"
+        ):
+            logger.info(
+                "Adopting prediction from local trained model: %s (confidence: %.2f%%)",
+                local_result.intent,
+                local_result.confidence * 100,
+            )
+            intent_val = local_result.intent
+            confidence = max(confidence, local_result.confidence)
 
         # 7. Entity Resolution
         resolved = EntityResolver.resolve(
