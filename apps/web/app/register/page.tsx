@@ -35,7 +35,7 @@ export default function RegisterPage() {
     // Sign straight in so new users land in their workspace, not back on a login form.
     try {
       await login({ email, password });
-      router.push("/");
+      router.push("/dashboard");
     } catch {
       router.push("/login");
     } finally {
