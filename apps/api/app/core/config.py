@@ -27,11 +27,17 @@ class Settings(BaseSettings):
     AI_MODEL: str = "gpt-4o-mini"
     AI_API_KEY: str = ""
     AI_BASE_URL: str | None = None
-    AI_TIMEOUT: int = 30
+    AI_TIMEOUT: int = 60
     AI_MAX_RETRIES: int = 2
     AI_TEMPERATURE: float = 0.1
-    AI_MAX_TOKENS: int = 2048
+    AI_MAX_TOKENS: int = 4096
     AI_RATE_LIMIT_PER_MINUTE: int = 30
+
+    # Secondary / Fallback AI Configuration (e.g. local Ollama)
+    AI_FALLBACK_PROVIDER: str = ""
+    AI_FALLBACK_MODEL: str = "llama3.2"
+    AI_FALLBACK_BASE_URL: str | None = None
+    AI_FALLBACK_API_KEY: str = "local-key"
 
     # Agent Configuration
     AGENT_MAX_STEPS: int = 10

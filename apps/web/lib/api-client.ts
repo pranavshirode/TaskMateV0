@@ -994,6 +994,12 @@ export class ApiClient {
     }) as Promise<RequirementsAnalysis>;
   }
 
+  async deleteAnalysis(analysisId: string): Promise<void> {
+    await this.fetchAPI(`/requirements/${analysisId}`, {
+      method: "DELETE",
+    });
+  }
+
   async generateTaskPlan(analysisId: string): Promise<TaskPlan> {
     return this.fetchAPI(`/requirements/${analysisId}/generate-task-plan`, {
       method: "POST",

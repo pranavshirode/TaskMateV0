@@ -406,6 +406,10 @@ Analyze this client brief and return the complete requirements specification in 
         await self.analysis_repo.update(analysis)
         return analysis
 
+    async def delete_analysis(self, user_id: str, analysis_id: str) -> None:
+        analysis = await self.get_analysis(user_id, analysis_id)
+        await self.analysis_repo.delete(analysis)
+
     async def generate_task_plan(self, user_id: str, analysis_id: str) -> GenerateTaskPlanResponse:
         analysis = await self.get_analysis(user_id, analysis_id)
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   apiClient,
@@ -19,10 +19,12 @@ import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import ErrorState from "@/components/ui/ErrorState";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
-
+import Icon from "@/components/ui/Icon";
 import { useFeedback } from "@/components/ui/Feedback";
+
 export default function RequirementsAnalysisDetailPage() {
   const { toast, confirm } = useFeedback();
+  const router = useRouter();
   const { id: projectId, analysisId } = useParams<{
     id: string;
     analysisId: string;
@@ -113,6 +115,30 @@ export default function RequirementsAnalysisDetailPage() {
     } catch (err: unknown) {
       toast(err instanceof Error ? err.message : "Operation failed", "error");
     } finally {
+      setIsActionLoading(false);
+    }
+  };
+
+  const handleDeleteAnalysis = async () => {
+    const ok = await confirm({
+      title: "Delete Requirements Session?",
+      message:
+        "Are you sure you want to delete this requirements session? All associated requirements and questions will be permanently removed.",
+      confirmLabel: "Delete",
+      danger: true,
+    });
+    if (!ok) return;
+
+    try {
+      setIsActionLoading(true);
+      await apiClient.deleteAnalysis(analysisId);
+      toast("Requirements session deleted", "success");
+      router.push(`/projects/${projectId}/requirements`);
+    } catch (err: unknown) {
+      toast(
+        err instanceof Error ? err.message : "Failed to delete session",
+        "error"
+      );
       setIsActionLoading(false);
     }
   };
@@ -307,6 +333,16 @@ export default function RequirementsAnalysisDetailPage() {
               disabled={isActionLoading}
             >
               🤖 Resume Pipeline
+            </Button>
+
+            <Button
+              variant="danger"
+              onClick={handleDeleteAnalysis}
+              disabled={isActionLoading}
+              className="border border-[color-mix(in_srgb,var(--danger)_40%,transparent)]"
+            >
+              <Icon name="trash" size={14} className="mr-1 inline" />
+              Delete Session
             </Button>
           </div>
         </div>

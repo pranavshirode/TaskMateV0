@@ -14,10 +14,11 @@ import ErrorState from "@/components/ui/ErrorState";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-
+import Icon from "@/components/ui/Icon";
 import { useFeedback } from "@/components/ui/Feedback";
+
 export default function ProjectRequirementsPage() {
-  const { toast } = useFeedback();
+  const { toast, confirm } = useFeedback();
   const { id: projectId } = useParams<{ id: string }>();
   const router = useRouter();
 
@@ -47,6 +48,38 @@ export default function ProjectRequirementsPage() {
   const [autoCreateTasks, setAutoCreateTasks] = useState(true);
   const [autoCreateProposal, setAutoCreateProposal] = useState(true);
   const [pipelineResult, setPipelineResult] = useState<PipelineExecutionResponse | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const handleDeleteAnalysis = async (
+    e: React.MouseEvent,
+    analysisId: string,
+    analysisTitle: string
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const ok = await confirm({
+      title: "Delete Requirements Session?",
+      message: `Are you sure you want to delete "${analysisTitle}"? All associated requirements and questions will be permanently removed.`,
+      confirmLabel: "Delete",
+      danger: true,
+    });
+    if (!ok) return;
+
+    try {
+      setDeletingId(analysisId);
+      await apiClient.deleteAnalysis(analysisId);
+      toast("Requirements session deleted", "success");
+      setAnalyses((prev) => prev.filter((a) => a.id !== analysisId));
+    } catch (err: unknown) {
+      toast(
+        err instanceof Error ? err.message : "Failed to delete session",
+        "error"
+      );
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -582,6 +615,15 @@ export default function ProjectRequirementsPage() {
                 <span className="text-xs text-[var(--primary)] hover:underline">
                   View Analysis →
                 </span>
+                <button
+                  type="button"
+                  title="Delete session"
+                  disabled={deletingId === a.id}
+                  onClick={(e) => handleDeleteAnalysis(e, a.id, a.title)}
+                  className="rounded-lg p-2 text-[var(--text-muted)] transition-colors hover:bg-[var(--danger-soft)] hover:text-[var(--danger)] disabled:opacity-50"
+                >
+                  <Icon name="trash" size={15} />
+                </button>
               </div>
             </Link>
           ))}

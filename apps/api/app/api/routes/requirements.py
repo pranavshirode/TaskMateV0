@@ -135,6 +135,16 @@ async def archive_analysis(
     return analysis
 
 
+@router.delete("/{analysis_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_analysis(
+    analysis_id: str,
+    current_user: User = Depends(get_current_user),
+    service: RequirementsService = Depends(get_requirements_service),
+):
+    """Delete a requirements analysis session and its child records."""
+    await service.delete_analysis(str(current_user.id), analysis_id)
+
+
 @router.post("/{analysis_id}/generate-task-plan", response_model=GenerateTaskPlanResponse)
 async def generate_task_plan(
     analysis_id: str,
