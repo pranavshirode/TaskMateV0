@@ -18,7 +18,10 @@ export default function ClientLayout({
 
   useEffect(() => setMenuOpen(false), [pathname]);
 
-  const isAuthPage = pathname === "/login" || pathname === "/register";
+  const isAuthPage =
+    pathname === "/login" ||
+    pathname === "/register" ||
+    pathname.startsWith("/auth/");
   const isLandingPage = pathname === "/";
   // Chat pages manage their own full-height scrolling.
   const isFullBleed =

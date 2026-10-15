@@ -7,6 +7,7 @@ import Link from "next/link";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import AuthShell from "@/components/layout/AuthShell";
+import GoogleSignInButton from "@/components/ui/GoogleSignInButton";
 
 // Seeded by scripts/seed.py; offered only in local development.
 const DEMO_ACCOUNT = { email: "alex@taskmate.dev", password: "password123" };
@@ -37,13 +38,7 @@ export default function LoginPage() {
       title="Welcome back"
       subtitle="Sign in to your TaskMate workspace."
     >
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          signIn({ email, password });
-        }}
-        className="space-y-4"
-      >
+      <div className="space-y-4">
         {error && (
           <div
             role="alert"
@@ -52,6 +47,23 @@ export default function LoginPage() {
             {error}
           </div>
         )}
+
+        <GoogleSignInButton text="Continue with Google" />
+
+        <div className="relative my-4 flex items-center justify-center">
+          <div className="w-full border-t border-[var(--sidebar-border)]" />
+          <span className="absolute bg-[var(--background)] px-3 text-xs uppercase tracking-wider text-[var(--text-muted)]">
+            or continue with email
+          </span>
+        </div>
+
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            signIn({ email, password });
+          }}
+          className="space-y-4"
+        >
         <Input
           label="Email"
           type="email"
@@ -86,6 +98,7 @@ export default function LoginPage() {
           </Button>
         )}
       </form>
+      </div>
       <p className="mt-6 text-center text-sm text-[var(--text-muted)]">
         New to TaskMate?{" "}
         <Link

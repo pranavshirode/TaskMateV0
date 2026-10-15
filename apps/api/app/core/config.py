@@ -49,10 +49,16 @@ class Settings(BaseSettings):
     # Generate: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
     TOKEN_ENCRYPTION_KEY: str = ""
 
-    # Google (per-user OAuth; tokens are used to call the Google Workspace MCP server)
+    # Google Workspace MCP integration (per-user OAuth; tokens are used to call the Google Workspace MCP server)
     GOOGLE_OAUTH_CLIENT_ID: str = ""
     GOOGLE_OAUTH_CLIENT_SECRET: str = ""
     GOOGLE_OAUTH_REDIRECT_URI: str = "http://localhost:3000/settings/integrations/google/callback"
+
+    # Google Sign-In (for user authentication / SSO)
+    GOOGLE_SIGN_IN_CLIENT_ID: str = ""
+    GOOGLE_SIGN_IN_CLIENT_SECRET: str = ""
+    GOOGLE_SIGN_IN_REDIRECT_URI: str = "http://localhost:8000/api/v1/auth/google/callback"
+    FRONTEND_URL: str = "http://localhost:3000"
 
     # MCP servers the agent may use on behalf of each connected user. Empty URL = disabled.
     MCP_GITHUB_URL: str = "https://api.githubcopilot.com/mcp/"

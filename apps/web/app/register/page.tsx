@@ -7,6 +7,7 @@ import Link from "next/link";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import AuthShell from "@/components/layout/AuthShell";
+import GoogleSignInButton from "@/components/ui/GoogleSignInButton";
 
 export default function RegisterPage() {
   const { register, login } = useAuth();
@@ -48,7 +49,7 @@ export default function RegisterPage() {
       title="Create your workspace"
       subtitle="Free for solo developers. Takes 30 seconds."
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-4">
         {error && (
           <div
             role="alert"
@@ -57,6 +58,17 @@ export default function RegisterPage() {
             {error}
           </div>
         )}
+
+        <GoogleSignInButton text="Sign up with Google" />
+
+        <div className="relative my-4 flex items-center justify-center">
+          <div className="w-full border-t border-[var(--sidebar-border)]" />
+          <span className="absolute bg-[var(--background)] px-3 text-xs uppercase tracking-wider text-[var(--text-muted)]">
+            or register with email
+          </span>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
         <Input
           label="Name"
           autoComplete="name"
@@ -89,6 +101,7 @@ export default function RegisterPage() {
           {isSubmitting ? "Creating workspace..." : "Create account"}
         </Button>
       </form>
+      </div>
       <p className="mt-6 text-center text-sm text-[var(--text-muted)]">
         Already have an account?{" "}
         <Link

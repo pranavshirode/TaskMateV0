@@ -17,6 +17,8 @@ type AuthContextType = {
   register: (data: RegisterRequest) => Promise<void>;
   /** Re-fetch the profile, e.g. after the user renames themselves. */
   refreshUser: () => Promise<void>;
+  /** Set an authenticated session directly from a token (e.g. OAuth callback). */
+  setSessionToken: (token: string) => Promise<void>;
   isLoading: boolean;
 };
 
@@ -64,6 +66,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(await apiClient.getMe());
   }, []);
 
+  const setSessionToken = useCallback(async (newToken: string) => {
+    apiClient.setToken(newToken);
+    setToken(newToken);
+    const userData = await apiClient.getMe();
+    setUser(userData);
+  }, []);
+
   const logout = useCallback(() => {
     apiClient.clearToken();
     setToken(null);
@@ -72,7 +81,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, token, login, logout, register, refreshUser, isLoading }}
+      value={{
+        user,
+        token,
+        login,
+        logout,
+        register,
+        refreshUser,
+        setSessionToken,
+        isLoading,
+      }}
     >
       {children}
     </AuthContext.Provider>
