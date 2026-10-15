@@ -13,8 +13,8 @@ TaskMate AI V1 has a production-grade FastAPI + Next.js foundation with 202 back
 
 | Suite | Count | Status |
 |---|---|---|
-| Backend pytest (`apps/api/tests/`) | **234 tests across 40 test files** | ✅ All passing (117.63 s) |
-| Frontend Jest (`apps/web/tests/`) | **10 tests** (`assistant.test.tsx`, `page.test.tsx`, `sidebar.test.tsx`) | ✅ All passing (1.30 s) |
+| Backend pytest (`apps/api/tests/`) | **240 tests across 41 test files** | ✅ All passing (122.83 s) |
+| Frontend Jest (`apps/web/tests/`) | **10 tests** (`assistant.test.tsx`, `page.test.tsx`, `sidebar.test.tsx`) | ✅ All passing (1.31 s) |
 | Frontend TypeScript (`tsc --noEmit`) | **0 type errors** across full codebase | ✅ All verified |
 
 ---
@@ -132,6 +132,7 @@ TaskMate AI V1 has a production-grade FastAPI + Next.js foundation with 202 back
 | Approve task plan → create tasks | `services/requirements_pipeline.py` `approve_task_plan()` | None | P1 | **COMPLETE** |
 | Traceability (req ↔ task links) | `services/requirements_pipeline.py` `get_traceability()`, `models/requirements.py` (`RequirementTaskLink`) | None | P1 | **COMPLETE** |
 | SRS document generation | `services/requirements_pipeline.py` `generate_srs_document()` | SRS doc is Markdown string; no HTML/PDF render | P2 | **PARTIAL** — Text generation complete; PDF render missing |
+| Multi-Agent Delivery Pipeline | `services/multi_agent_pipeline.py` (`MultiAgentPipelineService`), `schemas/pipeline.py`, `routes/requirements.py` (`/pipeline/execute`, `/pipeline/resume`), `web/app/projects/[id]/requirements/page.tsx` | None | P0 | **COMPLETE** — Sequential agent workflow: Requirement Analyzer → Approval Gate → Task Planner → Proposal Generator. Pauses on ambiguities without hallucinating; stages recorded with duration & telemetry (`tests/test_multi_agent_pipeline.py`) |
 | Requirements viewer page | `web/app/projects/[id]/requirements/page.tsx`, `web/app/projects/[id]/requirements/[analysisId]/page.tsx` | None | P0 | **COMPLETE** |
 | Global requirements listing | `web/app/requirements/page.tsx` | None | P1 | **COMPLETE** |
 
@@ -359,31 +360,24 @@ TaskMate AI V1 has a production-grade FastAPI + Next.js foundation with 202 back
 
 Priority-ordered list of what to build next to close all gaps:
 
-### P0 — Critical (V1 blockers)
-1. **Verify Docker Dockerfiles exist** at `infrastructure/docker/api.Dockerfile` and `infrastructure/docker/web.Dockerfile`; run `docker compose up` end-to-end.
-2. **Run Alembic migrations against PostgreSQL** container to verify schema compatibility with `asyncpg`.
+### P0 — Critical (Core delivery & reliability)
+1. **Multi-Agent Sequential Delivery Pipeline** — ✅ **COMPLETED** (`services/multi_agent_pipeline.py`, routes, schemas, Next.js UI modal and telemetry, 6/6 tests passing).
+2. **Fresh Machine Setup & Docker Healthchecks** — ✅ **COMPLETED** (`scripts/dev.sh`, `scripts/seed.py`, `infrastructure/docker/web.Dockerfile`).
 
 ### P1 — High (V1 feature completeness)
-3. **Proposal Generator service** (`services/proposal_generator.py`) — AI-driven proposal generation from approved requirements.
-4. **PDF Export** (`services/pdf_export.py`) — Use WeasyPrint or ReportLab to convert SRS/proposal markdown to downloadable PDF.
-5. **Proposal templates** (`ai/prompts/proposal_templates.py`) — Agile, Fixed-Price, Retainer templates.
-6. **Proposals frontend page** (`web/app/projects/[id]/proposals/page.tsx`) — viewer + editor + PDF download button.
-7. **Email service** (`services/email_service.py`) — SMTP transport with template support for follow-up drafts.
-8. **Outreach prompts** (`ai/prompts/outreach.py`) — Personalized email draft generation via AI.
-9. **Quotation service** (`services/quotation_service.py`) — Cost estimation with budget line items.
-10. **Password recovery flow** — OTP generation + SMTP email for FR-4.
-11. **Task reminder service** (`services/reminder_service.py`) — Background job to notify on approaching due dates.
+3. **Milestones & Task Dependencies** — ✅ **COMPLETED** (`models/milestone.py`, `services/milestone.py`, BFS cycle detection, `/projects/[id]/milestones`, 12/12 tests passing).
+4. **Proposals & Document Export** — ✅ **COMPLETED** (`models/proposal.py`, `services/proposal.py`, AI draft generator, markdown/HTML export, `/projects/[id]/proposals`, 11/11 tests passing).
+5. **Client Communication & Follow-ups** — ✅ **COMPLETED** (`models/client_communication.py`, `services/client_communication.py`, approval-gated dispatch, AI drafts, `/clients/[id]`, 9/9 tests passing).
+6. **External AI Provider Verification** — ✅ **COMPLETED** (`scripts/ai_check.py`, `docs/AI_PROVIDER_VERIFICATION.md` supporting OpenAI, Gemini OpenAI-compat, Ollama, LM Studio).
+7. **Password recovery flow** — OTP generation + SMTP email for FR-4 (needs external SMTP config).
+8. **PDF Export** — Native PDF generation via ReportLab/WeasyPrint (HTML & Markdown export currently functional).
 
-### P2 — Medium (Significant missing features)
-12. **Milestone model & CRUD** — Add `Milestone` SQLAlchemy model, migration, repository, route, service, and `web/app/projects/[id]/milestones/page.tsx`.
-13. **Task dependency model** — Add `blocked_by` FK or M2M on `Task`; update task detail page.
-14. **Scheduler daemon** (`services/scheduler.py`) — APScheduler or Celery worker for follow-up automation.
-15. **Conflict detector** (`services/conflict_detector.py`) — Detect overlapping task due dates / calendar events.
-16. **Calendar view page** (`web/app/tasks/calendar/page.tsx`) — Integrate a React calendar component (e.g., react-big-calendar).
-17. **Automations management page** (`web/app/automations/page.tsx`) — List, create, cancel scheduled automations.
-18. **Labels management page** (`web/app/labels/page.tsx`) — CRUD UI for label definitions.
-19. **Invoice generator** (`services/invoice_generator.py`) — Branded invoice PDF for completed projects.
-20. **Gemini native provider** (`ai/providers/gemini_provider.py`) — Replace the OpenAI-compat shim with Google GenAI SDK for proper Gemini 2.5 Flash support.
+### P2 — Medium (Workflow & usability enhancements)
+9. **Scheduler daemon** (`services/scheduler.py`) — APScheduler or Celery worker for follow-up automation.
+10. **Calendar view page** (`web/app/tasks/calendar/page.tsx`) — React calendar component for task deadlines.
+11. **Automations management page** (`web/app/automations/page.tsx`) — List, create, cancel scheduled automations.
+12. **Labels management page** (`web/app/labels/page.tsx`) — CRUD UI for label definitions.
+13. **Gemini native provider** (`ai/providers/gemini_provider.py`) — Native Google GenAI SDK (currently functional via OpenAI-compatible endpoint).
 
 ### P3 — Low (Nice-to-have / future)
 21. **Anthropic provider** (`ai/providers/anthropic_provider.py`) — Claude model support.

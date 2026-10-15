@@ -156,3 +156,23 @@ async def get_workflow_automation_service(
 
 async def get_google_integration_service(db: AsyncSession = Depends(get_db)) -> GoogleIntegrationService:
     return GoogleIntegrationService(GoogleIntegrationRepository(db))
+
+
+from app.services.multi_agent_pipeline import MultiAgentPipelineService
+from app.services.proposal import ProposalService
+
+
+async def get_multi_agent_pipeline_service(
+    db: AsyncSession = Depends(get_db),
+) -> MultiAgentPipelineService:
+    ai_provider = get_ai_provider()
+    task_service = TaskService(db)
+    req_service = RequirementsService(db, ai_provider, task_service)
+    prop_service = ProposalService(db, ai_provider)
+    return MultiAgentPipelineService(
+        db=db,
+        ai_provider=ai_provider,
+        requirements_service=req_service,
+        proposal_service=prop_service,
+        task_service=task_service,
+    )

@@ -398,7 +398,9 @@ def analyze_brief_dynamically(
     has_security = (
         has_auth or has_payment or any(k in low for k in ["secure", "security", "privacy", "gdpr", "encrypt"])
     )
-    has_performance = any(k in low for k in ["fast", "quick", "performance", "speed", "scalable", "load", "concurrent"])
+    has_performance = bool(re.search(r"\b(fast|quick|performance|speed|scalable|concurrency|latency)\b", low)) or bool(
+        re.search(r"\bload\s+(time|testing|balancer)\b", low)
+    )
     has_mobile = any(k in low for k in ["mobile", "android", "ios", "iphone", "phone", "app store", "play store"])
     has_reliability = any(k in low for k in ["reliable", "reliability", "uptime", "high availability", "backup"])
 

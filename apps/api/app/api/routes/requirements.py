@@ -4,8 +4,13 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, status
 
-from app.api.deps import get_current_user, get_requirements_service
+from app.api.deps import get_current_user, get_multi_agent_pipeline_service, get_requirements_service
 from app.models.user import User
+from app.schemas.pipeline import (
+    PipelineExecuteRequest,
+    PipelineExecutionResponse,
+    PipelineResumeRequest,
+)
 from app.schemas.requirements import (
     AnswerClarificationRequest,
     ApproveTaskPlanRequest,
@@ -186,3 +191,25 @@ async def download_srs_document(
         media_type="text/markdown",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+# ── Multi-Agent Sequential Workflow Pipeline ───────────────────────────────────
+
+@router.post("/pipeline/execute", response_model=PipelineExecutionResponse, status_code=status.HTTP_200_OK)
+async def execute_multi_agent_pipeline(
+    data: PipelineExecuteRequest,
+    current_user: User = Depends(get_current_user),
+    service: MultiAgentPipelineService = Depends(get_multi_agent_pipeline_service),
+) -> PipelineExecutionResponse:
+    """Execute end-to-end multi-agent delivery pipeline: Brief -> Requirements -> Plan -> Proposal."""
+    return await service.execute_new_brief(str(current_user.id), data)
+
+
+@router.post("/pipeline/resume", response_model=PipelineExecutionResponse, status_code=status.HTTP_200_OK)
+async def resume_multi_agent_pipeline(
+    data: PipelineResumeRequest,
+    current_user: User = Depends(get_current_user),
+    service: MultiAgentPipelineService = Depends(get_multi_agent_pipeline_service),
+) -> PipelineExecutionResponse:
+    """Resume execution of an existing pipeline after developer review, clarifications, or approvals."""
+    return await service.resume_pipeline(str(current_user.id), data)

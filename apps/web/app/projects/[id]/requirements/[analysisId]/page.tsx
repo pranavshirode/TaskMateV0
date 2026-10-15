@@ -175,6 +175,41 @@ export default function RequirementsAnalysisDetailPage() {
     }
   };
 
+  const handleResumePipeline = async () => {
+    try {
+      setIsActionLoading(true);
+      const res = await apiClient.resumeMultiAgentPipeline({
+        analysis_id: analysisId,
+        auto_approve_requirements: true,
+        auto_create_tasks: true,
+        auto_create_proposal: true,
+      });
+      fetchAnalysisData();
+      if (res.status === "SUCCESS") {
+        toast(
+          `Pipeline completed: ${res.created_tasks_count} tasks created, proposal ${
+            res.proposal_id ? "drafted" : "ready"
+          }.`
+        );
+      } else if (res.status === "CLARIFICATION_REQUIRED") {
+        toast(
+          `Pipeline paused: ${res.unresolved_questions_count} clarification questions need answers.`,
+          "info"
+        );
+        setActiveTab("questions");
+      } else {
+        toast(res.message, "info");
+      }
+    } catch (err: unknown) {
+      toast(
+        err instanceof Error ? err.message : "Failed to resume pipeline",
+        "error"
+      );
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
   const toggleTaskSelection = (index: number) => {
     if (selectedTaskIndices.includes(index)) {
       setSelectedTaskIndices(selectedTaskIndices.filter((i) => i !== index));
@@ -264,6 +299,14 @@ export default function RequirementsAnalysisDetailPage() {
               disabled={isActionLoading}
             >
               ⚡ Generate Task Plan
+            </Button>
+
+            <Button
+              variant="secondary"
+              onClick={handleResumePipeline}
+              disabled={isActionLoading}
+            >
+              🤖 Resume Pipeline
             </Button>
           </div>
         </div>

@@ -478,6 +478,48 @@ export interface AIGenerateCommunicationRequest {
   context_notes?: string;
 }
 
+export interface PipelineStageLog {
+  stage_name: string;
+  status: string;
+  duration_ms: number;
+  summary: string;
+  error?: string;
+}
+
+export interface PipelineExecuteRequest {
+  project_id: string;
+  brief: string;
+  title?: string;
+  desired_outcome?: string;
+  constraints?: string;
+  deadline?: string;
+  auto_approve_requirements?: boolean;
+  auto_create_tasks?: boolean;
+  auto_create_proposal?: boolean;
+}
+
+export interface PipelineResumeRequest {
+  analysis_id: string;
+  auto_approve_requirements?: boolean;
+  auto_create_tasks?: boolean;
+  auto_create_proposal?: boolean;
+}
+
+export interface PipelineExecutionResponse {
+  execution_id: string;
+  project_id: string;
+  analysis_id: string;
+  status: string;
+  stages: PipelineStageLog[];
+  requirements_count: number;
+  unresolved_questions_count: number;
+  planned_tasks_count: number;
+  created_tasks_count: number;
+  proposal_id?: string;
+  message: string;
+  total_duration_ms: number;
+}
+
 // ─── ApiClient ────────────────────────────────────────────────────────────────
 
 export class ApiClient {
@@ -972,6 +1014,24 @@ export class ApiClient {
     return this.fetchAPI(
       `/requirements/${analysisId}/traceability`
     ) as Promise<TraceabilityReport>;
+  }
+
+  async executeMultiAgentPipeline(
+    data: PipelineExecuteRequest
+  ): Promise<PipelineExecutionResponse> {
+    return this.fetchAPI("/requirements/pipeline/execute", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }) as Promise<PipelineExecutionResponse>;
+  }
+
+  async resumeMultiAgentPipeline(
+    data: PipelineResumeRequest
+  ): Promise<PipelineExecutionResponse> {
+    return this.fetchAPI("/requirements/pipeline/resume", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }) as Promise<PipelineExecutionResponse>;
   }
 
   // ─── Sprint 4: Project Context Notes & Memory ─────────────────────────────────
