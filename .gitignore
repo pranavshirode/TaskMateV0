@@ -8,6 +8,7 @@
 *.key
 *.db
 *.sqlite
+client_secret*.json
 
 # ===========================
 # Python
