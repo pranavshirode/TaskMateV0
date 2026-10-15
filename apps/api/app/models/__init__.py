@@ -20,7 +20,9 @@ from app.models.enums import (  # noqa: F401
 )
 from app.models.github_integration import GitHubIntegration  # noqa: F401
 from app.models.google_integration import GoogleIntegration  # noqa: F401
+from app.models.milestone import Milestone, TaskDependency  # noqa: F401
 from app.models.project import Project  # noqa: F401
+from app.models.proposal import Proposal, ProposalVersion  # noqa: F401
 from app.models.repository import Repository  # noqa: F401
 from app.models.requirements import (  # noqa: F401
     AnalysisRevision,

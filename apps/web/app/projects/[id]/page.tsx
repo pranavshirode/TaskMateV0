@@ -160,6 +160,18 @@ export default function ProjectDetailPage() {
       text: "Analyze briefs and generate tasks",
     },
     {
+      href: `/projects/${id}/milestones`,
+      icon: "calendar",
+      title: "Milestones",
+      text: "Phases, targets, and task dependencies",
+    },
+    {
+      href: `/projects/${id}/proposals`,
+      icon: "tasks",
+      title: "Proposals & Quotes",
+      text: "Client proposals, estimates, and export",
+    },
+    {
       href: `/projects/${id}/context`,
       icon: "brain",
       title: "Project memory",

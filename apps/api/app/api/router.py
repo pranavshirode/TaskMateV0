@@ -19,8 +19,10 @@ from app.api.routes import (
     dashboard,
     integrations,
     labels,
+    milestones,
     project_context,
     projects,
+    proposals,
     repositories,
     requirements,
     tasks,
@@ -43,3 +45,5 @@ v1_router.include_router(requirements.router, prefix="/requirements", tags=["req
 v1_router.include_router(project_context.router, tags=["project-context"])
 v1_router.include_router(client_requests.router, tags=["client-requests"])
 v1_router.include_router(automations.router, prefix="/automations", tags=["automations"])
+v1_router.include_router(proposals.router, prefix="", tags=["proposals"])
+v1_router.include_router(milestones.router, prefix="", tags=["milestones"])

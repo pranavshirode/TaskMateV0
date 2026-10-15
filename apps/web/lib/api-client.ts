@@ -362,6 +362,73 @@ export interface DailySummary {
   generated_at: string;
 }
 
+export interface Milestone {
+  id: string;
+  project_id: string;
+  user_id: string;
+  title: string;
+  description?: string;
+  status: string; // OPEN, IN_PROGRESS, COMPLETED, CANCELLED
+  due_date?: string;
+  task_count: number;
+  completed_task_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TaskDependency {
+  id: string;
+  task_id: string;
+  depends_on_task_id: string;
+  depends_on_title?: string;
+  depends_on_status?: string;
+  created_at: string;
+}
+
+export interface ProposalLineItem {
+  description: string;
+  quantity: number;
+  unit_price: number;
+  total?: number;
+}
+
+export interface ProposalSection {
+  heading: string;
+  content: string;
+}
+
+export interface ProposalVersionSummary {
+  id: string;
+  version_number: number;
+  change_note?: string;
+  created_at: string;
+}
+
+export interface Proposal {
+  id: string;
+  project_id: string;
+  analysis_id?: string;
+  user_id: string;
+  title: string;
+  client_name?: string;
+  executive_summary?: string;
+  line_items: ProposalLineItem[];
+  sections: ProposalSection[];
+  currency: string;
+  subtotal?: number;
+  discount_percent: number;
+  tax_percent: number;
+  total_amount?: number;
+  valid_until?: string;
+  estimated_duration_weeks?: number;
+  status: string; // DRAFT, PENDING_APPROVAL, SENT, ACCEPTED, REJECTED
+  version: number;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+  version_history: ProposalVersionSummary[];
+}
+
 // ─── ApiClient ────────────────────────────────────────────────────────────────
 
 export class ApiClient {
@@ -954,6 +1021,149 @@ export class ApiClient {
     return this.fetchAPI(`/automations/executions${query}`) as Promise<
       AutomationExecution[]
     >;
+  }
+
+  // ─── Milestones ─────────────────────────────────────────────────────────────
+  async createMilestone(data: {
+    project_id: string;
+    title: string;
+    description?: string;
+    status?: string;
+    due_date?: string;
+  }): Promise<Milestone> {
+    return this.fetchAPI("/milestones", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }) as Promise<Milestone>;
+  }
+
+  async listProjectMilestones(projectId: string): Promise<Milestone[]> {
+    return this.fetchAPI(`/milestones/project/${projectId}`) as Promise<Milestone[]>;
+  }
+
+  async getMilestone(milestoneId: string): Promise<Milestone> {
+    return this.fetchAPI(`/milestones/${milestoneId}`) as Promise<Milestone>;
+  }
+
+  async updateMilestone(
+    milestoneId: string,
+    data: {
+      title?: string;
+      description?: string;
+      status?: string;
+      due_date?: string;
+    }
+  ): Promise<Milestone> {
+    return this.fetchAPI(`/milestones/${milestoneId}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }) as Promise<Milestone>;
+  }
+
+  async deleteMilestone(milestoneId: string): Promise<void> {
+    await this.fetchAPI(`/milestones/${milestoneId}`, { method: "DELETE" });
+  }
+
+  // ─── Task Dependencies ──────────────────────────────────────────────────────
+  async addTaskDependency(
+    taskId: string,
+    dependsOnTaskId: string
+  ): Promise<TaskDependency> {
+    return this.fetchAPI(`/tasks/${taskId}/dependencies`, {
+      method: "POST",
+      body: JSON.stringify({ depends_on_task_id: dependsOnTaskId }),
+    }) as Promise<TaskDependency>;
+  }
+
+  async getTaskDependencies(taskId: string): Promise<TaskDependency[]> {
+    return this.fetchAPI(`/tasks/${taskId}/dependencies`) as Promise<TaskDependency[]>;
+  }
+
+  async removeTaskDependency(
+    taskId: string,
+    dependsOnTaskId: string
+  ): Promise<void> {
+    await this.fetchAPI(`/tasks/${taskId}/dependencies/${dependsOnTaskId}`, {
+      method: "DELETE",
+    });
+  }
+
+  // ─── Proposals ──────────────────────────────────────────────────────────────
+  async createProposal(data: {
+    project_id: string;
+    title: string;
+    analysis_id?: string;
+    client_name?: string;
+    executive_summary?: string;
+    line_items?: ProposalLineItem[];
+    sections?: ProposalSection[];
+    currency?: string;
+    discount_percent?: number;
+    tax_percent?: number;
+    valid_until?: string;
+    estimated_duration_weeks?: number;
+    notes?: string;
+  }): Promise<Proposal> {
+    return this.fetchAPI("/proposals", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }) as Promise<Proposal>;
+  }
+
+  async listProjectProposals(projectId: string): Promise<Proposal[]> {
+    return this.fetchAPI(`/proposals/project/${projectId}`) as Promise<Proposal[]>;
+  }
+
+  async getProposal(proposalId: string): Promise<Proposal> {
+    return this.fetchAPI(`/proposals/${proposalId}`) as Promise<Proposal>;
+  }
+
+  async updateProposal(
+    proposalId: string,
+    data: Partial<Proposal>
+  ): Promise<Proposal> {
+    return this.fetchAPI(`/proposals/${proposalId}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }) as Promise<Proposal>;
+  }
+
+  async transitionProposalStatus(
+    proposalId: string,
+    status: string,
+    note?: string
+  ): Promise<Proposal> {
+    return this.fetchAPI(`/proposals/${proposalId}/transition`, {
+      method: "POST",
+      body: JSON.stringify({ status, note }),
+    }) as Promise<Proposal>;
+  }
+
+  async deleteProposal(proposalId: string): Promise<void> {
+    await this.fetchAPI(`/proposals/${proposalId}`, { method: "DELETE" });
+  }
+
+  async generateAIProposal(data: {
+    project_id: string;
+    analysis_id?: string;
+    title: string;
+    currency?: string;
+    discount_percent?: number;
+    tax_percent?: number;
+    client_name?: string;
+  }): Promise<Proposal> {
+    return this.fetchAPI("/proposals/ai-generate", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }) as Promise<Proposal>;
+  }
+
+  async getProposalMarkdown(proposalId: string): Promise<string> {
+    const res = await fetch(`${this.baseUrl}/proposals/${proposalId}/markdown`, {
+      headers: this.getToken() ? { Authorization: `Bearer ${this.getToken()}` } : {},
+    });
+    if (!res.ok) throw new Error("Failed to download markdown");
+    return res.text();
   }
 }
 

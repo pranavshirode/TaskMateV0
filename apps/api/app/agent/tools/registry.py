@@ -88,7 +88,9 @@ def create_default_registry() -> ToolRegistry:
 
     from app.agent.tools.client_tools import get_client_tools
     from app.agent.tools.github_tools import get_github_tools
+    from app.agent.tools.milestone_tools import get_milestone_tools
     from app.agent.tools.project_tools import get_project_tools
+    from app.agent.tools.proposal_tools import get_proposal_tools
     from app.agent.tools.task_tools import get_task_tools
 
     for tool in get_task_tools():
@@ -100,4 +102,17 @@ def create_default_registry() -> ToolRegistry:
     for tool in get_github_tools():
         registry.register(tool)
 
+    return registry
+
+
+def create_extended_registry() -> ToolRegistry:
+    """Create a ToolRegistry including milestones, proposals, and requirements tools."""
+    registry = create_default_registry()
+    from app.agent.tools.milestone_tools import get_milestone_tools
+    from app.agent.tools.proposal_tools import get_proposal_tools
+
+    for tool in get_milestone_tools():
+        registry.register(tool)
+    for tool in get_proposal_tools():
+        registry.register(tool)
     return registry

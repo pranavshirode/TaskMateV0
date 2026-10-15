@@ -76,6 +76,11 @@ class ToolPermissionService:
             if project_id_str and not await self._can_access_project(user, project_id_str):
                 return PermissionResult(allowed=False, reason="Project not found or access denied")
 
+        if tool.name in ("milestone.create", "milestone.list", "proposal.create", "proposal.list"):
+            project_id_str = tool_input.get("project_id")
+            if project_id_str and not await self._can_access_project(user, project_id_str):
+                return PermissionResult(allowed=False, reason="Project not found or access denied")
+
         return PermissionResult(allowed=True, requires_approval=requires_approval)
 
     async def _can_access_project(self, user: User, project_id: str) -> bool:
